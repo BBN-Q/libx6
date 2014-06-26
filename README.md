@@ -21,3 +21,8 @@ cd build
 cmake -G "MSYS Makefiles" ../src/
 make
 ```
+
+LICENSE
+------------
+
+Licensed under the Apache License v2.
