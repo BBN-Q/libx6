@@ -67,6 +67,9 @@ int main ()
 
   cout << "get trigger source returns " << ((get_trigger_source(0) == INTERNAL) ? "INTERNAL" : "EXTERNAL") << endl;
 
+  cout << "Disabling channel 2";
+  set_channel_enable(0, 1, 0);
+
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
 
   set_averager_settings(0, 1024, 10, 1, 1);
