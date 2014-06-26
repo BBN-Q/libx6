@@ -16,6 +16,7 @@ public:
 };
 
 CleanUp::~CleanUp() {
+	FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading.";
 	if (Output2FILE::Stream()) {
 		fclose(Output2FILE::Stream());
 	}
@@ -37,6 +38,7 @@ int init() {
 	Output2FILE::Stream() = pFile;
 
 	numDevices_ = get_num_devices();
+	FILE_LOG(logINFO) << "Initializing BBN libx6 with " << numDevices_ << " device" << (numDevices_ > 1 ? "s" : "") << " found.";
 
 	return X6::X6_OK;
 }
