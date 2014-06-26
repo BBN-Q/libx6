@@ -87,8 +87,8 @@ int main ()
 
 
   cout << "Transferring waveform ch1" << endl;
-  vector<int64_t> buffer(10240);
-  transfer_waveform(0, 1, buffer.data(), 1024);
+  vector<double> buffer(10240);
+  transfer_waveform(0, 0, buffer.data(), 1024);
 
   cout << "Stopping" << endl;
 
