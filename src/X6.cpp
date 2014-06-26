@@ -32,7 +32,7 @@ int X6::disconnect(){
 		success = handle_.close();
 
 		if (success == 0) {
-			FILE_LOG(logINFO) << "Closed connection to device " << deviceID_ << endl;
+			FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 			isOpen_ = false;
 		}	
 	}

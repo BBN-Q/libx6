@@ -32,7 +32,9 @@ enum X6ErrorCode {
 };
 
 
-EXPORT int init();
+void init() __attribute__((constructor));
+void cleanup() __attribute__((destructor));
+
 EXPORT int connect_by_ID(int);
 EXPORT int disconnect(int);
 EXPORT int get_num_devices();

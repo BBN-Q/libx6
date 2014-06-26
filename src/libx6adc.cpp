@@ -9,39 +9,32 @@
 #include "libx6adc.h"
 #include "X6.h"
 
-// stub class to close the logger file handle when the driver goes out of scope
-class CleanUp {
-public:
-	~CleanUp();
-};
-
-CleanUp::~CleanUp() {
-	FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading.";
-	if (Output2FILE::Stream()) {
-		fclose(Output2FILE::Stream());
-	}
-}
-
 // globals
 X6 X6s_[MAX_NUM_DEVICES];
 int numDevices_ = 0;
-CleanUp cleanup_;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// initialize the library
-int init() {
-	//Create the logger
+// initialize the library --contructor hook in header
+void init() {
+	//Open the logging file
 	FILE* pFile = fopen("libaps.log", "a");
 	Output2FILE::Stream() = pFile;
 
 	numDevices_ = get_num_devices();
 	FILE_LOG(logINFO) << "Initializing BBN libx6 with " << numDevices_ << " device" << (numDevices_ > 1 ? "s" : "") << " found.";
-
-	return X6::X6_OK;
 }
+
+//cleanup on driver unload --destructor hook in header
+void cleanup(){
+	FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading." << endl;
+	if (Output2FILE::Stream()) {
+		fclose(Output2FILE::Stream());
+	}
+}
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // initialize an X6-1000M board
 int initX6(int deviceID) {

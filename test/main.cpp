@@ -27,12 +27,10 @@ int main ()
   if (numDevices < 1)
   	return 0;
 
-  char s[] = "stdout";
-  set_log(s);
+  // char s[] = "stdout";
+  // set_log(s);
 
   cout << "Attempting to initialize libaps" << endl;
-
-  init();
 
   int rc;
   rc = connect_by_ID(0);
@@ -67,7 +65,7 @@ int main ()
 
   cout << "get trigger source returns " << ((get_trigger_source(0) == INTERNAL) ? "INTERNAL" : "EXTERNAL") << endl;
 
-  cout << "Disabling channel 2";
+  cout << "Disabling channel 2" << endl;
   set_channel_enable(0, 1, 0);
 
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
@@ -91,7 +89,7 @@ int main ()
 
   cout << "Transferring waveform ch1" << endl;
   vector<double> buffer(10240);
-  transfer_waveform(0, 0, buffer.data(), 1024);
+  transfer_waveform(0, 0, buffer.data(), 10240);
 
   cout << "Stopping" << endl;
 
