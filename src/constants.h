@@ -32,9 +32,6 @@ static const int WB_PHASE_INC_OFFSET = 0x10;
 //Expected version
 static const int FIRMWARE_VERSION =  0x1;
 
-typedef enum {INTERNAL=0, EXTERNAL} TRIGGERSOURCE;
-typedef enum {INTERNALREF=0, EXTERNALREF} REFERENCESOURCE;
-
 typedef enum {DIGITIZE=0, AVERGAGE, FILTER, FILTER_AND_AVERAGE} DIGITIZER_MODE;
 
 //Readout filter parameters

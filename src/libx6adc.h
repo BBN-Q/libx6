@@ -37,7 +37,7 @@ void cleanup() __attribute__((destructor));
 
 EXPORT int connect_by_ID(int);
 EXPORT int disconnect(int);
-EXPORT int get_num_devices();
+EXPORT unsigned get_num_devices();
 
 EXPORT int initX6(int);
 EXPORT int read_firmware_version(int);
@@ -51,8 +51,8 @@ EXPORT double get_sampleRate(int);
 EXPORT int set_trigger_source(int, int);
 EXPORT int get_trigger_source(int);
 
-EXPORT int set_reference_source(int, int);
-EXPORT int get_reference_source(int);
+EXPORT int set_reference(int, int);
+EXPORT int get_reference(int);
 
 EXPORT int set_channel_enable(int, int, int);
 EXPORT int get_channel_enable(int, int);

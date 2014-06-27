@@ -55,7 +55,7 @@ int X6::read_firmware_version() const {
 	X6_1000 *h = const_cast<X6_1000*>(&handle_);
 	h->read_firmware_version(version, subrevision);
 
-	FILE_LOG(logINFO) << "Logic version: " << myhex << version << ", " << myhex << subrevision;
+	FILE_LOG(logINFO) <<  "Logic version: " << myhex << version << ", " << myhex << subrevision;
 
 	return version;
 }

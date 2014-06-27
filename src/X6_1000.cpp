@@ -9,7 +9,7 @@ using namespace Innovative;
 
 // constructor
 X6_1000::X6_1000() :
-    isOpened_(false), isRunning_(false), VMPs_(2) {
+    isOpen_{false}, isRunning_{false}, VMPs_(2) {
     numBoards_ = getBoardCount();
 
     for(int cnt = 0; cnt < get_num_channels(); cnt++) {
@@ -21,17 +21,13 @@ X6_1000::X6_1000() :
 }
 
 X6_1000::~X6_1000() {
-	if (isOpened_) close();   
+	if (isOpen_) close();   
 }
 
 unsigned int X6_1000::get_num_channels() {
     return module_.Input().Channels();
 }
 
-unsigned int  X6_1000::getBoardCount() {
-    static Innovative::X6_1000M  x6;
-    return static_cast<unsigned int>(x6.BoardCount());
-}
 
 void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event, 
     void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event)) {
@@ -46,7 +42,9 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
      * if the device cannot be found
      */
 
-    if (deviceID > numBoards_ || isOpened_) return MODULE_ERROR;
+    if (isOpen_) return SUCCESS;
+    if (deviceID > numBoards_) return MODULE_ERROR;
+    deviceID_ = deviceID;
 
     // Timer event handlers
     setHandler(timer_.OnElapsed, &X6_1000::HandleTimer);
@@ -97,7 +95,7 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     module_.Reset();
     FILE_LOG(logINFO) << "Module Device Opened Successfully...";
     
-    isOpened_ = true;
+    isOpen_ = true;
 
     log_card_info();
 
@@ -125,21 +123,27 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     return SUCCESS;
   }
 
+X6_1000::ErrorCodes X6_1000::init() {
+    /*
+    TODO: some standard setup stuff here.  Maybe move some of the open code here.
+    */
+    return SUCCESS;
+}
  
 X6_1000::ErrorCodes X6_1000::close() {
     stream_.Disconnect();
     module_.Close();
 
-    isOpened_ = false;
-
+    isOpen_ = false;
+    FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 	return SUCCESS;
 }
 
-int X6_1000::read_firmware_version(int & version, int & subrevision) {
-    version = module_.Info().FpgaLogicVersion();
-    subrevision = module_.Info().FpgaLogicSubrevision();
-
-    return SUCCESS;
+int X6_1000::read_firmware_version() {
+    int version = module_.Info().FpgaLogicVersion();
+    int subrevision = module_.Info().FpgaLogicSubrevision();
+    FILE_LOG(logINFO) << "Logic version: " << myhex << version << ", " << myhex << subrevision;
+    return version;
 }
 
 float X6_1000::get_logic_temperature() {
@@ -168,29 +172,29 @@ X6_1000::ErrorCodes X6_1000::set_routes() {
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ExtInt ref, float frequency) {
+X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferneceSource ref, float frequency) {
     IX6ClockIo::IIReferenceSource x6ref; // reference source
     if (frequency < 0) return INVALID_FREQUENCY;
 
     x6ref = (ref == EXTERNAL) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
+    FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
 
     module_.Clock().Reference(x6ref);
     module_.Clock().ReferenceFrequency(frequency);
     return SUCCESS;
 }
 
-X6_1000::ExtInt X6_1000::get_reference() {
+X6_1000::ReferneceSource X6_1000::get_reference() {
     auto iiref = module_.Clock().Reference();
     return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL : INTERNAL;
 }
 
-X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ExtInt src , 
-                                       float frequency,
-                                       ExtSource extSrc) {
+X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ExtInt src , float frequency, ExtSource extSrc) {
 
     IX6ClockIo::IIClockSource x6clksrc; // clock source
     if (frequency < 0) return INVALID_FREQUENCY;
 
+    FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
     // Route clock
     x6clksrc = (src ==  EXTERNAL) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
     module_.Clock().Source(x6clksrc);
@@ -200,10 +204,13 @@ X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ExtInt src ,
 }
 
 double X6_1000::get_pll_frequency() {
-    return module_.Clock().FrequencyActual();
+    double freq module_.Clock().FrequencyActual();
+    FILE_LOG(logINFO) << "PLL frequency for X6: " << freq;
+    return freq
+
 }
 
-X6_1000::ErrorCodes X6_1000::set_trigger_src(TriggerSource trgSrc) {
+X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
 
@@ -215,7 +222,7 @@ X6_1000::ErrorCodes X6_1000::set_trigger_src(TriggerSource trgSrc) {
     return SUCCESS;
 }
 
-X6_1000::TriggerSource X6_1000::get_trigger_src() const {
+X6_1000::TriggerSource X6_1000::get_trigger_source() const {
     // return cached trigger source until 
     // TODO: identify method for getting source from card
     if (triggerSource_) 
@@ -400,6 +407,19 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     return SUCCESS;
 }
 
+X6_1000::ErrorCodes X6_1000::wait_for_acquisition(unsigned timeOut){
+    /* Blocking wait until all the records have been acquired. */
+
+    auto start = std::chrono::system_clock::now();
+    auto end = start + std::chrono::seconds(timeOut);
+    while (get_is_running()) {
+        if (std::chrono::system_clock::now() > end)
+            return X6::X6_TIMEOUT;
+        std::this_thread::sleep_for( std::chrono::milliseconds(100) );
+    }
+    return SUCCESS;
+}
+
 X6_1000::ErrorCodes X6_1000::stop() {
     isRunning_ = false;
     stream_.Stop();
@@ -555,6 +575,15 @@ void X6_1000::HandleTriggerAlert(Innovative::AlertSignalEvent & event) {
 
 void X6_1000::LogHandler(string handlerName) {
     FILE_LOG(logINFO) << "Alert:" << handlerName;
+}
+
+X6_1000::ErrorCodes X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
+    FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
+    return write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
+}
+
+DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
+    return DIGITIZER_MODE(read_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
 }
 
 X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {

@@ -182,7 +182,7 @@ classdef X6 < hgsetget
             
             x6 = X6();
             
-            x6.setDebugLevel(8);
+            x6.setDebugLevel(6);
             
             x6.connect(0);
             

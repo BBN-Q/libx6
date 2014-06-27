@@ -33,17 +33,25 @@ public:
 
 	enum ErrorCodes {
     	SUCCESS = 0,
-    	MODULE_ERROR = -1,
-    	NOT_IMPLEMENTED = -2,
-    	INVALID_FREQUENCY = -3,
-    	INVALID_CHANNEL = -4,
-    	INVALID_INTERVAL = -5,
-    	INVALID_FRAMESIZE = -6
+    	INVALID_DEVICEID = -1,
+    	DEVICE_NOT_CONNECTED = -2,
+    	MODULE_ERROR = -3,
+    	NOT_IMPLEMENTED = -4,
+    	FILE_ERROR = -5,
+    	INVALID_FREQUENCY = -0x10,
+    	INVALID_CHANNEL = -0x11,
+    	INVALID_INTERVAL = -0x12,
+    	INVALID_FRAMESIZE = -0x13
 	};
 
-	enum ExtInt {
-		EXTERNAL = 0,   /**< External Input */
-		INTERNAL        /**< Internal Generation */
+	enum ClockSource {
+		EXTERNAL_CLOCK = 0,   /**< External Input */
+		INTERNAL_CLOCK        /**< Internal Generation */
+	};
+
+	enum ReferenceSource {
+		EXTERNAL_REFERENCE = 0,   /**< External Input */
+		INTERNAL_REFERENCE        /**< Internal Generation */
 	};
 
 	enum ExtSource {
@@ -59,24 +67,19 @@ public:
 	X6_1000();
 	~X6_1000();
 
-	/** getBoardCount()
-	 *  \returns Number of boards reported by Malibu driver
-	 */
-	static unsigned int getBoardCount();
-
 	float get_logic_temperature();
 	float get_logic_temperature_by_reg(); // second test method to get temp using WB register
 
-	int read_firmware_version(int &, int &);
+	int read_firmware_version();
 
 	/** Set reference source and frequency
 	 *  \param ref EXTERNAL || INTERNAL
 	 *  \param frequency Frequency in Hz
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_reference(ExtInt ref = INTERNAL, float frequency = 10e6);
+	ErrorCodes set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
 
-	ExtInt get_reference();
+	ReferenceSource get_reference();
 
 	/** Set clock source and frequency
 	 *  \param src EXTERNAL || INTERNAL
@@ -84,7 +87,7 @@ public:
 	 *  \param extSrc FRONT_PANEL || P16
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_clock(ExtInt src = INTERNAL, 
+	ErrorCodes set_clock(ClockSource src = INTERNAL_CLOCK, 
 		                 float frequency = 1e9, 
 		                 ExtSource extSrc = FRONT_PANEL);
 
@@ -96,8 +99,8 @@ public:
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	ErrorCodes set_trigger_src(TriggerSource trgSrc = EXTERNAL_TRIGGER);
-	TriggerSource get_trigger_src() const;
+	ErrorCodes set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
+	TriggerSource get_trigger_source() const;
 
 	ErrorCodes set_trigger_delay(float delay = 0.0);
 
@@ -115,6 +118,10 @@ public:
 	ErrorCodes set_channel_enable(int channel, bool enabled);
 	bool get_channel_enable(int channel);
 
+	ErrorCodes set_digitizer_mode(const DIGITIZER_MODE &);
+	DIGITIZER_MODE get_digitizer_mode() const;
+
+
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
 	 */
@@ -123,9 +130,11 @@ public:
 	unsigned int get_num_channels();
 
 	ErrorCodes open(int deviceID);
+	ErrorCodes init();
 	ErrorCodes close();
 
 	ErrorCodes acquire();
+	ErrorCodes wait_for_acquisition(unsigned);
 	ErrorCodes stop();
 	bool       get_is_running();
 
@@ -142,7 +151,7 @@ public:
 	const int Meg = 1024 * 1024;
  
 private:
-	// disable copying
+	// disable copying because some the innovative stuff it holds on to is non-copyable
 	X6_1000(const X6_1000&) = delete;
 	X6_1000& operator=(const X6_1000&) = delete;
 
@@ -153,8 +162,8 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	unsigned int numBoards_;      /**< cached number of boards */
-	// unsigned int deviceID_;       /**< board ID (aka target number) */
+	unsigned numBoards_;      /**< cached number of boards */
+	unsigned deviceID_;       /**< board ID (aka target number) */
 
 	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 	map<int,bool> activeChannels_;
