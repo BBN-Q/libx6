@@ -67,7 +67,7 @@ classdef X6 < hgsetget
         
         function set.reference(obj, reference)
             valMap = containers.Map({'int', 'internal', 'ext', 'external'}, {0, 0, 1, 1});
-            obj.libraryCall('set_reference_source', valMap(lower(reference)));
+            obj.libraryCall('set_reference', valMap(lower(reference)));
         end
         
         function val = get.reference(obj)
@@ -141,7 +141,7 @@ classdef X6 < hgsetget
             switch computer()
                 case 'PCWIN64'
                     libfname = 'libx6adc.dll';
-                    libheader = '../src/libx6adc.h';
+                    libheader = '../src/libx6adc.matlab.h';
                     %protoFile = @obj.libaps64;
                 otherwise
                     error('Unsupported platform.');
@@ -149,8 +149,6 @@ classdef X6 < hgsetget
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
                 loadlibrary(fullfile(obj.library_path, libfname), libheader );
-                %Initialize the APSRack in the library
-                calllib('libx6adc', 'init');
             end
         end
 

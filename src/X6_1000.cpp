@@ -10,7 +10,6 @@ using namespace Innovative;
 // constructor
 X6_1000::X6_1000() :
     isOpen_{false}, isRunning_{false}, VMPs_(2) {
-    numBoards_ = getBoardCount();
 
     for(int cnt = 0; cnt < get_num_channels(); cnt++) {
         set_channel_enable(cnt, true);
@@ -43,7 +42,6 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
      */
 
     if (isOpen_) return SUCCESS;
-    if (deviceID > numBoards_) return MODULE_ERROR;
     deviceID_ = deviceID;
 
     // Timer event handlers
@@ -172,11 +170,11 @@ X6_1000::ErrorCodes X6_1000::set_routes() {
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferneceSource ref, float frequency) {
+X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
     IX6ClockIo::IIReferenceSource x6ref; // reference source
     if (frequency < 0) return INVALID_FREQUENCY;
 
-    x6ref = (ref == EXTERNAL) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
+    x6ref = (ref == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
     FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
 
     module_.Clock().Reference(x6ref);
@@ -184,19 +182,19 @@ X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferneceSource ref, float f
     return SUCCESS;
 }
 
-X6_1000::ReferneceSource X6_1000::get_reference() {
+X6_1000::ReferenceSource X6_1000::get_reference() {
     auto iiref = module_.Clock().Reference();
-    return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL : INTERNAL;
+    return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
 }
 
-X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ExtInt src , float frequency, ExtSource extSrc) {
+X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ClockSource src , float frequency, ExtSource extSrc) {
 
     IX6ClockIo::IIClockSource x6clksrc; // clock source
     if (frequency < 0) return INVALID_FREQUENCY;
 
     FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
     // Route clock
-    x6clksrc = (src ==  EXTERNAL) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
+    x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
     module_.Clock().Source(x6clksrc);
     module_.Clock().Frequency(frequency);
 
@@ -204,9 +202,9 @@ X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ExtInt src , float frequency, Ex
 }
 
 double X6_1000::get_pll_frequency() {
-    double freq module_.Clock().FrequencyActual();
+    double freq = module_.Clock().FrequencyActual();
     FILE_LOG(logINFO) << "PLL frequency for X6: " << freq;
-    return freq
+    return freq;
 
 }
 
@@ -342,7 +340,7 @@ void X6_1000::set_defaults() {
     set_routes();
     set_reference();
     set_clock();
-    set_trigger_src();
+    set_trigger_source();
     set_decimation();
     set_active_channels();
 
@@ -414,7 +412,7 @@ X6_1000::ErrorCodes X6_1000::wait_for_acquisition(unsigned timeOut){
     auto end = start + std::chrono::seconds(timeOut);
     while (get_is_running()) {
         if (std::chrono::system_clock::now() > end)
-            return X6::X6_TIMEOUT;
+            return X6_1000::TIMEOUT;
         std::this_thread::sleep_for( std::chrono::milliseconds(100) );
     }
     return SUCCESS;
@@ -583,7 +581,7 @@ X6_1000::ErrorCodes X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
 }
 
 DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
-    return DIGITIZER_MODE(read_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
+    return DIGITIZER_MODE(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
 }
 
 X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {

@@ -38,6 +38,7 @@ public:
     	MODULE_ERROR = -3,
     	NOT_IMPLEMENTED = -4,
     	FILE_ERROR = -5,
+    	TIMEOUT = -6,
     	INVALID_FREQUENCY = -0x10,
     	INVALID_CHANNEL = -0x11,
     	INVALID_INTERVAL = -0x12,
@@ -162,7 +163,6 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	unsigned numBoards_;      /**< cached number of boards */
 	unsigned deviceID_;       /**< board ID (aka target number) */
 
 	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
@@ -178,7 +178,7 @@ private:
 	map<int, Accumulator> accumulators_;
 
 	// State Variables
-	bool isOpened_;				  /**< cached flag indicaing board was openned */
+	bool isOpen_;				  /**< cached flag indicaing board was openned */
 	bool isRunning_;
 	int prefillPacketCount_;
 	unsigned recordLength_ = 0;

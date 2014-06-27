@@ -4,6 +4,7 @@
 
 #include "libx6adc.h"
 #include "constants.h"
+#include "X6_1000.h"
 
 using namespace std;
 
@@ -59,11 +60,11 @@ int main ()
 
   cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
 
-  cout << "setting trigger source = EXTERNAL" << endl;
+  cout << "setting trigger source = EXTERNAL_TRIGGER" << endl;
 
-  set_trigger_source(0, EXTERNAL);
+  set_trigger_source(0, X6_1000::EXTERNAL_TRIGGER);
 
-  cout << "get trigger source returns " << ((get_trigger_source(0) == INTERNAL) ? "INTERNAL" : "EXTERNAL") << endl;
+  cout << "get trigger source returns " << ((get_trigger_source(0) == X6_1000::SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 
   cout << "Disabling channel 2" << endl;
   set_channel_enable(0, 1, 0);
@@ -80,7 +81,7 @@ int main ()
   int success = wait_for_acquisition(0, 1);
   if (success == X6_OK) {
     cout << "Acquistion finished" << endl;
-  } else if (success == X6_TIMEOUT) {
+  } else if (success == X6_1000::TIMEOUT) {
     cout << "Acquisition timed out" << endl;
   } else {
     cout << "Unknown error in wait_for_acquisition" << endl;
