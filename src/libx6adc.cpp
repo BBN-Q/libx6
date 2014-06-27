@@ -114,14 +114,14 @@ int get_reference(int deviceID) {
 	return int(X6s_[deviceID]->get_reference());
 }
 
-int set_channel_enable(int deviceID, int channel, int enable) {
+int enable_stream(int deviceID, int physChan, int demodChan) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->set_channel_enable(channel, enable);
+	return X6s_[deviceID]->enable_stream(physChan, demodChan);
 }
 
-int get_channel_enable(int deviceID, int channel) {
+int disable_stream(int deviceID, int physChan, int demodChan) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->get_channel_enable(channel);
+	return X6s_[deviceID]->disable_stream(physChan, demodChan);
 }
 
 int set_averager_settings(int deviceID, int recordLength, int numSegments, int waveforms, int roundRobins) {

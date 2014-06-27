@@ -54,8 +54,8 @@ EXPORT int get_trigger_source(int);
 EXPORT int set_reference(int, int);
 EXPORT int get_reference(int);
 
-EXPORT int set_channel_enable(int, int, int);
-EXPORT int get_channel_enable(int, int);
+EXPORT int enable_stream(int, int, int);
+EXPORT int disable_stream(int, int, int);
 
 EXPORT int set_averager_settings(int, int, int, int, int);
 

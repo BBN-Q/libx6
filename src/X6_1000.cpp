@@ -9,11 +9,7 @@ using namespace Innovative;
 
 // constructor
 X6_1000::X6_1000() :
-    isOpen_{false}, isRunning_{false}, VMPs_(2) {
-
-    for(int cnt = 0; cnt < get_num_channels(); cnt++) {
-        set_channel_enable(cnt, true);
-    }
+    isOpen_{false}, isRunning_{false} {
 
     // Use IPP performance memory functions.    
     Init::UsePerformanceMemoryFunctions();
@@ -27,14 +23,12 @@ unsigned int X6_1000::get_num_channels() {
     return module_.Input().Channels();
 }
 
-
 void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event, 
     void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event)) {
 
     event.SetEvent(this, CallBackFunction );
     event.Unsynchronize();
 }
-
 
 X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     /* Connects to the II module with the given device ID returns MODULE_ERROR
@@ -105,18 +99,6 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
 
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
-
-    //  Initialize VeloMergeParsers with stream IDs
-    VMPs_[0].OnDataAvailable.SetEvent(this, &X6_1000::HandlePhysicalStream);
-    //std::vector<int> streamIDs = {static_cast<int>(module_.VitaIn().VitaStreamId(0)), static_cast<int>(module_.VitaIn().VitaStreamId(1))};
-    std::vector<int> streamIDs = {static_cast<int>(module_.VitaIn().VitaStreamId(0))};
-    VMPs_[0].Init(streamIDs);
-    FILE_LOG(logDEBUG) << "ADC physical stream IDs: " << myhex << streamIDs[0];// << ", " << myhex << streamIDs[1];
-
-    VMPs_[1].OnDataAvailable.SetEvent(this, &X6_1000::HandleVirtualStream);
-    streamIDs = {0x200, 0x201};
-    VMPs_[1].Init(streamIDs);
-    FILE_LOG(logDEBUG) << "ADC virtual stream IDs: " << myhex << streamIDs[0] << ", " << myhex << streamIDs[1];
 
     return SUCCESS;
   }
@@ -296,22 +278,34 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_channel_enable(int channel, bool enabled) {
-    if (channel >= get_num_channels()) return INVALID_CHANNEL;
-    FILE_LOG(logINFO) << "Set Channel " << channel << " Enable = " << enabled;
-    activeChannels_[channel] = enabled;
-    if (enabled) {
-        accumulators_[channel] = Accumulator(channel < 10 ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
-    } else {
-        accumulators_.erase(channel);
-    }
+X6_1000::ErrorCodes X6_1000::enable_stream(unsigned phys, unsigned demod) {
+    FILE_LOG(logINFO) << "Enable stream " << phys << "." << demod;
+    Channel chan = Channel(phys, demod);
+    FILE_LOG(logDEBUG2) << "Assigned stream " << phys << "." << demod << " to streamID " << chan.streamID;
+    activeChannels_[chan.streamID] = chan;
+    accumulators_[chan.streamID] = Accumulator(chan.isPhys()  ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
     return SUCCESS;
+}
+
+X6_1000::ErrorCodes X6_1000::disable_stream(unsigned phys, unsigned demod){
+    //Find the channel
+    uint16_t streamID = Channel::calc_streamID(phys, demod);
+    if (activeChannels_.count(streamID)){
+        accumulators_.erase(streamID);
+        activeChannels_.erase(streamID);
+        FILE_LOG(logINFO) << "Disabling stream " << phys << "." << demod;
+        return SUCCESS;
+    } 
+    else{
+        FILE_LOG(logERROR) << "Tried to disable stream " << phys << "." << demod << " which was not enabled.";
+        return SUCCESS;
+    }  
 }
 
 bool X6_1000::get_channel_enable(int channel) {
     // TODO get active channel status from board
     if (channel >= get_num_channels()) return false;
-    else return activeChannels_[channel];
+    return true;
 }
 
 X6_1000::ErrorCodes X6_1000::set_active_channels() {
@@ -321,19 +315,14 @@ X6_1000::ErrorCodes X6_1000::set_active_channels() {
     module_.Input().ChannelDisableAll();
 
     for (int cnt = 0; cnt < get_num_channels(); cnt++) {
-        FILE_LOG(logINFO) << "Channel " << cnt << " Enable = " << activeChannels_[cnt];
-        module_.Input().ChannelEnabled(cnt, activeChannels_[cnt]);
+        FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
+        module_.Input().ChannelEnabled(cnt, 1);
     }
     return status;
 }
 
 int X6_1000::num_active_channels() {
-    int numActiveChannels = 0;
-    for (int i = 0; i < activeChannels_.size(); i++) {
-        numActiveChannels += activeChannels_[i] == true ? 1 : 0;
-    }
-
-    return numActiveChannels;
+    return 2;
 }
 
 void X6_1000::set_defaults() {
@@ -369,6 +358,29 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     // should only need to call this once, but for now we call it every time
     stream_.Preconfigure();
 
+    // Initialize VeloMergeParsers with stream IDs
+    VMPs_.clear();
+    VMPs_.resize(2);
+
+    physChans_.clear();
+    virtChans_.clear();
+
+    for (auto kv : activeChannels_){
+        if (kv.second.isPhys()){
+            physChans_.push_back(kv.first);
+            FILE_LOG(logDEBUG) << "ADC physical stream ID: " << myhex << kv.first;
+        } else{
+            virtChans_.push_back(kv.first);
+            FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << myhex << kv.first;
+        }
+    }
+    VMPs_[0].Init(physChans_);
+    VMPs_[0].OnDataAvailable.SetEvent(this, &X6_1000::HandlePhysicalStream);
+
+    VMPs_[1].Init(virtChans_);
+    VMPs_[1].OnDataAvailable.SetEvent(this, &X6_1000::HandleVirtualStream);
+
+    //Now set the buffers sizes to fire when a full record length is in
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
     FILE_LOG(logDEBUG) << "samplesPerWord = " << samplesPerWord;
     // calcate packet size for physical and virtual channels
@@ -377,6 +389,7 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     VMPs_[0].Resize(packetSize);
     VMPs_[0].Clear();
 
+    //Vitual channels are complex so they get a factor of two.
     packetSize = 2*recordLength_/samplesPerWord/get_decimation()/DECIMATION_FACTOR;
     FILE_LOG(logDEBUG) << "Virtual channel packetSize = " << packetSize;
     VMPs_[1].Resize(packetSize);
@@ -501,26 +514,26 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
     }
 }
 
-void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, int offset) {
+void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, ChannelType chanType) {
     FILE_LOG(logDEBUG4) << "X6_1000::VMPDataAvailable";
     if (!isRunning_) {
         return;
     }
     // StreamID is now encoded in the PeripheralID of the VMP Vita buffer
+    // PeripheralID is just the order of the streamID in the filter   
     PacketBufferHeader header(Event.Data);
-    int channel = header.PeripheralId() + offset;
+    uint16_t sid;
+    if (chanType == PHYS_CHAN){
+        sid = physChans_[header.PeripheralId()];
+    } else{
+        sid = virtChans_[header.PeripheralId()];
+    }
 
     // interpret the data as integers
     ShortDG bufferDG(Event.Data);
-    FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer channel = " << channel << "; buffer.size = " << bufferDG.size() << " samples";
+    FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << bufferDG.size() << " samples";
     // accumulate the data in the appropriate channel
-    // first check if is there
-    if (accumulators_.find(channel) != accumulators_.end()) {
-        accumulators_[channel].accumulate(bufferDG);
-    } else {
-        accumulators_[channel] = Accumulator(channel < 10 ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
-        accumulators_[channel].accumulate(bufferDG);
-    }
+    accumulators_[sid].accumulate(bufferDG);
 }
 
 bool X6_1000::check_done() {
@@ -664,4 +677,18 @@ void Accumulator::accumulate(const ShortDG & buffer){
         idx_ = data_.begin();
     }
 
+}
+
+Channel::Channel() : physChan{0}, demodChan{0}, streamID{0} {};
+
+Channel::Channel(unsigned phys, unsigned demod) : physChan{phys}, demodChan{demod} {
+    streamID = calc_streamID(phys, demod);
+};
+
+uint16_t Channel::calc_streamID(unsigned phys, unsigned demod){
+    return (phys << 8) + (demod << 4); 
+}
+
+bool Channel::isPhys(){
+    return demodChan == 0;
 }

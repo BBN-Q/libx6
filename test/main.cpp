@@ -66,8 +66,8 @@ int main ()
 
   cout << "get trigger source returns " << ((get_trigger_source(0) == X6_1000::SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 
-  cout << "Disabling channel 2" << endl;
-  set_channel_enable(0, 1, 0);
+  cout << "Enabling physical channel 1" << endl;
+  enable_stream(0, 1, 0);
 
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
 

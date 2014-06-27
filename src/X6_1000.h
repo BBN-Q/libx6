@@ -25,6 +25,7 @@ using std::string;
  */
 
 class Accumulator;
+class Channel;
 
 
 class X6_1000 
@@ -63,6 +64,11 @@ public:
 	enum TriggerSource {
 		SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
 		EXTERNAL_TRIGGER         /**< External trigger */
+	};
+
+	enum ChannelType {
+		PHYS_CHAN = 0,
+		DEMOD_CHAN = 1
 	};
 
 	X6_1000();
@@ -116,7 +122,9 @@ public:
 	ErrorCodes set_frame(int recordLength);
 	ErrorCodes set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
 
-	ErrorCodes set_channel_enable(int channel, bool enabled);
+	ErrorCodes enable_stream(unsigned, unsigned);
+	ErrorCodes disable_stream(unsigned, unsigned);
+
 	bool get_channel_enable(int channel);
 
 	ErrorCodes set_digitizer_mode(const DIGITIZER_MODE &);
@@ -156,6 +164,8 @@ private:
 	X6_1000(const X6_1000&) = delete;
 	X6_1000& operator=(const X6_1000&) = delete;
 
+	unsigned deviceID_;       /**< board ID (aka target number) */
+
 	Innovative::X6_1000M            module_; /**< Malibu module */
 	Innovative::TriggerManager      trigger_;   /**< Malibu trigger manager */
 	Innovative::VitaPacketStream    stream_;
@@ -163,19 +173,17 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	unsigned deviceID_;       /**< board ID (aka target number) */
+	
+
 
 	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
-	map<int,bool> activeChannels_;
 
-	/* map for record storage
-	 * ch  0-9  : physical channels
-	 * ch 10-19 : demodulated channels
-	 * ch 20-29 : integrated channels
-	 * ch 100-199 : correlated channels
-	 */
+	map<uint16_t, Channel> activeChannels_;
+	//vector to go from VMP ordering to SID's
+	vector<int> physChans_;
+	vector<int> virtChans_;
 	//Some auxiliary accumlator data
-	map<int, Accumulator> accumulators_;
+	map<uint16_t, Accumulator> accumulators_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
@@ -208,12 +216,12 @@ private:
     void HandleAfterStreamStop(OpenWire::NotifyEvent & Event);
 
     void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
-    void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, int offset);
+    void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, ChannelType);
     void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
-    	VMPDataAvailable(Event, 0);
+    	VMPDataAvailable(Event, PHYS_CHAN);
     };
     void HandleVirtualStream(Innovative::VeloMergeParserDataAvailable & Event) {
-    	VMPDataAvailable(Event, 10);
+    	VMPDataAvailable(Event, DEMOD_CHAN);
     };
 
 	void HandleTimer(OpenWire::NotifyEvent & Event);
@@ -256,6 +264,19 @@ private:
 
 };
 
+
+class Channel{
+public:
+	Channel();
+	Channel(unsigned, unsigned);
+
+	static uint16_t calc_streamID(unsigned, unsigned);
+
+	uint16_t streamID;
+	unsigned physChan;
+	unsigned demodChan;
+	bool isPhys();
+};
 
 
 #endif
