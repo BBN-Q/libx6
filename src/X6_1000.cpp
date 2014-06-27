@@ -443,10 +443,16 @@ bool X6_1000::get_is_running() {
     return isRunning_;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(int channel, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned physChan, unsigned demodChan, double * buffer, size_t length) {
+    //Check we have the channel
+    uint16_t sid = Channel::calc_streamID(physChan, demodChan);
+    if(activeChannels_.find(sid) == activeChannels_.end()){
+        FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
+        return INVALID_CHANNEL;
+    }
     //Don't copy more than we have
-    if (length < accumulators_[channel].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
-    accumulators_[channel].snapshot(buffer);
+    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    accumulators_[sid].snapshot(buffer);
     return SUCCESS;
 }
 

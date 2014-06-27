@@ -144,9 +144,9 @@ int stop(int deviceID) {
 	return X6s_[deviceID]->stop();
 }
 
-int transfer_waveform(int deviceID, int channel, double *buffer, unsigned bufferLength) {
+int transfer_waveform(int deviceID, unsigned physChan, unsigned demodChan, double *buffer, unsigned bufferLength) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->transfer_waveform(channel, buffer, bufferLength);
+	return X6s_[deviceID]->transfer_waveform(physChan, demodChan, buffer, bufferLength);
 }
 
 //Expects a null-terminated character array

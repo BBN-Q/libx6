@@ -147,7 +147,7 @@ public:
 	ErrorCodes stop();
 	bool       get_is_running();
 
-	ErrorCodes transfer_waveform(int, double *, size_t);
+	ErrorCodes transfer_waveform(unsigned, unsigned, double *, size_t);
 
 	ErrorCodes write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data);
 	ErrorCodes write_wishbone_register(uint32_t offset, uint32_t data);
