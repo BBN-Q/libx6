@@ -10,7 +10,7 @@
 #include "X6_1000.h"
 
 // globals
-map<unsigned, X6_1000> X6s_;
+map<unsigned, std::unique_ptr<X6_1000>> X6s_;
 unsigned numDevices_ = 0;
 
 // initialize the library --contructor hook in header
@@ -52,97 +52,101 @@ unsigned get_num_devices() {
 
 int connect_by_ID(int deviceID) {
 	if (deviceID >= numDevices_) return X6_1000::INVALID_DEVICEID;
-	return X6s_[deviceID].open(deviceID);
+	if (X6s_.find(deviceID) == X6s_.end()){
+		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000());
+	}
+	return X6s_[deviceID]->open(deviceID);
 }
 
 int disconnect(int deviceID) {
 	if (deviceID >= numDevices_) return X6_1000::INVALID_DEVICEID;
-	return X6s_[deviceID].close();
+	X6s_[deviceID]->close();
+	X6s_.erase(deviceID);
 }
 
 int initX6(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].init();
+	return X6s_[deviceID]->init();
 }
 
 int read_firmware_version(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].read_firmware_version();
+	return X6s_[deviceID]->read_firmware_version();
 }
 
 int set_digitizer_mode(int deviceID, int mode) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_digitizer_mode(DIGITIZER_MODE(mode));
+	return X6s_[deviceID]->set_digitizer_mode(DIGITIZER_MODE(mode));
 }
 
 int get_digitizer_mode(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return int(X6s_[deviceID].get_digitizer_mode());
+	return int(X6s_[deviceID]->get_digitizer_mode());
 }
 
 int set_sampleRate(int deviceID, double freq){
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_clock(X6_1000::INTERNAL_CLOCK, freq); //assume for now we'll use the internal clock
+	return X6s_[deviceID]->set_clock(X6_1000::INTERNAL_CLOCK, freq); //assume for now we'll use the internal clock
 }
 
 double get_sampleRate(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].get_pll_frequency();
+	return X6s_[deviceID]->get_pll_frequency();
 }
 
 int set_trigger_source(int deviceID, int triggerSource) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_trigger_source(X6_1000::TriggerSource(triggerSource));
+	return X6s_[deviceID]->set_trigger_source(X6_1000::TriggerSource(triggerSource));
 }
 
 int get_trigger_source(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return int(X6s_[deviceID].get_trigger_source());
+	return int(X6s_[deviceID]->get_trigger_source());
 }
 
 int set_reference(int deviceID, int referenceSource) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_reference(X6_1000::ReferenceSource(referenceSource));
+	return X6s_[deviceID]->set_reference(X6_1000::ReferenceSource(referenceSource));
 }
 
 int get_reference(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return int(X6s_[deviceID].get_reference());
+	return int(X6s_[deviceID]->get_reference());
 }
 
 int set_channel_enable(int deviceID, int channel, int enable) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_channel_enable(channel, enable);
+	return X6s_[deviceID]->set_channel_enable(channel, enable);
 }
 
 int get_channel_enable(int deviceID, int channel) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].get_channel_enable(channel);
+	return X6s_[deviceID]->get_channel_enable(channel);
 }
 
 int set_averager_settings(int deviceID, int recordLength, int numSegments, int waveforms, int roundRobins) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].set_averager_settings(recordLength, numSegments, waveforms, roundRobins);
+	return X6s_[deviceID]->set_averager_settings(recordLength, numSegments, waveforms, roundRobins);
 }
 
 int acquire(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].acquire();
+	return X6s_[deviceID]->acquire();
 }
 
 int wait_for_acquisition(int deviceID, int timeOut) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].wait_for_acquisition(timeOut);
+	return X6s_[deviceID]->wait_for_acquisition(timeOut);
 }
 
 int stop(int deviceID) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].stop();
+	return X6s_[deviceID]->stop();
 }
 
 int transfer_waveform(int deviceID, int channel, double *buffer, unsigned bufferLength) {
 	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID].transfer_waveform(channel, buffer, bufferLength);
+	return X6s_[deviceID]->transfer_waveform(channel, buffer, bufferLength);
 }
 
 //Expects a null-terminated character array
@@ -183,18 +187,18 @@ int set_logging_level(int logLevel) {
 }
 
 int read_register(int deviceID, int wbAddr, int offset){
-	return X6s_[deviceID].read_wishbone_register(wbAddr, offset);
+	return X6s_[deviceID]->read_wishbone_register(wbAddr, offset);
 }
 
 int write_register(int deviceID, int wbAddr, int offset, int data){
-	return X6s_[deviceID].write_wishbone_register(wbAddr, offset, data);
+	return X6s_[deviceID]->write_wishbone_register(wbAddr, offset, data);
 }
 
 float get_logic_temperature(int deviceID, int method) {
 	if (method == 0)
-		return X6s_[deviceID].get_logic_temperature();
+		return X6s_[deviceID]->get_logic_temperature();
 	else
-		return X6s_[deviceID].get_logic_temperature_by_reg();
+		return X6s_[deviceID]->get_logic_temperature_by_reg();
 }
 
 #ifdef __cplusplus
