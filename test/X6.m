@@ -74,14 +74,14 @@ classdef X6 < hgsetget
             val = obj.libraryCall('get_reference_source');
         end
         
-        function val = set_channel_enable(obj, channel, enable)
-            val = obj.libraryCall('set_channel_enable', channel-1, enable);
+        function val = enable_stream(obj, physChan, demodChan)
+            val = obj.libraryCall('enable_stream', physChan, demodChan);
         end
         
-        function val = get_channel_enable(obj, channel)
-            val = obj.libraryCall('get_channel_enable', channel-1);
+        function val = disable_stream(obj, physChan, demodChan)
+            val = obj.libraryCall('disable_stream', physChan, demodChan);
         end
-
+        
         function val = set_averager_settings(obj, recordLength, numSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, numSegments, waveforms, roundRobins);
             obj.bufferSize = recordLength * numSegments;
@@ -99,18 +99,18 @@ classdef X6 < hgsetget
             val = obj.libraryCall('stop');
         end
 
-        function wf = transfer_waveform(obj, ch)
+        function wf = transfer_waveform(obj, physChan, demodChan)
             % possibly more efficient to pass a libpointer, but this is easiest for now
-            if mod(ch,16) == 0
+            if demodChan == 0
                 bufSize = obj.bufferSize;
             else
                 bufSize = 2*obj.bufferSize/obj.DECIM_FACTOR;
             end
-            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'int64'));
-            success = obj.libraryCall('transfer_waveform', ch, wfPtr, bufSize);
+            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
+            success = obj.libraryCall('transfer_waveform', physChan, demodChan, wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
 
-            if mod(ch,16) == 0
+            if demodChan == 0
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
@@ -187,7 +187,6 @@ classdef X6 < hgsetget
             if (~x6.is_open)
                 error('Could not open aps')
             end
-            x6.init();
 
             fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
             
@@ -195,15 +194,19 @@ classdef X6 < hgsetget
             fprintf('Setting clock reference to external\n');
             x6.reference = 'external';
             
-            x6.set_channel_enable(2, 0);
+            x6.enable_stream(1, 0);
+            x6.enable_stream(1, 1);
+            x6.enable_stream(1, 2);
             
             phase_increment = 4/50;
-            fprintf('Setting NCO phase offset to %.3f\n', phase_increment);
+            fprintf('Setting NCO phase increment to %.3f\n', phase_increment);
             x6.writeRegister(hex2dec('700'), 16, round(4 * phase_increment * 2^16));
             x6.writeRegister(hex2dec('700'), 17, round(4 * phase_increment * 2^16));
-            x6.writeRegister(hex2dec('700'), 35, hex2dec('00020202'));
-            x6.writeRegister(hex2dec('700'), 36, hex2dec('00020203'));
             
+            x6.writeRegister(hex2dec('700'), 32, hex2dec('00020100'));
+            x6.writeRegister(hex2dec('700'), 33, hex2dec('00020110'));
+            x6.writeRegister(hex2dec('700'), 34, hex2dec('00020120'));
+ 
             fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 50, 1, 1);
 %             x6.writeRegister(hex2dec('700'), 0, 1024);
@@ -220,9 +223,9 @@ classdef X6 < hgsetget
             x6.stop();
 
             fprintf('Transferring waveform channels 1 and 2\n');
-            wf1 = x6.transfer_waveform(0);
-            wf2 = x6.transfer_waveform(10);
-            wf3 = x6.transfer_waveform(11);
+            wf1 = x6.transfer_waveform(1,0);
+            wf2 = x6.transfer_waveform(1,1);
+            wf3 = x6.transfer_waveform(1,2);
             figure();
             subplot(3,1,1);
             plot(wf1);
