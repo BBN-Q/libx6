@@ -267,12 +267,8 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
     numRecords_ = numSegments * waveforms * roundRobins;
 
     //Setup the accumulators
-    for (auto & kv : accumulators_) {
-        ssize_t recLength = recordLength;
-        if (kv.first >= 10) {
-            recLength /= DECIMATION_FACTOR;
-        }
-        kv.second.init(kv.first < 10 ? recordLength : recordLength/DECIMATION_FACTOR, numSegments, waveforms);
+    for (auto & kv : activeChannels_) {
+        accumulators_[kv.first].init(kv.second.isPhys() ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
     }
 
     return SUCCESS;
