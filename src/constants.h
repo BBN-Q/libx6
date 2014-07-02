@@ -18,7 +18,7 @@ static const int X6_WRITETIMEOUT = 500;
 static const int LSB_MASK = 0xFF;
 
 // WishBone interface
-const unsigned int BASE_DSP = 0x700;
+static const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
 //Registers we read from
 static const int WB_ADDR_VERSION  = 0x10; // UPDATE ME

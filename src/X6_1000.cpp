@@ -250,11 +250,13 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
 
     // set frame sizes (2 samples per word), virtual channels are complex so 2*
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
-    write_wishbone_register(WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord);
-    write_wishbone_register(WB_FRAME_SIZE_OFFSET+1, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
-    write_wishbone_register(WB_FRAME_SIZE_OFFSET+2, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
-    write_wishbone_register(WB_FRAME_SIZE_OFFSET+3, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
-    write_wishbone_register(WB_FRAME_SIZE_OFFSET+4, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
+
+    for (int inst = 0; inst <= 1; ++inst) {
+        write_dsp_register(inst, WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord);
+        for (int vchan = 1; vchan <= 4; ++vchan) {
+            write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
+        }
+    }
 
     return SUCCESS;
 }
@@ -277,7 +279,7 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
 X6_1000::ErrorCodes X6_1000::enable_stream(unsigned phys, unsigned demod) {
     FILE_LOG(logINFO) << "Enable stream " << phys << "." << demod;
     Channel chan = Channel(phys, demod);
-    FILE_LOG(logDEBUG2) << "Assigned stream " << phys << "." << demod << " to streamID " << chan.streamID;
+    FILE_LOG(logDEBUG2) << "Assigned stream " << phys << "." << demod << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
     accumulators_[chan.streamID] = Accumulator(chan.isPhys()  ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
     return SUCCESS;
@@ -608,9 +610,6 @@ X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t offset, uint32_t data) {
-    return write_wishbone_register(BASE_DSP, offset, data);
-}
 
 uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) const {
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
@@ -619,8 +618,12 @@ uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) con
     return reg.Value();
 }
 
-uint32_t X6_1000::read_wishbone_register(uint32_t offset) const {
-    return read_wishbone_register(BASE_DSP, offset);
+X6_1000::ErrorCodes X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t data) {
+    return write_wishbone_register(BASE_DSP[instance], offset, data);
+}
+
+uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
+    return read_wishbone_register(BASE_DSP[instance], offset);
 }
 
 Accumulator::Accumulator() : 

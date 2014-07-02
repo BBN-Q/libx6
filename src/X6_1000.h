@@ -149,11 +149,11 @@ public:
 
 	ErrorCodes transfer_waveform(unsigned, unsigned, double *, size_t);
 
-	ErrorCodes write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data);
-	ErrorCodes write_wishbone_register(uint32_t offset, uint32_t data);
+	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
+	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
 
-	uint32_t read_wishbone_register(uint32_t baseAddr, uint32_t offset) const;
-	uint32_t read_wishbone_register(uint32_t offset) const;
+	ErrorCodes write_dsp_register(unsigned, uint32_t, uint32_t);
+	uint32_t read_dsp_register(unsigned, uint32_t) const;
 
 	const int BusmasterSize = 4; /**< Rx & Tx BusMaster size in MB */
 	const int MHz = 1e6;         /**< Constant for converting MHz */
