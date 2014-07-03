@@ -15,6 +15,7 @@ classdef X6 < hgsetget
     
     properties(Constant)
         DECIM_FACTOR = 4;
+        DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
     end
     
     methods
@@ -100,7 +101,6 @@ classdef X6 < hgsetget
         end
 
         function wf = transfer_waveform(obj, physChan, demodChan)
-            % possibly more efficient to pass a libpointer, but this is easiest for now
             if demodChan == 0
                 bufSize = obj.bufferSize;
             else
@@ -127,10 +127,17 @@ classdef X6 < hgsetget
             val = obj.libraryCall('read_register', addr, offset);
         end
 
-        
         function val = getLogicTemperature(obj)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('get_logic_temperature', 0);
+        end
+        
+        function write_kernel(obj, phys, demod, kernel)
+            obj.writeRegister(obj.DSP_WB_OFFSET(phys), 24+demod-1, length(kernel));
+            for ct = 1:length(kernel)
+                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
+                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 49+2*demod-1, bitshift(real(kernel(ct)), 16) + imag(kernel(ct)));
+            end
         end
     end
     
@@ -201,18 +208,25 @@ classdef X6 < hgsetget
             x6.enable_stream(2, 1);
             x6.enable_stream(2, 2);
             
+            fprintf('Setting NCO phase increments\n');
             phase_increment = 4/100;
-            fprintf('Setting NCO phase increment to %.3f\n', phase_increment);
-            x6.writeRegister(hex2dec('2000'), 16,   round(1 * phase_increment * 2^18));
-            x6.writeRegister(hex2dec('2000'), 16+1, round(3 * phase_increment * 2^18));
-            x6.writeRegister(hex2dec('2100'), 16,   round(2 * phase_increment * 2^18));
-            x6.writeRegister(hex2dec('2100'), 16+1, round(4 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16,   round(1 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16+1, round(3 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16,   round(2 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16+1, round(4 * phase_increment * 2^18));
             
             %write stream IDs
+            fprintf('Setting stream IDs\n');
             for ct = 0:4
-                x6.writeRegister(hex2dec('2000'), 32+ct, hex2dec('00020100') + 16*ct);
-                x6.writeRegister(hex2dec('2100'), 32+ct, hex2dec('00020200') + 16*ct);
-            end 
+                x6.writeRegister(X6.DSP_WB_OFFSET(1), 32+ct, hex2dec('00020100') + 16*ct);
+                x6.writeRegister(X6.DSP_WB_OFFSET(2), 32+ct, hex2dec('00020200') + 16*ct);
+            end
+            
+            fprintf('Writing integration kernels\n');
+            x6.write_kernel(1, 1, ones(64,1));
+            x6.write_kernel(1, 2, ones(64,1));
+            x6.write_kernel(2, 1, ones(64,1));
+            x6.write_kernel(2, 2, ones(64,1));
             
             fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
