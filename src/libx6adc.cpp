@@ -31,16 +31,6 @@ void cleanup(){
 	}
 }
 
-bool check_device_open(int deviceID){
-	//First check that we have it in the X6s_ map
-	if (X6s_.find(deviceID) == X6s_.end()){
-		FILE_LOG(logERROR) << "Device " << deviceID << " not yet connected.";
-		return false;
-	}
-	return true;
-}
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -64,88 +54,97 @@ int disconnect(int deviceID) {
 	X6s_.erase(deviceID);
 }
 
+int is_open(int deviceID){
+	//First check that we have it in the X6s_ map
+	if (X6s_.find(deviceID) == X6s_.end()){
+		FILE_LOG(logERROR) << "Device " << deviceID << " not yet connected.";
+		return 0;
+	}
+	return 1;
+}
+
 int initX6(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->init();
 }
 
 int read_firmware_version(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->read_firmware_version();
 }
 
 int set_digitizer_mode(int deviceID, int mode) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->set_digitizer_mode(DIGITIZER_MODE(mode));
 }
 
 int get_digitizer_mode(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return int(X6s_[deviceID]->get_digitizer_mode());
 }
 
 int set_sampleRate(int deviceID, double freq){
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->set_clock(X6_1000::INTERNAL_CLOCK, freq); //assume for now we'll use the internal clock
 }
 
 double get_sampleRate(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->get_pll_frequency();
 }
 
 int set_trigger_source(int deviceID, int triggerSource) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->set_trigger_source(X6_1000::TriggerSource(triggerSource));
 }
 
 int get_trigger_source(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return int(X6s_[deviceID]->get_trigger_source());
 }
 
 int set_reference(int deviceID, int referenceSource) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->set_reference(X6_1000::ReferenceSource(referenceSource));
 }
 
 int get_reference(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return int(X6s_[deviceID]->get_reference());
 }
 
 int enable_stream(int deviceID, int physChan, int demodChan) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->enable_stream(physChan, demodChan);
 }
 
 int disable_stream(int deviceID, int physChan, int demodChan) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->disable_stream(physChan, demodChan);
 }
 
 int set_averager_settings(int deviceID, int recordLength, int numSegments, int waveforms, int roundRobins) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->set_averager_settings(recordLength, numSegments, waveforms, roundRobins);
 }
 
 int acquire(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->acquire();
 }
 
 int wait_for_acquisition(int deviceID, int timeOut) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->wait_for_acquisition(timeOut);
 }
 
 int stop(int deviceID) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->stop();
 }
 
 int transfer_waveform(int deviceID, unsigned physChan, unsigned demodChan, double *buffer, unsigned bufferLength) {
-	if (!check_device_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->transfer_waveform(physChan, demodChan, buffer, bufferLength);
 }
 

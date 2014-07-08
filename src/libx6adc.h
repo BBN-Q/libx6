@@ -38,6 +38,7 @@ void cleanup() __attribute__((destructor));
 EXPORT int connect_by_ID(int);
 EXPORT int disconnect(int);
 EXPORT unsigned get_num_devices();
+EXPORT int is_open(int);
 
 EXPORT int initX6(int);
 EXPORT int read_firmware_version(int);
