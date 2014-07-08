@@ -137,7 +137,7 @@ classdef X6 < hgsetget
             kernel = int32(kernel * (2^15-1)); % scale up to integers
             for ct = 1:length(kernel)
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 49+2*demod-1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
+                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1)+1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
             end
         end
     end
@@ -211,10 +211,10 @@ classdef X6 < hgsetget
             
             fprintf('Setting NCO phase increments\n');
             phase_increment = 4/100;
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16,   round(1 * phase_increment * 2^18));
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16+1, round(3 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16,   round(2 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16+1, round(2 * phase_increment * 2^18));
             x6.writeRegister(X6.DSP_WB_OFFSET(2), 16,   round(2 * phase_increment * 2^18));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16+1, round(4 * phase_increment * 2^18));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16+1, round(2 * phase_increment * 2^18));
             
             %write stream IDs
             fprintf('Setting stream IDs\n');
@@ -224,16 +224,16 @@ classdef X6 < hgsetget
             end
             
             fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(64,1));
-            x6.write_kernel(1, 2, ones(64,1));
-            x6.write_kernel(2, 1, ones(64,1));
-            x6.write_kernel(2, 2, ones(64,1));
+            x6.write_kernel(1, 1, ones(128,1));
+            x6.write_kernel(1, 2, ones(128,1));
+            x6.write_kernel(2, 1, ones(128,1));
+            x6.write_kernel(2, 2, ones(128,1));
             
             fprintf('Writing decision engine thresholds\n');
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56, int32(50*200*2^15));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56, int32(50*200*2^15));
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(50*200*2^15));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(50*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56, int32(4000));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56, int32(4000));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(5000*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(5000*200*2^15));
             
             fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
