@@ -270,32 +270,32 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
 
     //Setup the accumulators
     for (auto & kv : activeChannels_) {
-        accumulators_[kv.first].init(kv.second.isPhys() ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
+        accumulators_[kv.first].init(kv.second, recordLength_, numSegments_, waveforms_);
     }
 
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::enable_stream(unsigned phys, unsigned demod) {
-    FILE_LOG(logINFO) << "Enable stream " << phys << "." << demod;
-    Channel chan = Channel(phys, demod);
-    FILE_LOG(logDEBUG2) << "Assigned stream " << phys << "." << demod << " to streamID " << myhex << chan.streamID;
+X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
+    FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
+    Channel chan = Channel(a, b, c);
+    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
-    accumulators_[chan.streamID] = Accumulator(chan.isPhys()  ? recordLength_ : 2*recordLength_/DECIMATION_FACTOR, numSegments_, waveforms_);
+    accumulators_[chan.streamID] = Accumulator(chan, recordLength_, numSegments_, waveforms_);
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::disable_stream(unsigned phys, unsigned demod){
+X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     //Find the channel
-    uint16_t streamID = Channel::calc_streamID(phys, demod);
+    uint16_t streamID = Channel(a,b,c).streamID;
     if (activeChannels_.count(streamID)){
         accumulators_.erase(streamID);
         activeChannels_.erase(streamID);
-        FILE_LOG(logINFO) << "Disabling stream " << phys << "." << demod;
+        FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
         return SUCCESS;
     } 
     else{
-        FILE_LOG(logERROR) << "Tried to disable stream " << phys << "." << demod << " which was not enabled.";
+        FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
         return SUCCESS;
     }  
 }
@@ -358,18 +358,25 @@ X6_1000::ErrorCodes X6_1000::acquire() {
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();
-    VMPs_.resize(2);
+    VMPs_.resize(3);
 
     physChans_.clear();
     virtChans_.clear();
+    resultChans_.clear();
 
     for (auto kv : activeChannels_){
-        if (kv.second.isPhys()){
-            physChans_.push_back(kv.first);
-            FILE_LOG(logDEBUG) << "ADC physical stream ID: " << myhex << kv.first;
-        } else{
-            virtChans_.push_back(kv.first);
-            FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << myhex << kv.first;
+        switch (kv.second.type) {
+            case PHYSICAL:
+                physChans_.push_back(kv.first);
+                FILE_LOG(logDEBUG) << "ADC physical stream ID: " << myhex << kv.first;
+                break;
+            case DEMOD:
+                virtChans_.push_back(kv.first);
+                FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << myhex << kv.first;
+                break;
+            case RESULT:
+                resultChans_.push_back(kv.first);
+                FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
         }
     }
     VMPs_[0].Init(physChans_);
@@ -377,6 +384,9 @@ X6_1000::ErrorCodes X6_1000::acquire() {
 
     VMPs_[1].Init(virtChans_);
     VMPs_[1].OnDataAvailable.SetEvent(this, &X6_1000::HandleVirtualStream);
+
+    VMPs_[2].Init(resultChans_);
+    VMPs_[2].OnDataAvailable.SetEvent(this, &X6_1000::HandleResultStream);
 
     //Now set the buffers sizes to fire when a full record length is in
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
@@ -392,6 +402,11 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     FILE_LOG(logDEBUG) << "Virtual channel packetSize = " << packetSize;
     VMPs_[1].Resize(packetSize);
     VMPs_[1].Clear();
+
+    packetSize = 2;
+    FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
+    VMPs_[2].Resize(packetSize);
+    VMPs_[2].Clear();
 
     // reset the accumulators
     for (auto & kv : accumulators_) {
@@ -441,9 +456,9 @@ bool X6_1000::get_is_running() {
     return isRunning_;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned physChan, unsigned demodChan, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
     //Check we have the channel
-    uint16_t sid = Channel::calc_streamID(physChan, demodChan);
+    uint16_t sid = Channel(a,b,c).streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         return INVALID_CHANNEL;
@@ -491,6 +506,7 @@ void
     module_.Input().Trigger().External(false);
     VMPs_[0].Flush();
     VMPs_[1].Flush();
+    VMPs_[2].Flush();
 }
 
 void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event) {
@@ -518,7 +534,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
     }
 }
 
-void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, ChannelType chanType) {
+void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t chanType) {
     FILE_LOG(logDEBUG4) << "X6_1000::VMPDataAvailable";
     if (!isRunning_) {
         return;
@@ -527,17 +543,36 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     // PeripheralID is just the order of the streamID in the filter   
     PacketBufferHeader header(Event.Data);
     uint16_t sid;
-    if (chanType == PHYS_CHAN){
-        sid = physChans_[header.PeripheralId()];
-    } else{
-        sid = virtChans_[header.PeripheralId()];
-    }
 
-    // interpret the data as integers
-    ShortDG bufferDG(Event.Data);
-    FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << bufferDG.size() << " samples";
-    // accumulate the data in the appropriate channel
-    accumulators_[sid].accumulate(bufferDG);
+    switch (chanType) {
+        case PHYSICAL:
+            sid = physChans_[header.PeripheralId()];
+            break;
+        case DEMOD:
+            sid = virtChans_[header.PeripheralId()];
+            break;
+        case RESULT:
+            sid = resultChans_[header.PeripheralId()];
+            break;
+    }
+    
+    // interpret the data as 16 or 32-bit integers depending on the channel type
+    ShortDG sbufferDG(Event.Data);
+    IntegerDG ibufferDG(Event.Data);
+    switch (chanType) {
+        case PHYSICAL:
+        case DEMOD:
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << sbufferDG.size() << " samples";
+            // accumulate the data in the appropriate channel
+            accumulators_[sid].accumulate(sbufferDG);
+            break;
+        case RESULT:
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << ibufferDG.size() << " samples";
+            // accumulate the data in the appropriate channel
+            accumulators_[sid].accumulate(ibufferDG);
+            break;
+    }
+    
 }
 
 bool X6_1000::check_done() {
@@ -629,20 +664,35 @@ uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
 Accumulator::Accumulator() : 
     wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
 
-Accumulator::Accumulator(const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) : 
-    wfmCt_{0}, recordLength_{recordLength}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
-        data_.assign(recordLength*numSegments, 0);
-        idx_ = data_.begin();
-    }; 
+Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) : 
+                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+    recordLength_ = calc_record_length(chan, recordLength);
+    data_.assign(recordLength_*numSegments, 0);
+    idx_ = data_.begin();
+}; 
 
-void Accumulator::init(const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms){
-    data_.assign(recordLength*numSegments, 0);
+void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms){
+    recordLength_ = calc_record_length(chan, recordLength);
+    data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
     wfmCt_ = 0;
-    recordLength_  = recordLength;
     numSegments_ = numSegments;
     numWaveforms_ = numWaveforms;
     recordsTaken = 0;
+}
+
+size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
+    switch (chan.type) {
+        case PHYSICAL:
+            return recordLength;
+            break;
+        case DEMOD:
+            return 2 * recordLength / DECIMATION_FACTOR;
+            break;
+        case RESULT:
+            return 2;
+            break;
+    }
 }
 
 void Accumulator::reset(){
@@ -660,9 +710,10 @@ void Accumulator::snapshot(double * buf){
     }
 }
 
-void Accumulator::accumulate(const ShortDG & buffer){
+template <class T>
+void Accumulator::accumulate(const AccessDatagram<T> & buffer){
     //TODO: worry about performance, cache-friendly etc.
-    FILE_LOG(logDEBUG4) << "Accumulating data for unknown channel...";
+    FILE_LOG(logDEBUG4) << "Accumulating data...";
     FILE_LOG(logDEBUG4) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
     FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
     FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
@@ -684,16 +735,15 @@ void Accumulator::accumulate(const ShortDG & buffer){
 
 }
 
-Channel::Channel() : physChan{0}, demodChan{0}, streamID{0} {};
+Channel::Channel() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
 
-Channel::Channel(unsigned phys, unsigned demod) : physChan{phys}, demodChan{demod} {
-    streamID = calc_streamID(phys, demod);
+Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
+    streamID = (a << 8) + (b << 4) + c;
+    if ((b == 0) && (c == 0)) {
+        type = PHYSICAL;
+    } else if (c != 0) {
+        type = RESULT;
+    } else {
+        type = DEMOD;
+    }
 };
-
-uint16_t Channel::calc_streamID(unsigned phys, unsigned demod){
-    return (phys << 8) + (demod << 4); 
-}
-
-bool Channel::isPhys(){
-    return demodChan == 0;
-}

@@ -67,7 +67,7 @@ int main ()
   cout << "get trigger source returns " << ((get_trigger_source(0) == X6_1000::SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 
   cout << "Enabling physical channel 1" << endl;
-  enable_stream(0, 1, 0);
+  enable_stream(0, 1, 0, 0);
 
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
 
@@ -90,7 +90,7 @@ int main ()
 
   cout << "Transferring waveform ch1" << endl;
   vector<double> buffer(10240);
-  transfer_waveform(0, 1, 0, buffer.data(), 10240);
+  transfer_waveform(0, 1, 0, 0, buffer.data(), 10240);
 
   cout << "Stopping" << endl;
 

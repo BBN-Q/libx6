@@ -55,15 +55,15 @@ EXPORT int get_trigger_source(int);
 EXPORT int set_reference(int, int);
 EXPORT int get_reference(int);
 
-EXPORT int enable_stream(int, int, int);
-EXPORT int disable_stream(int, int, int);
+EXPORT int enable_stream(int, int, int, int);
+EXPORT int disable_stream(int, int, int, int);
 
 EXPORT int set_averager_settings(int, int, int, int, int);
 
 EXPORT int acquire(int);
 EXPORT int wait_for_acquisition(int, int);
 EXPORT int stop(int);
-EXPORT int transfer_waveform(int, unsigned, unsigned, double *, unsigned);
+EXPORT int transfer_waveform(int, unsigned, unsigned, unsigned, double *, unsigned);
 
 EXPORT int set_log(char *);
 int update_log(FILE * pFile);

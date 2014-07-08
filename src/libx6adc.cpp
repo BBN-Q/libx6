@@ -6,8 +6,8 @@
  */
 
 #include "headings.h"
-#include "libx6adc.h"
 #include "X6_1000.h"
+#include "libx6adc.h"
 
 // globals
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
@@ -113,14 +113,14 @@ int get_reference(int deviceID) {
 	return int(X6s_[deviceID]->get_reference());
 }
 
-int enable_stream(int deviceID, int physChan, int demodChan) {
+int enable_stream(int deviceID, int a, int b, int c) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->enable_stream(physChan, demodChan);
+	return X6s_[deviceID]->enable_stream(a, b, c);
 }
 
-int disable_stream(int deviceID, int physChan, int demodChan) {
+int disable_stream(int deviceID, int a, int b, int c) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->disable_stream(physChan, demodChan);
+	return X6s_[deviceID]->disable_stream(a, b, c);
 }
 
 int set_averager_settings(int deviceID, int recordLength, int numSegments, int waveforms, int roundRobins) {
@@ -143,9 +143,9 @@ int stop(int deviceID) {
 	return X6s_[deviceID]->stop();
 }
 
-int transfer_waveform(int deviceID, unsigned physChan, unsigned demodChan, double *buffer, unsigned bufferLength) {
+int transfer_waveform(int deviceID, unsigned a, unsigned b, unsigned c, double *buffer, unsigned bufferLength) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->transfer_waveform(physChan, demodChan, buffer, bufferLength);
+	return X6s_[deviceID]->transfer_waveform(a, b, c, buffer, bufferLength);
 }
 
 //Expects a null-terminated character array

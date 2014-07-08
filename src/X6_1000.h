@@ -27,6 +27,7 @@ using std::string;
 class Accumulator;
 class Channel;
 
+enum channel_t { PHYSICAL, DEMOD, RESULT };
 
 class X6_1000 
 {
@@ -64,11 +65,6 @@ public:
 	enum TriggerSource {
 		SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
 		EXTERNAL_TRIGGER         /**< External trigger */
-	};
-
-	enum ChannelType {
-		PHYS_CHAN = 0,
-		DEMOD_CHAN = 1
 	};
 
 	X6_1000();
@@ -122,8 +118,8 @@ public:
 	ErrorCodes set_frame(int recordLength);
 	ErrorCodes set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
 
-	ErrorCodes enable_stream(unsigned, unsigned);
-	ErrorCodes disable_stream(unsigned, unsigned);
+	ErrorCodes enable_stream(unsigned, unsigned, unsigned);
+	ErrorCodes disable_stream(unsigned, unsigned, unsigned);
 
 	bool get_channel_enable(int channel);
 
@@ -147,7 +143,7 @@ public:
 	ErrorCodes stop();
 	bool       get_is_running();
 
-	ErrorCodes transfer_waveform(unsigned, unsigned, double *, size_t);
+	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
@@ -182,6 +178,7 @@ private:
 	//vector to go from VMP ordering to SID's
 	vector<int> physChans_;
 	vector<int> virtChans_;
+	vector<int> resultChans_;
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
 
@@ -209,20 +206,24 @@ private:
 	
 	void HandleDisableTrigger(OpenWire::NotifyEvent & Event);
 	void HandleExternalTrigger(OpenWire::NotifyEvent & Event);
-    void HandleSoftwareTrigger(OpenWire::NotifyEvent & Event);
+	void HandleSoftwareTrigger(OpenWire::NotifyEvent & Event);
 
 	void HandleBeforeStreamStart(OpenWire::NotifyEvent & Event);
-    void HandleAfterStreamStart(OpenWire::NotifyEvent & Event);
-    void HandleAfterStreamStop(OpenWire::NotifyEvent & Event);
+	void HandleAfterStreamStart(OpenWire::NotifyEvent & Event);
+	void HandleAfterStreamStop(OpenWire::NotifyEvent & Event);
 
-    void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
-    void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, ChannelType);
-    void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
-    	VMPDataAvailable(Event, PHYS_CHAN);
-    };
-    void HandleVirtualStream(Innovative::VeloMergeParserDataAvailable & Event) {
-    	VMPDataAvailable(Event, DEMOD_CHAN);
-    };
+	void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
+	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t);
+	void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
+		VMPDataAvailable(Event, PHYSICAL);
+	};
+	void HandleVirtualStream(Innovative::VeloMergeParserDataAvailable & Event) {
+		VMPDataAvailable(Event, DEMOD);
+	};
+
+	void HandleResultStream(Innovative::VeloMergeParserDataAvailable & Event) {
+		VMPDataAvailable(Event, RESULT);
+	};
 
 	void HandleTimer(OpenWire::NotifyEvent & Event);
 
@@ -243,13 +244,14 @@ friend X6_1000;
 public:
 	/* Helper class to accumulate/average data */
 	Accumulator();
-	Accumulator(const size_t &, const size_t &, const size_t &);
-	//TODO: Template this for multiple return types?  
-	void accumulate(const Innovative::ShortDG &);
+	Accumulator(const Channel &, const size_t &, const size_t &, const size_t &);
+	template <class T>
+	void accumulate(const Innovative::AccessDatagram<T> &);
 
-	void init(const size_t &, const size_t &, const size_t &);
+	void init(const Channel &, const size_t &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
+	size_t calc_record_length(const Channel &, const size_t &);
 
 	size_t recordsTaken;
 
@@ -264,18 +266,14 @@ private:
 
 };
 
-
 class Channel{
 public:
 	Channel();
-	Channel(unsigned, unsigned);
+	Channel(unsigned, unsigned, unsigned);
 
-	static uint16_t calc_streamID(unsigned, unsigned);
-
+	unsigned channelID[3];
 	uint16_t streamID;
-	unsigned physChan;
-	unsigned demodChan;
-	bool isPhys();
+	channel_t type;
 };
 
 

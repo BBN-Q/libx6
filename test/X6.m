@@ -75,12 +75,12 @@ classdef X6 < hgsetget
             val = obj.libraryCall('get_reference_source');
         end
         
-        function val = enable_stream(obj, physChan, demodChan)
-            val = obj.libraryCall('enable_stream', physChan, demodChan);
+        function val = enable_stream(obj, a, b, c)
+            val = obj.libraryCall('enable_stream', a, b, c);
         end
         
-        function val = disable_stream(obj, physChan, demodChan)
-            val = obj.libraryCall('disable_stream', physChan, demodChan);
+        function val = disable_stream(obj, a, b, c)
+            val = obj.libraryCall('disable_stream', a, b, c);
         end
         
         function val = set_averager_settings(obj, recordLength, numSegments, waveforms, roundRobins)
@@ -100,17 +100,19 @@ classdef X6 < hgsetget
             val = obj.libraryCall('stop');
         end
 
-        function wf = transfer_waveform(obj, physChan, demodChan)
-            if demodChan == 0
+        function wf = transfer_waveform(obj, a, b, c)
+            if b == 0 % physical
                 bufSize = obj.bufferSize;
-            else
+            elseif c ~= 0 % result
+                bufSize = 2;
+            else % demod
                 bufSize = 2*obj.bufferSize/obj.DECIM_FACTOR;
             end
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
-            success = obj.libraryCall('transfer_waveform', physChan, demodChan, wfPtr, bufSize);
+            success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
 
-            if demodChan == 0
+            if b == 0
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
@@ -202,12 +204,18 @@ classdef X6 < hgsetget
             fprintf('Setting clock reference to external\n');
             x6.reference = 'external';
             
-            x6.enable_stream(1, 0);
-            x6.enable_stream(1, 1);
-            x6.enable_stream(1, 2);
-            x6.enable_stream(2, 0);
-            x6.enable_stream(2, 1);
-            x6.enable_stream(2, 2);
+            fprintf('enabling streams\n');
+            for phys = 1:2
+                for demod = 0:2
+                    if demod > 0
+                        for result = 0:1
+                            x6.enable_stream(phys, demod, result);
+                        end
+                    else
+                        x6.enable_stream(phys, demod, 0);
+                    end
+                end
+            end
             
             fprintf('Setting NCO phase increments\n');
             phase_increment = 4/100;
@@ -232,8 +240,8 @@ classdef X6 < hgsetget
             fprintf('Writing decision engine thresholds\n');
             x6.writeRegister(X6.DSP_WB_OFFSET(1), 56, int32(4000));
             x6.writeRegister(X6.DSP_WB_OFFSET(2), 56, int32(4000));
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(5000*200*2^15));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(5000*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(4000));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(4000));
             
             fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
@@ -251,7 +259,7 @@ classdef X6 < hgsetget
             numDemodChan = 2;
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_waveform(1,ct);
+                wfs{ct+1} = x6.transfer_waveform(1,ct,0);
             end
             figure();
             subplot(numDemodChan+1,1,1);
@@ -268,7 +276,7 @@ classdef X6 < hgsetget
             
             
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_waveform(2,ct);
+                wfs{ct+1} = x6.transfer_waveform(2,ct,0);
             end
             figure();
             subplot(numDemodChan+1,1,1);
