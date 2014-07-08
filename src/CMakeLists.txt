@@ -33,6 +33,7 @@ LINK_DIRECTORIES( ${LINK_DIRECTORIES}
 
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-DGCC")
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11")
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static -lpthread")
 
 SET ( DLL_SRC 
 	./libx6adc.cpp
@@ -69,3 +70,4 @@ TARGET_LINK_LIBRARIES(x6adc
 	#Framework_Win 
 	#Vpx_Mb  ##
 )
+
