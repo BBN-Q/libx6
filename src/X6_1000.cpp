@@ -252,9 +252,9 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
 
     for (int inst = 0; inst <= 1; ++inst) {
-        write_dsp_register(inst, WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord);
+        write_dsp_register(inst, WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord + 8);
         for (int vchan = 1; vchan <= 4; ++vchan) {
-            write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord);
+            write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord + 8);
         }
     }
 
