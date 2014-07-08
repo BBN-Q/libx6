@@ -134,9 +134,10 @@ classdef X6 < hgsetget
         
         function write_kernel(obj, phys, demod, kernel)
             obj.writeRegister(obj.DSP_WB_OFFSET(phys), 24+demod-1, length(kernel));
+            kernel = int32(kernel * (2^15-1)); % scale up to integers
             for ct = 1:length(kernel)
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 49+2*demod-1, bitshift(real(kernel(ct)), 16) + imag(kernel(ct)));
+                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 49+2*demod-1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
             end
         end
     end
@@ -227,6 +228,12 @@ classdef X6 < hgsetget
             x6.write_kernel(1, 2, ones(64,1));
             x6.write_kernel(2, 1, ones(64,1));
             x6.write_kernel(2, 2, ones(64,1));
+            
+            fprintf('Writing decision engine thresholds\n');
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56, int32(50*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56, int32(50*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(50*200*2^15));
+            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(50*200*2^15));
             
             fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
