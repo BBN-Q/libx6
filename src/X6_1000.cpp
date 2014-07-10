@@ -562,14 +562,18 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     switch (chanType) {
         case PHYSICAL:
         case DEMOD:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << sbufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
-            accumulators_[sid].accumulate(sbufferDG);
+            if (accumulators_[sid].recordsTaken < numRecords_) {
+                accumulators_[sid].accumulate(sbufferDG);
+            }
             break;
         case RESULT:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << sid << "; buffer.size = " << ibufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
-            accumulators_[sid].accumulate(ibufferDG);
+            if (accumulators_[sid].recordsTaken < numRecords_) {
+                accumulators_[sid].accumulate(ibufferDG);
+            }
             break;
     }
     
@@ -578,7 +582,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 bool X6_1000::check_done() {
     int records;
     for (auto & kv : accumulators_) {
-        FILE_LOG(logDEBUG2) << "Channel " << kv.first << " has taken " << kv.second.recordsTaken << " records.";
+        FILE_LOG(logDEBUG2) << "Channel " << myhex << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
     for (auto & kv : accumulators_) {
             if (kv.second.recordsTaken < numRecords_) {
