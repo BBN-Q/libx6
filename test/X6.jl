@@ -8,6 +8,7 @@ X6() = X6(-1, 0)
 
 const DSP_WB_OFFSET = [0x2000, 0x2100]
 const X6_LIBRARY = "C:\\Users\\qlab\\Documents\\GitHub\\libx6\\build\\libx6adc"
+const DECIMATION_FACTOR = 4
 
 function connect!(dev::X6, id)
 	ret = ccall((:connect_by_ID, X6_LIBRARY), Int32, (Int32,), id)
@@ -63,12 +64,12 @@ function set_reference(dev::X6, ref::String)
 	ccall((:set_reference, X6_LIBRARY), Int32, (Int32, Int32), dev.id, strMap[ref])
 end
 
-function enable_stream(dev::X6, physChan::Int, demodChan::Int)
-	ccall((:enable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32), dev.id, physChan, demodChan)
+function enable_stream(dev::X6, a::Int, b::Int, c::Int)
+	ccall((:enable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, a, b, c)
 end
 
-function disable_stream(dev::X6, physChan::Int, demodChan::Int)
-	ccall((:disable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32), dev.id, physChan, demodChan)
+function disable_stream(dev::X6, a::Int, b::Int, c::Int)
+	ccall((:disable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, a, b, c)
 end
 
 function read_register(dev::X6, addr::Uint16, offset::Uint16)
@@ -99,13 +100,13 @@ function wait_for_acquisition(dev::X6, timeOut::Int)
 	ccall((:wait_for_acquisition, X6_LIBRARY), Int32, (Int32, Int32), dev.id, timeOut)
 end
 
-function transfer_waveform(dev::X6, physChan, demodChan)
-	bufSize = (demodChan == 0) ? dev.bufferSize : 2*dev.bufferSize/DECIMATION_FACTOR
+function transfer_waveform(dev::X6, a, b, c)
+	bufSize = (b == 0) ? dev.bufferSize : fld(2*dev.bufferSize, DECIMATION_FACTOR)
 	wfs = Array(Float64, bufSize)
-	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Int32, Int32, Ptr{Float64}, Int32),
-													dev.id, physChan, demodChan, wfs, bufSize)
+	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32, Ptr{Float64}, Int32),
+													dev.id, a, b, c, wfs, bufSize)
 	@assert success == 0 "Transferring waveforms failed!"
-	if (demodChan == 0)
+	if (b == 0) || (c != 0) # physical or result channel
 		return wfs
 	else
 		return wfs[1:2:end] + 1im*wfs[2:2:end]
@@ -129,8 +130,14 @@ function unittest()
 
 	println("Enabling streams...")
 	for physChan = 1:2
-		for demodChan = 0:2
-			enable_stream(x6, physChan, demodChan)
+		for demodChan = 0:4
+			if demodChan > 0
+				for resultChan = 0:0
+					enable_stream(x6, physChan, demodChan, resultChan)
+				end
+			else
+				enable_stream(x6, physChan, 0, 0)
+			end
 		end
 	end
 
@@ -143,8 +150,8 @@ function unittest()
 
 	println("Setting stream IDs...")
 	for ct = 0:4
-		write_register(x6, DSP_WB_OFFSET[1], uint16(0x0020+ct), 0x100 + 16*ct)	
-		write_register(x6, DSP_WB_OFFSET[2], uint16(0x0020+ct), 0x200 + 16*ct)	
+		write_register(x6, DSP_WB_OFFSET[1], uint16(0x0020+ct), 0x10100 + 16*ct)	
+		write_register(x6, DSP_WB_OFFSET[2], uint16(0x0020+ct), 0x20200 + 16*ct)	
 	end
 
 	set_averager_settings(x6, 2048, 9, 1, 1)
@@ -155,13 +162,7 @@ function unittest()
 	println("Wait for acquisition returned $success")
 	stop(x6)
 
-	wfs = cell()
-
-	for physChan = 1:2
-		for demodChan = 0:2
-			push!(cell, transfer_waveform(x6, physChan, demodChan))
-		end
-	end
+	wfs = [transfer_waveform(x6, physChan, demodChan, 0) for physChan = 1:2, demodChan = 0:4]
 
 	disconnect!(x6)
 
