@@ -112,7 +112,7 @@ classdef X6 < hgsetget
             success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
 
-            if b == 0
+            if b == 0 || c ~= 0 % physical or result channel
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
@@ -204,7 +204,7 @@ classdef X6 < hgsetget
             fprintf('Setting clock reference to external\n');
             x6.reference = 'external';
             
-            fprintf('enabling streams\n');
+            fprintf('Enabling streams\n');
             for phys = 1:2
                 for demod = 0:2
                     if demod > 0
