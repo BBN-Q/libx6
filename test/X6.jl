@@ -104,7 +104,7 @@ function transfer_waveform(dev::X6, a, b, c)
 	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Uint32, Uint32, Uint32, Ptr{Float64}, Int32),
 													dev.id, a, b, c, wfs, bufSize)
 	@assert success == 0 "Transferring waveforms failed!"
-	if (b == 0) || (c != 0) # physical or result channel
+	if (b == 0) # physical channel
 		return wfs
 	else
 		return wfs[1:2:end] + 1im*wfs[2:2:end]

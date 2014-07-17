@@ -104,7 +104,7 @@ classdef X6 < hgsetget
             success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
 
-            if b == 0 || c ~= 0 % physical or result channel
+            if b == 0 % physical channel
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
