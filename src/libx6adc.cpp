@@ -148,6 +148,11 @@ int transfer_waveform(int deviceID, unsigned a, unsigned b, unsigned c, double *
 	return X6s_[deviceID]->transfer_waveform(a, b, c, buffer, bufferLength);
 }
 
+int get_buffer_size(int deviceID, unsigned a, unsigned b, unsigned c) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->get_buffer_size(a, b, c);
+}
+
 //Expects a null-terminated character array
 int set_log(char * fileNameArr) {
 	string fileName(fileNameArr);

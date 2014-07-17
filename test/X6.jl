@@ -2,9 +2,8 @@ module X6ADC
 
 type X6
 	id::Int
-	bufferSize::Int
 end
-X6() = X6(-1, 0)
+X6() = X6(-1)
 
 const DSP_WB_OFFSET = [0x2000, 0x2100]
 const X6_LIBRARY = "C:\\Users\\qlab\\Documents\\GitHub\\libx6\\build\\libx6adc"
@@ -85,7 +84,6 @@ end
 function set_averager_settings(dev::X6, recordLength::Int, numSegments::Int, waveforms::Int, roundRobins::Int)
 	ccall((:set_averager_settings, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32, Int32),	
 											dev.id, recordLength, numSegments, waveforms, roundRobins) 
-	dev.bufferSize = recordLength * numSegments
 end
 
 function acquire(dev::X6)
@@ -101,9 +99,9 @@ function wait_for_acquisition(dev::X6, timeOut::Int)
 end
 
 function transfer_waveform(dev::X6, a, b, c)
-	bufSize = (b == 0) ? dev.bufferSize : fld(2*dev.bufferSize, DECIMATION_FACTOR)
+	bufSize = ccall(:get_buffer_size, X6_LIBRARY, Int32, (Int32, Uint32, Uint32, Uint32), dev.id, a, b, c)
 	wfs = Array(Float64, bufSize)
-	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32, Ptr{Float64}, Int32),
+	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Uint32, Uint32, Uint32, Ptr{Float64}, Int32),
 													dev.id, a, b, c, wfs, bufSize)
 	@assert success == 0 "Transferring waveforms failed!"
 	if (b == 0) || (c != 0) # physical or result channel

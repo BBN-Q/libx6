@@ -403,7 +403,8 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     VMPs_[1].Resize(packetSize);
     VMPs_[1].Clear();
 
-    packetSize = 2;
+    //Result channels are real/imag 32bit integers
+    packetSize = 2; 
     FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
     VMPs_[2].Resize(packetSize);
     VMPs_[2].Clear();
@@ -467,6 +468,11 @@ X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned 
     if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
     accumulators_[sid].snapshot(buffer);
     return SUCCESS;
+}
+
+int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
+    uint16_t sid = Channel(a,b,c).streamID;
+    return accumulators_[sid].get_buffer_size();
 }
 
 /****************************************************************************
@@ -699,6 +705,10 @@ size_t Accumulator::calc_record_length(const Channel & chan, const size_t & reco
     }
 }
 
+size_t Accumulator::get_buffer_size() {
+    return data_.size();
+}
+
 void Accumulator::reset(){
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
@@ -708,7 +718,8 @@ void Accumulator::reset(){
 
 void Accumulator::snapshot(double * buf){
     /* Copies current data into a *preallocated* buffer*/
-    double scale = recordsTaken / (numSegments_*numWaveforms_) * 2048;
+    const int dac_to_amp = (1 << 11); // signed 12-bit integers from DAC
+    double scale = recordsTaken / (numSegments_*numWaveforms_) * dac_to_amp;
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = static_cast<double>(data_[ct]) / scale;
     }

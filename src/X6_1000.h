@@ -144,6 +144,7 @@ public:
 	bool       get_is_running();
 
 	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
+	int get_buffer_size(unsigned, unsigned, unsigned);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
@@ -251,6 +252,7 @@ public:
 	void init(const Channel &, const size_t &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
+	size_t get_buffer_size();
 	size_t calc_record_length(const Channel &, const size_t &);
 
 	size_t recordsTaken;

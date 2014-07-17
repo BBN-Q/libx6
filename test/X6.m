@@ -8,7 +8,6 @@ classdef X6 < hgsetget
         samplingRate = 1000;
         triggerSource
         reference
-        bufferSize = 0;
         is_open = 0;
         deviceID = 0;
     end
@@ -85,7 +84,6 @@ classdef X6 < hgsetget
         
         function val = set_averager_settings(obj, recordLength, numSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, numSegments, waveforms, roundRobins);
-            obj.bufferSize = recordLength * numSegments;
         end
 
         function val = acquire(obj)
@@ -101,13 +99,7 @@ classdef X6 < hgsetget
         end
 
         function wf = transfer_waveform(obj, a, b, c)
-            if b == 0 % physical
-                bufSize = obj.bufferSize;
-            elseif c ~= 0 % result
-                bufSize = 2;
-            else % demod
-                bufSize = 2*obj.bufferSize/obj.DECIM_FACTOR;
-            end
+            bufSize = obj.libraryCall('get_buffer_size', a, b, c);
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
@@ -190,7 +182,7 @@ classdef X6 < hgsetget
             
             x6 = X6();
             
-            x6.setDebugLevel(6);
+            x6.setDebugLevel(8);
             
             x6.connect(0);
             
@@ -232,9 +224,9 @@ classdef X6 < hgsetget
             end
             
             fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(128,1));
+            x6.write_kernel(1, 1, ones(256,1));
             x6.write_kernel(1, 2, ones(128,1));
-            x6.write_kernel(2, 1, ones(128,1));
+            x6.write_kernel(2, 1, ones(256,1));
             x6.write_kernel(2, 2, ones(128,1));
             
             fprintf('Writing decision engine thresholds\n');
