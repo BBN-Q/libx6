@@ -15,6 +15,7 @@ classdef X6 < hgsetget
     properties(Constant)
         DECIM_FACTOR = 4;
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
+        SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
     end
     
     methods
@@ -120,7 +121,21 @@ classdef X6 < hgsetget
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('read_register', addr, offset);
         end
+        
+        function write_spi(obj, chip, addr, data)
+           %read flag is low so just address
+           val = bitshift(addr, 16) + data;
+           obj.writeRegister(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+        end
 
+        function val = read_spi(obj, chip, addr)
+           %read flag is high
+           val = bitshift(1, 28) + bitshift(addr, 16);
+           obj.writeRegister(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+           val = int32(obj.readRegister(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
+           assert(bitget(val, 32) == 1, 'Oops! Read valid flag was not set!');
+        end
+        
         function val = getLogicTemperature(obj)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('get_logic_temperature', 0);
