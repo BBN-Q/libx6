@@ -1,3 +1,28 @@
+% MATLAB wrapper for the X6 driver.
+%
+% Usage notes: The channelizer creates multiple data streams per physical
+% input channel. These are indexed by a 3-parameter label (a,b,c), where a
+% is the 1-indexed physical channel, b is the 0-indexed virtual channel
+% (b=0 is the raw stream, b>1 are demodulated streams, and c indicates
+% demodulated (c=0) or demodulated and integrated (c = 1).
+
+% Original authors: Blake Johnson and Colm Ryan
+% Date: August 25, 2014
+
+% Copyright 2014 Raytheon BBN Technologies
+%
+% Licensed under the Apache License, Version 2.0 (the "License");
+% you may not use this file except in compliance with the License.
+% You may obtain a copy of the License at
+%
+%     http://www.apache.org/licenses/LICENSE-2.0
+%
+% Unless required by applicable law or agreed to in writing, software
+% distributed under the License is distributed on an "AS IS" BASIS,
+% WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+% See the License for the specific language governing permissions and
+% limitations under the License.
+
 classdef X6 < hgsetget
     
     properties (Constant)
@@ -5,7 +30,7 @@ classdef X6 < hgsetget
     end
     
     properties
-        samplingRate = 1000;
+        samplingRate = 1e9;
         triggerSource
         reference
         is_open = 0;
@@ -141,12 +166,42 @@ classdef X6 < hgsetget
             val = obj.libraryCall('get_logic_temperature', 0);
         end
         
+        function set_nco_frequency(obj, a, b, freq)
+            phase_increment = 4 * freq/obj.samplingRate; % NCO runs at quarter rate
+            obj.writeRegister(X6.DSP_WB_OFFSET(a), 16+b-1, round(1 * phase_increment * 2^18));
+        end
+        
         function write_kernel(obj, phys, demod, kernel)
             obj.writeRegister(obj.DSP_WB_OFFSET(phys), 24+demod-1, length(kernel));
             kernel = int32(kernel * (2^15-1)); % scale up to integers
             for ct = 1:length(kernel)
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1)+1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
+            end
+        end
+        
+        %Instrument meta-setter that sets all parameters
+        function setAll(obj, settings)
+            obj.settings = settings;
+            fields = fieldnames(settings);
+            for tmpName = fields'
+                switch tmpName{1}
+                    case 'horizontal'
+                        % Skip for now. Eventually this is where you'd want
+                        % to pass thru trigger delay
+                    case 'averager'
+                        obj.set_averager_settings( ...
+                            settings.averager.recordLength, ...
+                            settings.averager.nbrSegments, ...
+                            settings.averager.nbrWaveforms, ...
+                            settings.averager.nbrRoundRobins);
+                    otherwise
+                        if ismember(tmpName{1}, methods(obj))
+                            feval(['obj.' tmpName{1}], settings.(tmpName{1}));
+                        elseif ismember(tmpName{1}, properties(obj))
+                            obj.(tmpName{1}) = settings.(tmpName{1});
+                        end
+                end
             end
         end
     end
@@ -213,23 +268,19 @@ classdef X6 < hgsetget
             
             fprintf('Enabling streams\n');
             for phys = 1:2
-                for demod = 0:2
-                    if demod > 0
-                        for result = 0:1
-                            x6.enable_stream(phys, demod, result);
-                        end
-                    else
-                        x6.enable_stream(phys, demod, 0);
+                x6.enable_stream(phys, 0, 0); % the raw stream
+                for demod = 1:2
+                    for result = 0:1
+                        x6.enable_stream(phys, demod, result);
                     end
                 end
             end
             
             fprintf('Setting NCO phase increments\n');
-            phase_increment = 4/100;
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16,   round(2 * phase_increment * 2^18));
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 16+1, round(2 * phase_increment * 2^18));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16,   round(2 * phase_increment * 2^18));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 16+1, round(2 * phase_increment * 2^18));
+            x6.set_nco_frequency(1, 1, 10e6);
+            x6.set_nco_frequency(1, 2, 30e6);
+            x6.set_nco_frequency(2, 1, 20e6);
+            x6.set_nco_frequency(2, 2, 40e6);
             
             %write stream IDs
             fprintf('Setting stream IDs\n');
@@ -239,9 +290,9 @@ classdef X6 < hgsetget
             end
             
             fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(256,1));
+            x6.write_kernel(1, 1, ones(128,1));
             x6.write_kernel(1, 2, ones(128,1));
-            x6.write_kernel(2, 1, ones(256,1));
+            x6.write_kernel(2, 1, ones(128,1));
             x6.write_kernel(2, 2, ones(128,1));
             
             fprintf('Writing decision engine thresholds\n');
@@ -250,13 +301,13 @@ classdef X6 < hgsetget
             x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(4000));
             x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(4000));
             
-            fprintf('setting averager parameters to record 10 segments of 2048 samples\n');
+            fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
 
             fprintf('Acquiring\n');
             x6.acquire();
 
-            success = x6.wait_for_acquisition(1);
+            success = x6.wait_for_acquisition(0.1);
             fprintf('Wait for acquisition returned %d\n', success);
 
             fprintf('Stopping\n');
