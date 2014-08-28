@@ -419,6 +419,7 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     for (auto & kv : accumulators_) {
         kv.second.reset();
     }
+    recordsTaken_ = 0;
 
     module_.Velo().LoadAll_VeloDataSize(0x4000);
     module_.Velo().ForceVeloPacketSize(false);
@@ -461,6 +462,18 @@ X6_1000::ErrorCodes X6_1000::stop() {
 
 bool X6_1000::get_is_running() {
     return isRunning_;
+}
+
+bool X6_1000::get_has_new_data() {
+    // determines if new data has arrived since the last call
+    size_t currentRecords = 0;
+    for (auto & kv : accumulators_) {
+        currentRecords = max(currentRecords, kv.second.recordsTaken);
+    }
+
+    bool result = (currentRecords > recordsTaken_);
+    recordsTaken_ = currentRecords;
+    return result;
 }
 
 X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {

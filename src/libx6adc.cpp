@@ -138,6 +138,11 @@ int wait_for_acquisition(int deviceID, int timeOut) {
 	return X6s_[deviceID]->wait_for_acquisition(timeOut);
 }
 
+int get_has_new_data(int deviceID) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->get_has_new_data();	
+}
+
 int stop(int deviceID) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->stop();

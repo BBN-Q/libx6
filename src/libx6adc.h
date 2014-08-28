@@ -62,6 +62,7 @@ EXPORT int set_averager_settings(int, int, int, int, int);
 
 EXPORT int acquire(int);
 EXPORT int wait_for_acquisition(int, int);
+EXPORT int get_has_new_data(int);
 EXPORT int stop(int);
 EXPORT int transfer_waveform(int, unsigned, unsigned, unsigned, double *, unsigned);
 EXPORT int get_buffer_size(int, unsigned, unsigned, unsigned);

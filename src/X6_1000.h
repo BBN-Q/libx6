@@ -142,6 +142,7 @@ public:
 	ErrorCodes wait_for_acquisition(unsigned);
 	ErrorCodes stop();
 	bool       get_is_running();
+	bool       get_has_new_data();
 
 	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
 	int get_buffer_size(unsigned, unsigned, unsigned);
@@ -170,9 +171,6 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	
-
-
 	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 
 	map<uint16_t, Channel> activeChannels_;
@@ -192,6 +190,7 @@ private:
 	unsigned numSegments_;
 	unsigned waveforms_;
 	unsigned roundRobins_;
+	unsigned recordsTaken_;
 
 	ErrorCodes set_active_channels();
 	void set_dsp_stream_ids();

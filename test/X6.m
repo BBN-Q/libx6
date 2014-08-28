@@ -43,6 +43,10 @@ classdef X6 < hgsetget
         SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
     end
     
+    events
+        DataReady
+    end
+    
     methods
         function obj = X6()
             obj.load_library();
@@ -115,9 +119,17 @@ classdef X6 < hgsetget
         function val = acquire(obj)
             val = obj.libraryCall('acquire');
         end
-
+        
         function val = wait_for_acquisition(obj, timeout)
+            function do_poll(~,~)
+                if (obj.libraryCall('get_has_new_data'))
+                    notify(obj, 'DataReady');
+                end
+            end
+            myTimer = timer('TimerFcn', @do_poll, 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
+            start(myTimer);
             val = obj.libraryCall('wait_for_acquisition', timeout);
+            stop(myTimer); delete(myTimer);
         end
 
         function val = stop(obj)
