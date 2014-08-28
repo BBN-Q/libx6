@@ -168,7 +168,7 @@ classdef X6 < hgsetget
         
         function set_nco_frequency(obj, a, b, freq)
             phase_increment = 4 * freq/obj.samplingRate; % NCO runs at quarter rate
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 16+b-1, round(1 * phase_increment * 2^18));
+            obj.writeRegister(X6.DSP_WB_OFFSET(a), 16+(b-1), round(1 * phase_increment * 2^18));
         end
         
         function write_kernel(obj, phys, demod, kernel)
@@ -178,6 +178,10 @@ classdef X6 < hgsetget
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
                 obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1)+1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
             end
+        end
+        
+        function set_threshold(obj, a, b, threshold)
+            obj.writeRegister(X6.DSP_WB_OFFSET(a), 56+(b-1), int32(threshold));
         end
         
         %Instrument meta-setter that sets all parameters
@@ -257,7 +261,7 @@ classdef X6 < hgsetget
             x6.connect(0);
             
             if (~x6.is_open)
-                error('Could not open aps')
+                error('Could not open X6')
             end
 
             fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
@@ -296,10 +300,10 @@ classdef X6 < hgsetget
             x6.write_kernel(2, 2, ones(128,1));
             
             fprintf('Writing decision engine thresholds\n');
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56, int32(4000));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56, int32(4000));
-            x6.writeRegister(X6.DSP_WB_OFFSET(1), 56+1, int32(4000));
-            x6.writeRegister(X6.DSP_WB_OFFSET(2), 56+1, int32(4000));
+            x6.set_threshold(1, 1, 4000);
+            x6.set_threshold(1, 2, 4000);
+            x6.set_threshold(2, 1, 4000);
+            x6.set_threshold(2, 2, 4000);
             
             fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
