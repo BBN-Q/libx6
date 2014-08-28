@@ -194,11 +194,10 @@ private:
 	unsigned roundRobins_;
 
 	ErrorCodes set_active_channels();
-	int num_active_channels();
+	void set_dsp_stream_ids();
 	void set_defaults();
 	void log_card_info();
 	bool check_done();
-
 
 	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
     				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));

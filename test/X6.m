@@ -286,13 +286,6 @@ classdef X6 < hgsetget
             x6.set_nco_frequency(2, 1, 20e6);
             x6.set_nco_frequency(2, 2, 40e6);
             
-            %write stream IDs
-            fprintf('Setting stream IDs\n');
-            for ct = 0:4
-                x6.writeRegister(X6.DSP_WB_OFFSET(1), 32+ct, hex2dec('00020100') + 16*ct);
-                x6.writeRegister(X6.DSP_WB_OFFSET(2), 32+ct, hex2dec('00020200') + 16*ct);
-            end
-            
             fprintf('Writing integration kernels\n');
             x6.write_kernel(1, 1, ones(128,1));
             x6.write_kernel(1, 2, ones(128,1));

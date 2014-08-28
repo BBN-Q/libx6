@@ -319,8 +319,13 @@ X6_1000::ErrorCodes X6_1000::set_active_channels() {
     return status;
 }
 
-int X6_1000::num_active_channels() {
-    return 2;
+void X6_1000::set_dsp_stream_ids() {
+    for (int cnt = 0; cnt < VIRTUAL_CH_RATIO + 1; cnt++) {
+        for (int physChan = 0; physChan < get_num_channels(); physChan++) {
+            write_dsp_register(physChan, WB_STREAM_ID_OFFSET + cnt, 0x20000 + ((physChan+1) << 8) + (cnt << 4));
+        }
+    }
+
 }
 
 void X6_1000::set_defaults() {
@@ -330,6 +335,7 @@ void X6_1000::set_defaults() {
     set_trigger_source();
     set_decimation();
     set_active_channels();
+    set_dsp_stream_ids();
 
     // disable test mode 
     module_.Input().TestModeEnabled( false, 0);
