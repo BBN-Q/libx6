@@ -35,6 +35,7 @@ classdef X6 < hgsetget
         reference
         is_open = 0;
         deviceID = 0;
+        enabledStreams = {}
     end
     
     properties(Constant)
@@ -53,6 +54,9 @@ classdef X6 < hgsetget
         end
 
         function val = connect(obj, id)
+            if ischar(id)
+                id = str2double(id);
+            end
             val = calllib('libx6adc', 'connect_by_ID', id);
             if (val == 0)
                 obj.is_open = 1;
@@ -101,15 +105,23 @@ classdef X6 < hgsetget
         end
         
         function val = get.reference(obj)
-            val = obj.libraryCall('get_reference_source');
+            val = obj.libraryCall('get_reference');
         end
         
         function val = enable_stream(obj, a, b, c)
             val = obj.libraryCall('enable_stream', a, b, c);
+            obj.enabledStreams{end+1} = [a,b,c];
         end
         
         function val = disable_stream(obj, a, b, c)
             val = obj.libraryCall('disable_stream', a, b, c);
+            % remove the stream from the enabledStreams list
+            for ct = 1:length(obj.enabledStreams)
+                if isequal(obj.enabledStreams{ct}, [a,b,c])
+                    obj.enabledStreams = {obj.enabledStreams{1:(ct-1)}, obj.enabledStreams{(ct+1):end}};
+                    break
+                end
+            end
         end
         
         function val = set_averager_settings(obj, recordLength, numSegments, waveforms, roundRobins)
@@ -135,8 +147,20 @@ classdef X6 < hgsetget
         function val = stop(obj)
             val = obj.libraryCall('stop');
         end
+        
+        function data = transfer_waveform(obj, channel)
+            % returns a structure of streams associated with the given
+            % channel
+            data = struct();
+            for stream = obj.enabledStreams
+                if stream{1}(1) == channel
+                    s = num2cell(stream{1});
+                    data.(['s' sprintf('%d',stream{1})]) = feval(@obj.transfer_stream, s{:});
+                end
+            end
+        end 
 
-        function wf = transfer_waveform(obj, a, b, c)
+        function wf = transfer_stream(obj, a, b, c)
             bufSize = obj.libraryCall('get_buffer_size', a, b, c);
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
@@ -198,7 +222,6 @@ classdef X6 < hgsetget
         
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
-            obj.settings = settings;
             fields = fieldnames(settings);
             for tmpName = fields'
                 switch tmpName{1}
@@ -211,6 +234,15 @@ classdef X6 < hgsetget
                             settings.averager.nbrSegments, ...
                             settings.averager.nbrWaveforms, ...
                             settings.averager.nbrRoundRobins);
+                    case 'channels'
+                        for channel = fieldnames(settings.channels)'
+                            obj.set_channel_settings( channel{1}, settings.channels.(channel{1}) );
+                        end
+                    case 'enableRawStreams'
+                        if settings.enableRawStreams
+                            obj.enable_stream(1, 0, 0);
+                            obj.enable_stream(2, 0, 0);
+                        end
                     otherwise
                         if ismember(tmpName{1}, methods(obj))
                             feval(['obj.' tmpName{1}], settings.(tmpName{1}));
@@ -219,6 +251,23 @@ classdef X6 < hgsetget
                         end
                 end
             end
+        end
+        
+        function set_channel_settings(obj, label, settings)
+            % channel labels are of the form 'sAB'
+            a = str2double(label(2));
+            b = str2double(label(3));
+            if settings.enableDemodStream
+                obj.enable_stream(a, b, 0);
+            end
+            if settings.enableResultStream
+                obj.enable_stream(a, b, 1);
+            end
+            obj.set_nco_frequency(a, b, settings.IFfreq);
+            if ~isempty(settings.kernel)
+                obj.write_kernel(a, b, settings.kernel);
+            end
+            obj.set_threshold(a, b, settings.threshold);
         end
     end
     
@@ -326,7 +375,7 @@ classdef X6 < hgsetget
             numDemodChan = 2;
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_waveform(1,ct,0);
+                wfs{ct+1} = x6.transfer_stream(1,ct,0);
             end
             figure();
             subplot(numDemodChan+1,1,1);
@@ -343,7 +392,7 @@ classdef X6 < hgsetget
             
             
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_waveform(2,ct,0);
+                wfs{ct+1} = x6.transfer_stream(2,ct,0);
             end
             figure();
             subplot(numDemodChan+1,1,1);
