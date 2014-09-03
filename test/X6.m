@@ -36,6 +36,7 @@ classdef X6 < hgsetget
         is_open = 0;
         deviceID = 0;
         enabledStreams = {}
+        dataTimer
     end
     
     properties(Constant)
@@ -72,6 +73,10 @@ classdef X6 < hgsetget
         function delete(obj)
             if (obj.is_open)
                 obj.disconnect();
+            end
+            if ~isempty(obj.dataTimer)
+                stop(obj.dataTimer);
+                delete(obj.dataTimer);
             end
         end
 
@@ -130,22 +135,23 @@ classdef X6 < hgsetget
 
         function val = acquire(obj)
             val = obj.libraryCall('acquire');
-        end
-        
-        function val = wait_for_acquisition(obj, timeout)
             function do_poll(~,~)
                 if (obj.libraryCall('get_has_new_data'))
                     notify(obj, 'DataReady');
                 end
             end
-            myTimer = timer('TimerFcn', @do_poll, 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
-            start(myTimer);
+            obj.dataTimer = timer('TimerFcn', @do_poll, 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
+            start(obj.dataTimer);
+        end
+        
+        function val = wait_for_acquisition(obj, timeout)
             val = obj.libraryCall('wait_for_acquisition', timeout);
-            stop(myTimer); delete(myTimer);
+            stop(obj);
         end
 
         function val = stop(obj)
             val = obj.libraryCall('stop');
+            stop(obj.dataTimer);
         end
         
         function data = transfer_waveform(obj, channel)
@@ -285,7 +291,10 @@ classdef X6 < hgsetget
             end
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
-                loadlibrary(fullfile(obj.library_path, libfname), libheader );
+                [mypath,~] = fileparts(mfilename('fullpath'));
+                lib_path = fullfile(mypath, obj.library_path, libfname);
+                header_path = fullfile(mypath, libheader);
+                loadlibrary(lib_path, header_path);
             end
         end
 
@@ -305,7 +314,7 @@ classdef X6 < hgsetget
     
     methods (Static)
         
-        function setDebugLevel(level)
+        function set_debug_level(level)
             % sets logging level in libx6.log
             % level = {logERROR=0, logWARNING, logINFO, logDEBUG, logDEBUG1, logDEBUG2, logDEBUG3, logDEBUG4}
             calllib('libx6adc', 'set_logging_level', level);
@@ -317,7 +326,7 @@ classdef X6 < hgsetget
             
             x6 = X6();
             
-            x6.setDebugLevel(8);
+            x6.set_debug_level(8);
             
             x6.connect(0);
             
