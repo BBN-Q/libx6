@@ -37,6 +37,7 @@ classdef X6 < hgsetget
         deviceID = 0;
         enabledStreams = {}
         dataTimer
+        nbrSegments
     end
     
     properties(Constant)
@@ -75,7 +76,6 @@ classdef X6 < hgsetget
                 obj.disconnect();
             end
             if ~isempty(obj.dataTimer)
-                stop(obj.dataTimer);
                 delete(obj.dataTimer);
             end
         end
@@ -129,8 +129,9 @@ classdef X6 < hgsetget
             end
         end
         
-        function val = set_averager_settings(obj, recordLength, numSegments, waveforms, roundRobins)
-            val = obj.libraryCall('set_averager_settings', recordLength, numSegments, waveforms, roundRobins);
+        function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
+            val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
+            obj.nbrSegments = nbrSegments;
         end
 
         function val = acquire(obj)
@@ -145,13 +146,23 @@ classdef X6 < hgsetget
         end
         
         function val = wait_for_acquisition(obj, timeout)
-            val = obj.libraryCall('wait_for_acquisition', timeout);
+            t = tic;
+            while toc(t) < timeout
+                if ~obj.libraryCall('get_is_running')
+                    break
+                end
+                pause(0.1)
+            end
             stop(obj);
         end
 
         function val = stop(obj)
             val = obj.libraryCall('stop');
-            stop(obj.dataTimer);
+            if ~isempty(obj.dataTimer)
+                stop(obj.dataTimer);
+                delete(obj.dataTimer);
+                obj.dataTimer = [];
+            end
         end
         
         function data = transfer_waveform(obj, channel)
@@ -176,6 +187,9 @@ classdef X6 < hgsetget
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
+            end
+            if c == 0 % non-results streams should be reshaped
+                wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
             end
         end
         
