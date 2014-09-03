@@ -16,7 +16,7 @@ unsigned numDevices_ = 0;
 // initialize the library --contructor hook in header
 void init() {
 	//Open the logging file
-	FILE* pFile = fopen("libaps.log", "a");
+	FILE* pFile = fopen("libx6.log", "a");
 	Output2FILE::Stream() = pFile;
 
 	numDevices_ = get_num_devices();
