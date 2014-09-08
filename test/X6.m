@@ -160,8 +160,10 @@ classdef X6 < hgsetget
         
         function val = wait_for_acquisition(obj, timeout)
             t = tic;
+            val = -1;
             while toc(t) < timeout
                 if ~obj.libraryCall('get_is_running')
+                    val = 0;
                     break
                 end
                 pause(0.1)
