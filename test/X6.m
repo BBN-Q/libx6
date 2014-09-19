@@ -149,12 +149,15 @@ classdef X6 < hgsetget
 
         function val = acquire(obj)
             val = obj.libraryCall('acquire');
+            %Since we cannot easily pass callbacks to the C library to fire
+            %on new data arriving we resort to polling on a timer
+            %We also fire on stopping to catch any last data
             function do_poll(~,~)
                 if (obj.libraryCall('get_has_new_data'))
                     notify(obj, 'DataReady');
                 end
             end
-            obj.dataTimer = timer('TimerFcn', @do_poll, 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
+            obj.dataTimer = timer('TimerFcn', @do_poll, 'StopFcn', @(~,~) notify(obj, 'DataReady'), 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
             start(obj.dataTimer);
         end
         
