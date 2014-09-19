@@ -420,14 +420,14 @@ classdef X6 < hgsetget
             end
             figure();
             subplot(numDemodChan+1,1,1);
-            plot(wfs{1});
+            plot(wfs{1}(:));
             title('Raw Channel 1');
 
             for ct = 1:numDemodChan
                 subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}), 'b');
+                plot(real(wfs{ct+1}(:)), 'b');
                 hold on
-                plot(imag(wfs{ct+1}), 'r');
+                plot(imag(wfs{ct+1}(:)), 'r');
                 title(sprintf('Virtual Channel %d',ct));
             end
             
@@ -437,14 +437,14 @@ classdef X6 < hgsetget
             end
             figure();
             subplot(numDemodChan+1,1,1);
-            plot(wfs{1});
+            plot(wfs{1}(:));
             title('Raw Channel 2');
 
             for ct = 1:numDemodChan
                 subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}), 'b');
+                plot(real(wfs{ct+1}(:)), 'b');
                 hold on
-                plot(imag(wfs{ct+1}), 'r');
+                plot(imag(wfs{ct+1}(:)), 'r');
                 title(sprintf('Virtual Channel %d',ct));
             end
 
