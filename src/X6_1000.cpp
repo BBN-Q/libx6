@@ -698,6 +698,7 @@ Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, cons
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
+    fixed_to_float_ = fixed_to_float(chan);
 }; 
 
 void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms){
@@ -708,6 +709,7 @@ void Accumulator::init(const Channel & chan, const size_t & recordLength, const 
     numSegments_ = numSegments;
     numWaveforms_ = numWaveforms;
     recordsTaken = 0;
+    fixed_to_float_ = fixed_to_float(chan);
 }
 
 size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
@@ -720,6 +722,18 @@ size_t Accumulator::calc_record_length(const Channel & chan, const size_t & reco
             break;
         case RESULT:
             return 2;
+            break;
+    }
+}
+
+int Accumulator::fixed_to_float(const Channel & chan) {
+    switch (chan.type) {
+        case PHYSICAL:
+            return 1 << 11; // signed 12-bit integers from ADC
+            break;
+        case DEMOD:
+        case RESULT:
+            return 1 << 14; // sfix16_14 from DDC
             break;
     }
 }
@@ -737,8 +751,7 @@ void Accumulator::reset(){
 
 void Accumulator::snapshot(double * buf){
     /* Copies current data into a *preallocated* buffer*/
-    const int dac_to_amp = (1 << 11); // signed 12-bit integers from DAC
-    double scale = recordsTaken / (numSegments_*numWaveforms_) * dac_to_amp;
+    double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = static_cast<double>(data_[ct]) / scale;
     }
