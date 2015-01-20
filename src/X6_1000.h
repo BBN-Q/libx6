@@ -272,6 +272,37 @@ private:
 	vector<int64_t>::iterator idx2_;
 };
 
+class Correlator {
+public:
+	Correlator();
+	Correlator(const Channel &, const Channel &, const size_t &, const size_t &);
+	template <class T>
+	void correlate(const int &, const Innovative::AccessDatagram<T> &);
+
+	void init(const Channel &, const Channel &, const size_t &, const size_t &);
+	void reset();
+	void snapshot(double *);
+	void snapshot_variance(double *);
+	size_t get_buffer_size();
+
+	size_t recordLength;
+private:
+	size_t wfmCt_;
+	size_t numSegments_;
+	size_t numWaveforms_;
+
+	// buffers for raw data from the two channels
+	vector<int> bufA;
+	vector<int> bufB;
+
+	// buffer for the correlated values A*B
+	vector<int64_t> data_;
+	vector<int64_t>::iterator idx_;
+	// buffer for (A*B)^2
+	vector<int64_t> data2_;
+	vector<int64_t>::iterator idx2_;	
+};
+
 class Channel{
 public:
 	Channel();
