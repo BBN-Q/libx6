@@ -145,6 +145,7 @@ public:
 	bool       get_has_new_data();
 
 	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
+	ErrorCodes transfer_variance(unsigned, unsigned, unsigned, double *, size_t);
 	int get_buffer_size(unsigned, unsigned, unsigned);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
@@ -250,6 +251,7 @@ public:
 	void init(const Channel &, const size_t &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
+	void snapshot_variance(double *);
 	size_t get_buffer_size();
 	size_t calc_record_length(const Channel &, const size_t &);
 	int fixed_to_float(const Channel &);
@@ -265,7 +267,9 @@ private:
 
 	vector<int64_t> data_;
 	vector<int64_t>::iterator idx_;
-
+	// second data object to store the square of the data
+	vector<int64_t> data2_;
+	vector<int64_t>::iterator idx2_;
 };
 
 class Channel{

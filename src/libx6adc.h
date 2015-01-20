@@ -66,6 +66,7 @@ EXPORT int get_is_running(int);
 EXPORT int get_has_new_data(int);
 EXPORT int stop(int);
 EXPORT int transfer_waveform(int, unsigned, unsigned, unsigned, double *, unsigned);
+EXPORT int transfer_variance(int, unsigned, unsigned, unsigned, double *, unsigned);
 EXPORT int get_buffer_size(int, unsigned, unsigned, unsigned);
 
 EXPORT int set_log(char *);

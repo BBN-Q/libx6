@@ -489,6 +489,19 @@ X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned 
     return SUCCESS;
 }
 
+X6_1000::ErrorCodes X6_1000::transfer_variance(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
+    //Check we have the channel
+    uint16_t sid = Channel(a,b,c).streamID;
+    if(activeChannels_.find(sid) == activeChannels_.end()){
+        FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
+        return INVALID_CHANNEL;
+    }
+    //Don't copy more than we have
+    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    accumulators_[sid].snapshot_variance(buffer);
+    return SUCCESS;
+}
+
 int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
     uint16_t sid = Channel(a,b,c).streamID;
     return accumulators_[sid].get_buffer_size();
@@ -698,13 +711,17 @@ Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, cons
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments, 0);
+    idx2_ = data2_.begin();
     fixed_to_float_ = fixed_to_float(chan);
-}; 
+};
 
-void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms){
+void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) {
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments, 0);
+    idx2_ = data2_.begin();
     wfmCt_ = 0;
     numSegments_ = numSegments;
     numWaveforms_ = numWaveforms;
@@ -742,14 +759,14 @@ size_t Accumulator::get_buffer_size() {
     return data_.size();
 }
 
-void Accumulator::reset(){
+void Accumulator::reset() {
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
     wfmCt_ = 0;
     recordsTaken = 0;
 }
 
-void Accumulator::snapshot(double * buf){
+void Accumulator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
     double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
     for(size_t ct=0; ct < data_.size(); ct++){
@@ -757,8 +774,23 @@ void Accumulator::snapshot(double * buf){
     }
 }
 
+void Accumulator::snapshot_variance(double * buf) {
+    int64_t N = max(static_cast<int>(recordsTaken / (numSegments_*numWaveforms_)), 1);
+    double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
+
+    if (N == 0) {
+        for(size_t ct=0; ct < data_.size(); ct++){
+            buf[ct] = 0.0;
+        }
+    } else {
+        for(size_t ct=0; ct < data_.size(); ct++){
+            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        }
+    }
+}
+
 template <class T>
-void Accumulator::accumulate(const AccessDatagram<T> & buffer){
+void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     //TODO: worry about performance, cache-friendly etc.
     FILE_LOG(logDEBUG4) << "Accumulating data...";
     FILE_LOG(logDEBUG4) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
@@ -766,20 +798,25 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer){
     FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
 
     //The assumption is that this will be called with a full record size
-    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int>());
+    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
+    // record the square of the buffer as well
+    std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
+        return a + b*b;
+    });
     recordsTaken++;
 
     //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
-    if (++wfmCt_ == numWaveforms_){
+    if (++wfmCt_ == numWaveforms_) {
         wfmCt_ = 0;
         std::advance(idx_, recordLength_);
+        std::advance(idx2_, recordLength_);
     }
 
     //Final check if we're at the end
-    if (idx_ == data_.end()){
+    if (idx_ == data_.end()) {
         idx_ = data_.begin();
+        idx2_ = data2_.begin();
     }
-
 }
 
 Channel::Channel() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
