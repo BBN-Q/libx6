@@ -112,8 +112,8 @@ int main ()
 
   // Correlators
   Channel ch1(1,1,1), ch2(1,2,1);
-  int sid1 = 273;
-  int sid2 = 289;
+  int sid1 = ch1.streamID;
+  int sid2 = ch2.streamID;
   Correlator correlator({ch1, ch2}, 2, 1);
 
   ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, ch1
@@ -132,9 +132,24 @@ int main ()
   cout << "obuf[2]: " << obuf[2] << endl;
   cout << "obuf[3]: " << obuf[3] << endl;
   assert(obuf[0] == 0);
-  assert(obuf[1] == 200);
-  assert(obuf[2] == 6);
-  assert(obuf[3] == 20000);
+  assert(obuf[1] == 10*20);
+  assert(obuf[2] == 2*3);
+  assert(obuf[3] == 100*200);
+
+  Channel ch3(2,1,1);
+  int sid3 = ch3.streamID;
+  Correlator correlator2({ch1, ch2, ch3}, 1, 1);
+
+  ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, ch1
+  correlator2.accumulate(sid1, ibuf);
+  ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, ch2
+  correlator2.accumulate(sid2, ibuf);
+  ibuf[0] = 3 * scale; ibuf[1] = 30 * scale; // segment 1, ch2
+  correlator2.accumulate(sid3, ibuf);
+
+  correlator2.snapshot(obuf);
+  assert(obuf[0] == 0);
+  assert(obuf[1] == 10*20*30);
 
   return 0;
 }
