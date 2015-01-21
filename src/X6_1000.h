@@ -281,23 +281,26 @@ public:
 	Correlator();
 	Correlator(const vector<Channel> &, const size_t &, const size_t &);
 	template <class T>
-	void correlate(const int &, const Innovative::AccessDatagram<T> &);
+	void accumulate(const int &, const Innovative::AccessDatagram<T> &);
+	void correlate();
 
 	void reset();
 	void snapshot(double *);
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
 
+	size_t recordsTaken;
+
 private:
 	size_t wfmCt_;
 	size_t numSegments_;
 	size_t numWaveforms_;
 	size_t recordLength_;
-	int fixed_to_float_;
+	int64_t fixed_to_float_;
 
 	// buffers for raw data from the channels
 	vector<vector<int>> buffers_;
-	vector<int> SIDs_;
+	map<uint16_t, int> bufferSID_;
 
 	// buffer for the correlated values A*B(*C*D*...)
 	vector<int64_t> data_;

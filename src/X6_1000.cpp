@@ -634,7 +634,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
                 // correlate with other result channels
                 for (auto kv : correlators_) {
                     if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
-                        kv.second.correlate(sid, ibufferDG);
+                        kv.second.accumulate(sid, ibufferDG);
                     }
                 }
             }
@@ -755,6 +755,15 @@ void Accumulator::init(const Channel & chan, const size_t & recordLength, const 
     fixed_to_float_ = fixed_to_float(chan);
 }
 
+void Accumulator::reset() {
+    data_.assign(recordLength_*numSegments_, 0);
+    idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments_, 0);
+    idx2_ = data_.begin();
+    wfmCt_ = 0;
+    recordsTaken = 0;
+}
+
 size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
     switch (chan.type) {
         case PHYSICAL:
@@ -783,13 +792,6 @@ int Accumulator::fixed_to_float(const Channel & chan) {
 
 size_t Accumulator::get_buffer_size() {
     return data_.size();
-}
-
-void Accumulator::reset() {
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
 }
 
 void Accumulator::snapshot(double * buf) {
@@ -846,39 +848,105 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
 }
 
 Correlator::Correlator() : 
-    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {}; 
+    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
 
 Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) : 
-                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
+                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
     recordLength_ = 2; // assume a RESULT channel
     buffers_.resize(channels.size());
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
     data2_.assign(recordLength_*numSegments, 0);
     idx2_ = data2_.begin();
-    fixed_to_float_ = 1 << 14; // again, assumes a RESULT channel
+    // set up mapping of SIDs to an index into buffers_
+    fixed_to_float_ = 1;
+    for (int i = 0; i < channels.size(); i++) {
+        bufferSID_[channels[i].streamID] = i;
+        fixed_to_float_ *= 1 << 14; // assumes a RESULT channel, grows with the number of terms in the correlation
+    }
 };
 
+void Correlator::reset() {
+    for (int i = 0; i < buffers_.size(); i++)
+        buffers_[i].clear();
+    data_.assign(recordLength_*numSegments_, 0);
+    idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments_, 0);
+    idx2_ = data_.begin();
+    wfmCt_ = 0;
+    recordsTaken = 0;
+}
+
 template <class T>
-void Correlator::correlate(const int & sid, const AccessDatagram<T> & buffer) {
-    //The assumption is that this will be called with a full record size
-    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
-    // record the square of the buffer as well
-    std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
-        return a + b*b;
+void Correlator::accumulate(const int & sid, const AccessDatagram<T> & buffer) {
+    // copy the data
+    for (int i = 0; i < buffer.size(); i++)
+        buffers_[bufferSID_[sid]].push_back(buffer[i]);
+    correlate();
+}
+
+void Correlator::correlate() {
+    vector<size_t> bufsizes(buffers_.size());
+    std::transform(buffers_.begin(), buffers_.end(), bufsizes.begin(), [](vector<int> b) {
+        return b.size();
     });
+    size_t minsize = *std::min_element(bufsizes.begin(), bufsizes.end());
+    if (minsize == 0)
+        return;
+    
+    // correlate
+    for (int i = 0; i < minsize; i += 2) {
+        int64_t r1 = 1;
+        int64_t r2 = 1;
+        for (int j = 0; j < buffers_.size(); j++) {
+            r1 *= buffers_[j][i];
+            r2 *= buffers_[j][i+1];
+        }
+        *idx_ += r1;
+        *idx2_ += r1*r1;
+        *(idx_+1) += r2;
+        *(idx2_+1) += r2*r2;
 
-    //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
-    if (++wfmCt_ == numWaveforms_) {
-        wfmCt_ = 0;
-        std::advance(idx_, recordLength_);
-        std::advance(idx2_, recordLength_);
+        if (++wfmCt_ == numWaveforms_) {
+            wfmCt_ = 0;
+            std::advance(idx_, recordLength_);
+            std::advance(idx2_, recordLength_);
+            if (idx_ == data_.end()) {
+                idx_ = data_.begin();
+                idx2_ = data2_.begin();
+            }
+        }
     }
+    for (int j = 0; j < buffers_.size(); j++)
+        buffers_[j].erase(buffers_[j].begin(), buffers_[j].begin()+minsize);
 
-    //Final check if we're at the end
-    if (idx_ == data_.end()) {
-        idx_ = data_.begin();
-        idx2_ = data2_.begin();
+    recordsTaken += minsize/2;
+}
+
+size_t Correlator::get_buffer_size() {
+    return data_.size();
+}
+
+void Correlator::snapshot(double * buf) {
+    /* Copies current data into a *preallocated* buffer*/
+    double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
+    for(size_t ct=0; ct < data_.size(); ct++){
+        buf[ct] = static_cast<double>(data_[ct]) / scale;
+    }
+}
+
+void Correlator::snapshot_variance(double * buf) {
+    int64_t N = max(static_cast<int>(recordsTaken / (numSegments_*numWaveforms_)), 1);
+    double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
+
+    if (N == 0) {
+        for(size_t ct=0; ct < data_.size(); ct++){
+            buf[ct] = 0.0;
+        }
+    } else {
+        for(size_t ct=0; ct < data_.size(); ct++){
+            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        }
     }
 }
 

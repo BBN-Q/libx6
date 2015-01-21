@@ -110,6 +110,31 @@ int main ()
     cout << "}" << endl;
   }
 
-  
+  // Correlators
+  Channel ch1(1,1,1), ch2(1,2,1);
+  int sid1 = 273;
+  int sid2 = 289;
+  Correlator correlator({ch1, ch2}, 2, 1);
+
+  ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, ch1
+  correlator.accumulate(sid1, ibuf);
+  ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, ch2
+  correlator.accumulate(sid2, ibuf);
+  ibuf[0] = 2 * scale; ibuf[1] = 100 * scale; // segment 2, ch1
+  correlator.accumulate(sid1, ibuf);
+  ibuf[0] = 3 * scale; ibuf[1] = 200 * scale; // segment 2, ch2
+  correlator.accumulate(sid2, ibuf);
+
+  correlator.snapshot(obuf);
+  cout << "snapshot correlator: " << endl;
+  cout << "obuf[0]: " << obuf[0] << endl;
+  cout << "obuf[1]: " << obuf[1] << endl;
+  cout << "obuf[2]: " << obuf[2] << endl;
+  cout << "obuf[3]: " << obuf[3] << endl;
+  assert(obuf[0] == 0);
+  assert(obuf[1] == 200);
+  assert(obuf[2] == 6);
+  assert(obuf[3] == 20000);
+
   return 0;
 }
