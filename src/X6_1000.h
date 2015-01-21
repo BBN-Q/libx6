@@ -306,8 +306,8 @@ private:
 	vector<int64_t> data_;
 	vector<int64_t>::iterator idx_;
 	// buffer for (A*B)^2
-	vector<int64_t> data2_;
-	vector<int64_t>::iterator idx2_;	
+	vector<__int128> data2_;
+	vector<__int128>::iterator idx2_;	
 };
 
 class Channel{

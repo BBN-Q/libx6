@@ -872,7 +872,7 @@ void Correlator::reset() {
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
     data2_.assign(recordLength_*numSegments_, 0);
-    idx2_ = data_.begin();
+    idx2_ = data2_.begin();
     wfmCt_ = 0;
     recordsTaken = 0;
 }
