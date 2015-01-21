@@ -39,5 +39,7 @@ typedef enum {DIGITIZE=0, AVERGAGE, FILTER, FILTER_AND_AVERAGE} DIGITIZER_MODE;
 static const int VIRTUAL_CH_RATIO = 2; // Number of virtual channels per physical channel
 static const int DECIMATION_FACTOR = 16;
 
+// Correlations
+static const int MAX_N_BODY_CORRELATIONS = 3;
 
 #endif /* CONSTANTS_H_ */

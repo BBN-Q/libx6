@@ -25,6 +25,7 @@ using std::string;
  */
 
 class Accumulator;
+class Correlator;
 class Channel;
 
 enum channel_t { PHYSICAL, DEMOD, RESULT };
@@ -181,7 +182,7 @@ private:
 	vector<int> resultChans_;
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
-	map<std::pair<uint16_t, uint16_t>, Correlator> correlators_;
+	map<vector<uint16_t>, Correlator> correlators_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
@@ -278,7 +279,7 @@ private:
 class Correlator {
 public:
 	Correlator();
-	Correlator(const Channel &, const Channel &, const size_t &, const size_t &);
+	Correlator(const vector<Channel> &, const size_t &, const size_t &);
 	template <class T>
 	void correlate(const int &, const Innovative::AccessDatagram<T> &);
 
@@ -287,19 +288,18 @@ public:
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
 
-	size_t recordLength;
 private:
 	size_t wfmCt_;
 	size_t numSegments_;
 	size_t numWaveforms_;
+	size_t recordLength_;
+	int fixed_to_float_;
 
-	// buffers for raw data from the two channels
-	vector<int> bufA;
-	vector<int> bufB;
-	int sidA;
-	int sidB;
+	// buffers for raw data from the channels
+	vector<vector<int>> buffers_;
+	vector<int> SIDs_;
 
-	// buffer for the correlated values A*B
+	// buffer for the correlated values A*B(*C*D*...)
 	vector<int64_t> data_;
 	vector<int64_t>::iterator idx_;
 	// buffer for (A*B)^2
@@ -316,6 +316,8 @@ public:
 	uint16_t streamID;
 	channel_t type;
 };
+
+vector<vector<int>> combinations(int, int);
 
 
 #endif

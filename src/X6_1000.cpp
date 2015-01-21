@@ -510,12 +510,20 @@ int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
 }
 
 void X6_1000::initialize_correlators() {
-    Channel a, b;
-    for (int i = 0; i < resultChans_.size(); i++) {
-        a = resultChans_[i];
-        for (int j = i+1; j < resultChans_.size(); j++) {
-            b = resultChans_[j];
-            correlators_[std::make_pair(a.streamID, b.streamID)] = Correlator(a, b, numSegments_, waveforms_);
+    vector<uint16_t> streamIDs = {};
+    vector<Channel> channels = {};
+
+    // create all n-body correlators
+    for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
+        streamIDs.resize(n);
+        channels.resize(n);
+
+        for (auto c : combinations(resultChans_.size(), n)) {
+            for (int i = 0; i < n; i++) {
+                streamIDs[i] = resultChans_[c[i]];
+                channels[i] = activeChannels_[streamIDs[i]];
+            }
+            correlators_[streamIDs] = Correlator(channels, numSegments_, waveforms_);
         }
     }
 }
@@ -624,11 +632,10 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
                 // correlate with other result channels
-                for (int i = 0; i < resultChans_.size(); i++) {
-                    uint16_t sid2 = resultChans_[i];
-                    if (sid == sid2) continue;
-                    std::pair p = (sid < sid2) ? std::make_pair(sid, sid2) : std::make_pair(sid2, sid);
-                    correlators_[p].correlate(ibufferDG);
+                for (auto kv : correlators_) {
+                    if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
+                        kv.second.correlate(sid, ibufferDG);
+                    }
                 }
             }
             break;
@@ -838,6 +845,43 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     }
 }
 
+Correlator::Correlator() : 
+    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {}; 
+
+Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) : 
+                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
+    recordLength_ = 2; // assume a RESULT channel
+    buffers_.resize(channels.size());
+    data_.assign(recordLength_*numSegments, 0);
+    idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments, 0);
+    idx2_ = data2_.begin();
+    fixed_to_float_ = 1 << 14; // again, assumes a RESULT channel
+};
+
+template <class T>
+void Correlator::correlate(const int & sid, const AccessDatagram<T> & buffer) {
+    //The assumption is that this will be called with a full record size
+    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
+    // record the square of the buffer as well
+    std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
+        return a + b*b;
+    });
+
+    //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
+    if (++wfmCt_ == numWaveforms_) {
+        wfmCt_ = 0;
+        std::advance(idx_, recordLength_);
+        std::advance(idx2_, recordLength_);
+    }
+
+    //Final check if we're at the end
+    if (idx_ == data_.end()) {
+        idx_ = data_.begin();
+        idx2_ = data2_.begin();
+    }
+}
+
 Channel::Channel() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
 
 Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
@@ -850,3 +894,24 @@ Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
         type = DEMOD;
     }
 };
+
+vector<vector<int>> combinations(int n, int r) {
+    vector<vector<int>> c;
+    vector<int> s(r);
+    int i;
+    for (i = 0; i < r; i++)
+        s[i] = i;
+    c.push_back(s);
+    while (s[0] < n - r) {
+        for (i = r-1; i >= 0; i--) {
+            s[i] += 1;
+            if (s[i] > n - r + i)
+                continue;
+            for (int j = i+1; j < r; j++)
+                s[j] = s[j-1] + 1;
+            break;
+        }
+        c.push_back(s);
+    }
+    return c;
+}

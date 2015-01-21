@@ -14,6 +14,12 @@ std::ostream& hexn(std::ostream& out) {
   return out << "0x" << std::hex << std::setw(N) << std::setfill('0');
 }
 
+template <class T>
+bool vec_equal(vector<T> a, vector<T> b) {
+  return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin());
+}
+
+
 int main ()
 {
   cout << "BBN X6-1000 Library Unit Tests" << endl;
@@ -65,12 +71,45 @@ int main ()
   assert(obufvar[1] == 100);
   assert(obufvar[2] == 4);
   assert(obufvar[3] == 10000);
-  
+
   cout << "snapshot variance: " << endl;
   cout << "obufvar[0]: " << obufvar[0] << " (goal 4)" << endl;
   cout << "obufvar[1]: " << obufvar[1] << " (goal 100)" << endl;
   cout << "obufvar[2]: " << obufvar[2] << " (goal 4)" << endl;
   cout << "obufvar[3]: " << obufvar[3] << " (goal 10000)" << endl;
+
+  // Combinations test
+  vector<vector<int>> combos;
+  combos = combinations(3, 2);
+  assert(combos.size() == 3);
+  assert(vec_equal(combos[0], {0,1}));
+  assert(vec_equal(combos[1], {0,2}));
+  assert(vec_equal(combos[2], {1,2}));
+
+  combos = combinations(4,2);
+  assert(combos.size() == 6);
+  assert(vec_equal(combos[0], {0,1}));
+  assert(vec_equal(combos[1], {0,2}));
+  assert(vec_equal(combos[2], {0,3}));
+  assert(vec_equal(combos[3], {1,2}));
+  assert(vec_equal(combos[4], {1,3}));
+  assert(vec_equal(combos[5], {2,3}));
+
+  combos = combinations(4,3);
+  assert(combos.size() == 4);
+  assert(vec_equal(combos[0], {0,1,2}));
+  assert(vec_equal(combos[1], {0,1,3}));
+  assert(vec_equal(combos[2], {0,2,3}));
+  assert(vec_equal(combos[3], {1,2,3}));
+  cout << "combinations:" << endl;
+  for (int i = 0; i < combos.size(); i++) {
+    cout << "combos[" << i << "]: {";
+    for (int j = 0; j < combos[i].size(); j++) {
+      cout << combos[i][j] << ", ";
+    }
+    cout << "}" << endl;
+  }
+
   
   return 0;
 }
