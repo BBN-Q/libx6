@@ -181,6 +181,7 @@ private:
 	vector<int> resultChans_;
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
+	map<std::pair<uint16_t, uint16_t>, Correlator> correlators_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
@@ -198,6 +199,8 @@ private:
 	void set_defaults();
 	void log_card_info();
 	bool check_done();
+
+	void initialize_correlators();
 
 	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
     				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
@@ -279,7 +282,6 @@ public:
 	template <class T>
 	void correlate(const int &, const Innovative::AccessDatagram<T> &);
 
-	void init(const Channel &, const Channel &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
 	void snapshot_variance(double *);
@@ -294,6 +296,8 @@ private:
 	// buffers for raw data from the two channels
 	vector<int> bufA;
 	vector<int> bufB;
+	int sidA;
+	int sidB;
 
 	// buffer for the correlated values A*B
 	vector<int64_t> data_;

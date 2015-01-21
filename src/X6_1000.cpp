@@ -385,6 +385,8 @@ X6_1000::ErrorCodes X6_1000::acquire() {
                 FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
         }
     }
+    initialize_correlators();
+
     VMPs_[0].Init(physChans_);
     VMPs_[0].OnDataAvailable.SetEvent(this, &X6_1000::HandlePhysicalStream);
 
@@ -507,6 +509,16 @@ int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
     return accumulators_[sid].get_buffer_size();
 }
 
+void X6_1000::initialize_correlators() {
+    Channel a, b;
+    for (int i = 0; i < resultChans_.size(); i++) {
+        a = resultChans_[i];
+        for (int j = i+1; j < resultChans_.size(); j++) {
+            b = resultChans_[j];
+            correlators_[std::make_pair(a.streamID, b.streamID)] = Correlator(a, b, numSegments_, waveforms_);
+        }
+    }
+}
 /****************************************************************************
  * Event Handlers 
  ****************************************************************************/
@@ -611,6 +623,13 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
+                // correlate with other result channels
+                for (int i = 0; i < resultChans_.size(); i++) {
+                    uint16_t sid2 = resultChans_[i];
+                    if (sid == sid2) continue;
+                    std::pair p = (sid < sid2) ? std::make_pair(sid, sid2) : std::make_pair(sid2, sid);
+                    correlators_[p].correlate(ibufferDG);
+                }
             }
             break;
     }
