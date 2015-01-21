@@ -210,6 +210,44 @@ classdef X6 < hgsetget
                 wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
             end
         end
+
+        function wf = transfer_stream_variance(obj, a, b, c)
+            bufSize = obj.libraryCall('get_buffer_size', a, b, c);
+            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
+            success = obj.libraryCall('transfer_variance', a, b, c, wfPtr, bufSize);
+            assert(success == 0, 'transfer_variance failed');
+
+            if b == 0 % physical channel
+                wf = wfPtr.Value;
+            else
+                wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
+            end
+            if c == 0 % non-results streams should be reshaped
+                wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
+            end
+        end
+
+        function wf = transfer_correlation(obj, channels)
+            % expects channels to be a vector of structs of the form:
+            % struct('a', X, 'b', Y, 'c', Z)
+            bufSize = obj.libraryCall('get_buffer_size', channels(1).a, channels(1).b, channels(2).c);
+            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
+            success = obj.libraryCall('transfer_correlation', channels, length(channels), wfPtr, bufSize);
+            assert(success == 0, 'transfer_correlation failed');
+
+            wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
+        end
+
+        function wf = transfer_correlation_variance(obj, channels)
+            % expects channels to be a vector of structs of the form:
+            % struct('a', X, 'b', Y, 'c', Z)
+            bufSize = obj.libraryCall('get_buffer_size', channels(1).a, channels(1).b, channels(2).c);
+            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
+            success = obj.libraryCall('transfer_correlation_variance', channels, length(channels), wfPtr, bufSize);
+            assert(success == 0, 'transfer_correlation failed');
+
+            wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
+        end
         
         function val = writeRegister(obj, addr, offset, data)
             % get temprature using method one based on Malibu Objects
