@@ -499,8 +499,40 @@ X6_1000::ErrorCodes X6_1000::transfer_variance(unsigned a, unsigned b, unsigned 
         return INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
     accumulators_[sid].snapshot_variance(buffer);
+    return SUCCESS;
+}
+
+X6_1000::ErrorCodes X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+    // check that we have the correlator
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (correlators_.find(sids) == correlators_.end()) {
+        FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+        return INVALID_CHANNEL;
+    }
+    // Don't copy more than we have
+    if (length < correlators_[sids].get_buffer_size())
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    correlators_[sids].snapshot(buffer);
+    return SUCCESS;
+}
+
+X6_1000::ErrorCodes X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+    // check that we have the correlator
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (correlators_.find(sids) == correlators_.end()) {
+        FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+        return INVALID_CHANNEL;
+    }
+    // Don't copy more than we have
+    if (length < correlators_[sids].get_buffer_size())
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    correlators_[sids].snapshot_variance(buffer);
     return SUCCESS;
 }
 

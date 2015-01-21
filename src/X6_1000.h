@@ -147,6 +147,8 @@ public:
 
 	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
 	ErrorCodes transfer_variance(unsigned, unsigned, unsigned, double *, size_t);
+	ErrorCodes transfer_correlation(vector<Channel> &, double *, size_t);
+	ErrorCodes transfer_correlation_variance(vector<Channel> &, double *, size_t);
 	int get_buffer_size(unsigned, unsigned, unsigned);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);

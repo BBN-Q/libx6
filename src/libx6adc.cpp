@@ -163,6 +163,24 @@ int transfer_variance(int deviceID, unsigned a, unsigned b, unsigned c, double *
 	return X6s_[deviceID]->transfer_variance(a, b, c, buffer, bufferLength);
 }
 
+int transfer_correlation(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	vector<Channel> channels(numChannels);
+	for (int i = 0; i < numChannels; i++) {
+		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+	}
+	return X6s_[deviceID]->transfer_correlation(channels, buffer, bufferLength);
+}
+
+int transfer_correlation_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	vector<Channel> channels(numChannels);
+	for (int i = 0; i < numChannels; i++) {
+		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+	}
+	return X6s_[deviceID]->transfer_correlation_variance(channels, buffer, bufferLength);
+}
+
 int get_buffer_size(int deviceID, unsigned a, unsigned b, unsigned c) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->get_buffer_size(a, b, c);
