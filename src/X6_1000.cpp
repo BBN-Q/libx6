@@ -828,14 +828,14 @@ size_t Accumulator::get_buffer_size() {
 
 void Accumulator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
+    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = static_cast<double>(data_[ct]) / scale;
     }
 }
 
 void Accumulator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / (numSegments_*numWaveforms_)), 1);
+    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
     double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
     if (N == 0) {
