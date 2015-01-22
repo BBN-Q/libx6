@@ -486,7 +486,7 @@ X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned 
         return INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
     accumulators_[sid].snapshot(buffer);
     return SUCCESS;
 }
@@ -996,6 +996,10 @@ Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
 };
 
 vector<vector<int>> combinations(int n, int r) {
+    /*
+     * Returns all combinations of r choices from the list of integers 0,1,...,n-1.
+     * Based upon code in the Julia standard library.
+     */
     vector<vector<int>> c;
     vector<int> s(r);
     int i;
