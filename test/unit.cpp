@@ -131,10 +131,21 @@ int main ()
   cout << "obuf[1]: " << obuf[1] << endl;
   cout << "obuf[2]: " << obuf[2] << endl;
   cout << "obuf[3]: " << obuf[3] << endl;
-  assert(obuf[0] == 0);
-  assert(obuf[1] == 10*20);
-  assert(obuf[2] == 2*3);
-  assert(obuf[3] == 100*200);
+  assert(obuf[0] == 0*1 - 10*20);
+  assert(obuf[1] == 0*20 + 1*10);
+  assert(obuf[2] == 2*3 - 100*200);
+  assert(obuf[3] == 2*200 + 3*100);
+
+  correlator.snapshot_variance(obuf);
+  cout << "snapshot variance: " << endl;
+  cout << "obuf[0]: " << obuf[0] << endl;
+  cout << "obuf[1]: " << obuf[1] << endl;
+  cout << "obuf[2]: " << obuf[2] << endl;
+  cout << "obuf[3]: " << obuf[3] << endl;
+  assert(obuf[0] == 50.5);
+  assert(obuf[1] == 0);
+  assert(obuf[2] == 5000.5);
+  assert(obuf[3] == 0);
 
   Channel ch3(2,1,1);
   int sid3 = ch3.streamID;
@@ -144,12 +155,15 @@ int main ()
   correlator2.accumulate(sid1, ibuf);
   ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, ch2
   correlator2.accumulate(sid2, ibuf);
-  ibuf[0] = 3 * scale; ibuf[1] = 30 * scale; // segment 1, ch2
+  ibuf[0] = 2 * scale; ibuf[1] = 30 * scale; // segment 1, ch2
   correlator2.accumulate(sid3, ibuf);
 
   correlator2.snapshot(obuf);
-  assert(obuf[0] == 0);
-  assert(obuf[1] == 10*20*30);
+  cout << "snapshot correlator: " << endl;
+  cout << "obuf[0]: " << obuf[0] << endl;
+  cout << "obuf[1]: " << obuf[1] << endl;
+  assert(obuf[0] == 0*1*2 - 0*20*30 - 10*1*30 - 10*20*2);
+  assert(obuf[1] == -10*20*30 + 10*1*2 + 0*20*2 + 0*1*30);
 
   return 0;
 }

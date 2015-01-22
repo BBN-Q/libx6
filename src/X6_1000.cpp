@@ -863,6 +863,7 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
         return a + b*b;
     });
+    // TODO: fix the above, remembering that the data is complex (interleaved real/imaginary)
     recordsTaken++;
 
     //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
@@ -927,22 +928,23 @@ void Correlator::correlate() {
         return;
     
     // correlate
+    // data is real/imag interleaved, so process a pair of points at a time from each channel
     for (int i = 0; i < minsize; i += 2) {
-        int64_t r1 = 1;
-        int64_t r2 = 1;
+        std::complex<int64_t> c = 1;
+        std::complex<int64_t> c2;
         for (int j = 0; j < buffers_.size(); j++) {
-            r1 *= buffers_[j][i];
-            r2 *= buffers_[j][i+1];
+            c *= std::complex<int64_t>(buffers_[j][i], buffers_[j][i+1]);
         }
-        *idx_ += r1;
-        *idx2_ += r1*r1;
-        *(idx_+1) += r2;
-        *(idx2_+1) += r2*r2;
+        *idx_ += c.real();
+        *(idx_+1) += c.imag();
+        c2 = c*c;
+        *idx2_ += (c*c).real();
+        *(idx2_+1) += (c*c).imag();
 
         if (++wfmCt_ == numWaveforms_) {
             wfmCt_ = 0;
-            std::advance(idx_, recordLength_);
-            std::advance(idx2_, recordLength_);
+            std::advance(idx_, 2);
+            std::advance(idx2_, 2);
             if (idx_ == data_.end()) {
                 idx_ = data_.begin();
                 idx2_ = data2_.begin();
@@ -961,17 +963,17 @@ size_t Correlator::get_buffer_size() {
 
 void Correlator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
+    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = static_cast<double>(data_[ct]) / scale;
     }
 }
 
 void Correlator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / (numSegments_*numWaveforms_)), 1);
+    int64_t N = buffers_.size() * max(static_cast<int>(recordsTaken / numSegments_), 1);
     double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
-    if (N == 0) {
+    if (N <= buffers_.size()) {
         for(size_t ct=0; ct < data_.size(); ct++){
             buf[ct] = 0.0;
         }
