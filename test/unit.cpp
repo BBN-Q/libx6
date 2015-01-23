@@ -173,11 +173,11 @@ int main ()
   cout << "obufvar[3]: " << obufvar[3] << " (goal 128)" << endl;
   cout << "obufvar[4]: " << obufvar[4] << " (goal 1568)" << endl;
   cout << "obufvar[5]: " << obufvar[5] << " (goal -448)" << endl;
-  assert(obufvar[0] == 128);
-  assert(obufvar[1] == 1568);
+  assert(obufvar[0] == 1568);
+  assert(obufvar[1] == 128);
   assert(obufvar[2] == 448);
-  assert(obufvar[3] == 128);
-  assert(obufvar[4] == 1568);
+  assert(obufvar[3] == 1568);
+  assert(obufvar[4] == 128);
   assert(obufvar[5] == -448);
 
   Channel ch3(2,1,1);

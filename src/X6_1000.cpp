@@ -969,10 +969,11 @@ void Correlator::correlate() {
     // correlate
     // data is real/imag interleaved, so process a pair of points at a time from each channel
     for (int i = 0; i < minsize; i += 2) {
-        std::complex<__int128> c = 1;
+        std::complex<double> c = 1;
         for (int j = 0; j < buffers_.size(); j++) {
-            c *= std::complex<__int128>(buffers_[j][i], buffers_[j][i+1]);
+            c *= std::complex<double>(buffers_[j][i], buffers_[j][i+1]);
         }
+        c /= fixed_to_float_;
         idx_[0] += c.real();
         idx_[1] += c.imag();
         idx2_[0] += c.real()*c.real();
@@ -1001,15 +1002,14 @@ size_t Correlator::get_buffer_size() {
 
 void Correlator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
+    double N = max(static_cast<int>(recordsTaken), 1) / numSegments_;
     for(size_t ct=0; ct < data_.size(); ct++){
-        buf[ct] = static_cast<double>(data_[ct]) / scale;
+        buf[ct] = data_[ct] / N;
     }
 }
 
 void Correlator::snapshot_variance(double * buf) {
     int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-    double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
     if (N < 2) {
         for(size_t ct=0; ct < data2_.size(); ct++){
@@ -1017,15 +1017,12 @@ void Correlator::snapshot_variance(double * buf) {
         }
     } else {
         // construct complex vector of data
-        vector<std::complex<__int128>> cvec(data_.size()/2);
-        for (int i = 0; i < data_.size()/2; i++) {
-            cvec[i] = std::complex<__int128>(data_[2*i], data_[2*i+1]);
-        }
+        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
         // calculate 3 components of variance
-        for(size_t ct=0; ct < cvec.size(); ct++) {
-            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
-            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
-            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
+        for(size_t ct=0; ct < data_.size()/2; ct++) {
+            buf[3*ct] = (data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / (N-1);
+            buf[3*ct+1] = (data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / (N-1);
+            buf[3*ct+2] = (data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / (N-1);
         }
     }
 }

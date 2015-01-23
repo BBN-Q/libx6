@@ -316,11 +316,11 @@ private:
 	map<uint16_t, int> bufferSID_;
 
 	// buffer for the correlated values A*B(*C*D*...)
-	vector<int64_t> data_;
-	vector<int64_t>::iterator idx_;
+	vector<double> data_;
+	vector<double>::iterator idx_;
 	// buffer for (A*B)^2
-	vector<__int128> data2_;
-	vector<__int128>::iterator idx2_;	
+	vector<double> data2_;
+	vector<double>::iterator idx2_;	
 };
 
 vector<vector<int>> combinations(int, int);
