@@ -265,6 +265,7 @@ public:
 	size_t recordsTaken;
 
 private:
+	Channel channel_:
 	size_t wfmCt_;
 	size_t numSegments_;
 	size_t numWaveforms_;

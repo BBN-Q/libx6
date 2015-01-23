@@ -765,7 +765,7 @@ Accumulator::Accumulator() :
     wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
 
 Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) : 
-                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+                         channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
@@ -857,13 +857,33 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
     FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
 
-    //The assumption is that this will be called with a full record size
+    // The assumption is that this will be called with a full record size
+    // Accumulate the buffer into data_
     std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
     // record the square of the buffer as well
-    std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
-        return a + b*b;
-    });
-    // TODO: fix the above, remembering that the data is complex (interleaved real/imaginary)
+    if (channel_.type == PHYSICAL) {
+        // data is real, just square and sum it.
+        std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
+            return a + b*b;
+        });
+    } else {
+        // data is complex: real part is section from [0, recordLength_/2],
+        // imaginary part goes from [recordLength_/2 + 1, recordLength_].
+        // form a complex vector from the input buffer and square it
+        vector<std::complex<int64_t>> cvec(recordLength_/2);
+        std::transform(buffer.begin(), buffer.begin()+recordLength_/2, buffer.begin()+recordLength_/2+1, cvec.begin(), [](int64_t a, int64_t b) {
+            std::complex<int64_t> c(a, b);
+            return c*c;
+        });
+        // then sum the real part into the first half of the current segment
+        std::transform(cvec.begin(), cvec.end(), idx2_, idx2_, [](int64_t a, int64_t b) {
+            return a.real() + b;
+        });
+        // then the imaginary part into the second half of the segment
+        std::transform(cvec.begin(), cvec.end(), idx2_+recordLength_/2+1, idx2_+recordLength_/2+1, [](int64_t a, int64_t b) {
+            return a.imag() + b;
+        });
+    }
     recordsTaken++;
 
     //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
@@ -931,15 +951,14 @@ void Correlator::correlate() {
     // data is real/imag interleaved, so process a pair of points at a time from each channel
     for (int i = 0; i < minsize; i += 2) {
         std::complex<int64_t> c = 1;
-        std::complex<int64_t> c2;
         for (int j = 0; j < buffers_.size(); j++) {
             c *= std::complex<int64_t>(buffers_[j][i], buffers_[j][i+1]);
         }
         *idx_ += c.real();
         *(idx_+1) += c.imag();
-        c2 = c*c;
-        *idx2_ += (c*c).real();
-        *(idx2_+1) += (c*c).imag();
+        std::complex<int64_t> c2 = c*c;
+        *idx2_ += c2.real();
+        *(idx2_+1) += c2.imag();
 
         if (++wfmCt_ == numWaveforms_) {
             wfmCt_ = 0;
