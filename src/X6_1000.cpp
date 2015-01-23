@@ -769,16 +769,27 @@ Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, cons
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments, 0);
+    if (chan.type == PHYSICAL) {
+        data2_.assign(recordLength_*numSegments_, 0);
+    } else {
+        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
+        data2_.assign(recordLength_*numSegments*3/2, 0);
+    }
     idx2_ = data2_.begin();
     fixed_to_float_ = fixed_to_float(chan);
 };
 
 void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) {
+    channel_ = chan;
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments, 0);
+    if (chan.type == PHYSICAL) {
+        data2_.assign(recordLength_*numSegments, 0);
+    } else {
+        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
+        data2_.assign(recordLength_*numSegments*3/2, 0);
+    }
     idx2_ = data2_.begin();
     wfmCt_ = 0;
     numSegments_ = numSegments;
@@ -790,7 +801,7 @@ void Accumulator::init(const Channel & chan, const size_t & recordLength, const 
 void Accumulator::reset() {
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments_, 0);
+    std::fill(data2_.begin(), data2_.end(), 0);
     idx2_ = data_.begin();
     wfmCt_ = 0;
     recordsTaken = 0;
@@ -838,13 +849,21 @@ void Accumulator::snapshot_variance(double * buf) {
     int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
     double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
-    if (N == 0) {
-        for(size_t ct=0; ct < data_.size(); ct++){
+    if (N < 2) {
+        for(size_t ct=0; ct < data2_.size(); ct++){
             buf[ct] = 0.0;
         }
     } else {
-        for(size_t ct=0; ct < data_.size(); ct++){
-            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        // construct complex vector of data
+        vector<std::complex<int64_t>> cvec(data_.size()/2);
+        for (int i = 0; i < data_.size()/2; i++) {
+            cvec[i] = std::complex<int64_t>(data_[2*i], data_[2*i+1]);
+        }
+        // calculate 3 components of variance
+        for(size_t ct=0; ct < cvec.size(); ct++) {
+            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
+            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
+            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
         }
     }
 }
@@ -871,18 +890,15 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
         // imaginary part goes from [recordLength_/2 + 1, recordLength_].
         // form a complex vector from the input buffer and square it
         vector<std::complex<int64_t>> cvec(recordLength_/2);
-        std::transform(buffer.begin(), buffer.begin()+recordLength_/2, buffer.begin()+recordLength_/2+1, cvec.begin(), [](int64_t a, int64_t b) {
-            std::complex<int64_t> c(a, b);
-            return c*c;
-        });
-        // then sum the real part into the first half of the current segment
-        std::transform(cvec.begin(), cvec.end(), idx2_, idx2_, [](int64_t a, int64_t b) {
-            return a.real() + b;
-        });
-        // then the imaginary part into the second half of the segment
-        std::transform(cvec.begin(), cvec.end(), idx2_+recordLength_/2+1, idx2_+recordLength_/2+1, [](int64_t a, int64_t b) {
-            return a.imag() + b;
-        });
+        for (int i = 0; i < recordLength_/2; i++) {
+            cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
+        }
+        // calculate 3-component correlations into a triple of successive points
+        for (int i = 0; i < cvec.size(); i++) {
+            idx2_[3*i] += cvec[i].real() * cvec[i].real();
+            idx2_[3*i+1] += cvec[i].imag() * cvec[i].imag();
+            idx2_[3*i+2] += cvec[i].real() * cvec[i].imag();
+        }
     }
     recordsTaken++;
 
@@ -890,7 +906,10 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     if (++wfmCt_ == numWaveforms_) {
         wfmCt_ = 0;
         std::advance(idx_, recordLength_);
-        std::advance(idx2_, recordLength_);
+        if (channel_.type == PHYSICAL)
+            std::advance(idx2_, recordLength_);
+        else
+            std::advance(idx2_, recordLength_ * 3/2);
     }
 
     //Final check if we're at the end
@@ -909,7 +928,7 @@ Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegme
     buffers_.resize(channels.size());
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments, 0);
+    data2_.assign(recordLength_*numSegments*3/2, 0);
     idx2_ = data2_.begin();
     // set up mapping of SIDs to an index into buffers_
     fixed_to_float_ = 1;
@@ -924,7 +943,7 @@ void Correlator::reset() {
         buffers_[i].clear();
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments_, 0);
+    data2_.assign(recordLength_*numSegments_*3/2, 0);
     idx2_ = data2_.begin();
     wfmCt_ = 0;
     recordsTaken = 0;
@@ -950,20 +969,20 @@ void Correlator::correlate() {
     // correlate
     // data is real/imag interleaved, so process a pair of points at a time from each channel
     for (int i = 0; i < minsize; i += 2) {
-        std::complex<int64_t> c = 1;
+        std::complex<__int128> c = 1;
         for (int j = 0; j < buffers_.size(); j++) {
-            c *= std::complex<int64_t>(buffers_[j][i], buffers_[j][i+1]);
+            c *= std::complex<__int128>(buffers_[j][i], buffers_[j][i+1]);
         }
-        *idx_ += c.real();
-        *(idx_+1) += c.imag();
-        std::complex<int64_t> c2 = c*c;
-        *idx2_ += c2.real();
-        *(idx2_+1) += c2.imag();
+        idx_[0] += c.real();
+        idx_[1] += c.imag();
+        idx2_[0] += c.real()*c.real();
+        idx2_[1] += c.imag()*c.imag();
+        idx2_[2] += c.real()*c.imag();
 
         if (++wfmCt_ == numWaveforms_) {
             wfmCt_ = 0;
             std::advance(idx_, 2);
-            std::advance(idx2_, 2);
+            std::advance(idx2_, 3);
             if (idx_ == data_.end()) {
                 idx_ = data_.begin();
                 idx2_ = data2_.begin();
@@ -989,16 +1008,24 @@ void Correlator::snapshot(double * buf) {
 }
 
 void Correlator::snapshot_variance(double * buf) {
-    int64_t N = buffers_.size() * max(static_cast<int>(recordsTaken / numSegments_), 1);
+    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
     double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
-    if (N <= buffers_.size()) {
-        for(size_t ct=0; ct < data_.size(); ct++){
+    if (N < 2) {
+        for(size_t ct=0; ct < data2_.size(); ct++){
             buf[ct] = 0.0;
         }
     } else {
-        for(size_t ct=0; ct < data_.size(); ct++){
-            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        // construct complex vector of data
+        vector<std::complex<__int128>> cvec(data_.size()/2);
+        for (int i = 0; i < data_.size()/2; i++) {
+            cvec[i] = std::complex<__int128>(data_[2*i], data_[2*i+1]);
+        }
+        // calculate 3 components of variance
+        for(size_t ct=0; ct < cvec.size(); ct++) {
+            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
+            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
+            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
         }
     }
 }

@@ -244,6 +244,16 @@ private:
     void LogHandler(string handlerName);
 };
 
+class Channel{
+public:
+	Channel();
+	Channel(unsigned, unsigned, unsigned);
+
+	unsigned channelID[3];
+	uint16_t streamID;
+	channel_t type;
+};
+
 class Accumulator{
 friend X6_1000;
 
@@ -265,7 +275,7 @@ public:
 	size_t recordsTaken;
 
 private:
-	Channel channel_:
+	Channel channel_;
 	size_t wfmCt_;
 	size_t numSegments_;
 	size_t numWaveforms_;
@@ -311,16 +321,6 @@ private:
 	// buffer for (A*B)^2
 	vector<__int128> data2_;
 	vector<__int128>::iterator idx2_;	
-};
-
-class Channel{
-public:
-	Channel();
-	Channel(unsigned, unsigned, unsigned);
-
-	unsigned channelID[3];
-	uint16_t streamID;
-	channel_t type;
 };
 
 vector<vector<int>> combinations(int, int);

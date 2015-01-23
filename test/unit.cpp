@@ -48,12 +48,21 @@ int main ()
   assert(obuf[2] == 2);
   assert(obuf[3] == 150);
 
-  double obufvar[4];
+  double obufvar[6];
   accumlator.snapshot_variance(obufvar);
+  cout << "snapshot variance: " << endl;
+  cout << "obufvar[0]: " << obufvar[0] << " (goal 2)" << endl;
+  cout << "obufvar[1]: " << obufvar[1] << " (goal 50)" << endl;
+  cout << "obufvar[2]: " << obufvar[2] << " (goal 10)" << endl;
+  cout << "obufvar[3]: " << obufvar[3] << " (goal 2)" << endl;
+  cout << "obufvar[4]: " << obufvar[4] << " (goal 5000)" << endl;
+  cout << "obufvar[5]: " << obufvar[5] << " (goal 100)" << endl;
   assert(obufvar[0] == 2);
   assert(obufvar[1] == 50);
-  assert(obufvar[2] == 2);
-  assert(obufvar[3] == 5000);
+  assert(obufvar[2] == 10);
+  assert(obufvar[3] == 2);
+  assert(obufvar[4] == 5000);
+  assert(obufvar[5] == 100);
 
   ibuf[0] = 4 * scale; ibuf[1] = 30 * scale; // segment 1
   accumlator.accumulate(ibuf);
@@ -67,16 +76,19 @@ int main ()
   assert(obuf[3] == 200);
 
   accumlator.snapshot_variance(obufvar);
-  assert(obufvar[0] == 4);
-  assert(obufvar[1] == 100);
-  assert(obufvar[2] == 4);
-  assert(obufvar[3] == 10000);
-
   cout << "snapshot variance: " << endl;
   cout << "obufvar[0]: " << obufvar[0] << " (goal 4)" << endl;
   cout << "obufvar[1]: " << obufvar[1] << " (goal 100)" << endl;
-  cout << "obufvar[2]: " << obufvar[2] << " (goal 4)" << endl;
-  cout << "obufvar[3]: " << obufvar[3] << " (goal 10000)" << endl;
+  cout << "obufvar[2]: " << obufvar[2] << " (goal 20)" << endl;
+  cout << "obufvar[3]: " << obufvar[3] << " (goal 4)" << endl;
+  cout << "obufvar[4]: " << obufvar[4] << " (goal 10000)" << endl;
+  cout << "obufvar[5]: " << obufvar[5] << " (goal 200)" << endl;
+  assert(obufvar[0] == 4);
+  assert(obufvar[1] == 100);
+  assert(obufvar[2] == 20);
+  assert(obufvar[3] == 4);
+  assert(obufvar[4] == 10000);
+  assert(obufvar[5] == 200);
 
   // Combinations test
   vector<vector<int>> combos;
@@ -116,13 +128,13 @@ int main ()
   int sid2 = ch2.streamID;
   Correlator correlator({ch1, ch2}, 2, 1);
 
-  ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, ch1
+  ibuf[0] = 0 * scale; ibuf[1] = 7 * scale; // segment 1, ch1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, ch2
+  ibuf[0] = 1 * scale; ibuf[1] = 6 * scale; // segment 1, ch2
   correlator.accumulate(sid2, ibuf);
-  ibuf[0] = 2 * scale; ibuf[1] = 100 * scale; // segment 2, ch1
+  ibuf[0] = 2 * scale; ibuf[1] = 5 * scale; // segment 2, ch1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 3 * scale; ibuf[1] = 200 * scale; // segment 2, ch2
+  ibuf[0] = 3 * scale; ibuf[1] = 4 * scale; // segment 2, ch2
   correlator.accumulate(sid2, ibuf);
 
   correlator.snapshot(obuf);
@@ -131,21 +143,42 @@ int main ()
   cout << "obuf[1]: " << obuf[1] << endl;
   cout << "obuf[2]: " << obuf[2] << endl;
   cout << "obuf[3]: " << obuf[3] << endl;
-  assert(obuf[0] == 0*1 - 10*20);
-  assert(obuf[1] == 0*20 + 1*10);
-  assert(obuf[2] == 2*3 - 100*200);
-  assert(obuf[3] == 2*200 + 3*100);
+  assert(obuf[0] == 0*1 - 7*6);
+  assert(obuf[1] == 0*6 + 1*7);
+  assert(obuf[2] == 2*3 - 5*4);
+  assert(obuf[3] == 2*4 + 3*5);
 
-  correlator.snapshot_variance(obuf);
+  correlator.snapshot_variance(obufvar);
+  assert(obufvar[0] == 0);
+  assert(obufvar[1] == 0);
+  assert(obufvar[2] == 0);
+  assert(obufvar[3] == 0);
+  assert(obufvar[4] == 0);
+  assert(obufvar[5] == 0);
+
+  ibuf[0] = 4 * scale; ibuf[1] = 3 * scale; // segment 1, ch1
+  correlator.accumulate(sid1, ibuf);
+  ibuf[0] = 5 * scale; ibuf[1] = 2 * scale; // segment 1, ch2
+  correlator.accumulate(sid2, ibuf);
+  ibuf[0] = 6 * scale; ibuf[1] = 1 * scale; // segment 2, ch1
+  correlator.accumulate(sid1, ibuf);
+  ibuf[0] = 7 * scale; ibuf[1] = 0 * scale; // segment 2, ch2
+  correlator.accumulate(sid2, ibuf);
+
+  correlator.snapshot_variance(obufvar);
   cout << "snapshot variance: " << endl;
-  cout << "obuf[0]: " << obuf[0] << endl;
-  cout << "obuf[1]: " << obuf[1] << endl;
-  cout << "obuf[2]: " << obuf[2] << endl;
-  cout << "obuf[3]: " << obuf[3] << endl;
-  assert(obuf[0] == 50.5);
-  assert(obuf[1] == 0);
-  assert(obuf[2] == 5000.5);
-  assert(obuf[3] == 0);
+  cout << "obufvar[0]: " << obufvar[0] << " (goal 128)" << endl;
+  cout << "obufvar[1]: " << obufvar[1] << " (goal 1568)" << endl;
+  cout << "obufvar[2]: " << obufvar[2] << " (goal 448)" << endl;
+  cout << "obufvar[3]: " << obufvar[3] << " (goal 128)" << endl;
+  cout << "obufvar[4]: " << obufvar[4] << " (goal 1568)" << endl;
+  cout << "obufvar[5]: " << obufvar[5] << " (goal -448)" << endl;
+  assert(obufvar[0] == 128);
+  assert(obufvar[1] == 1568);
+  assert(obufvar[2] == 448);
+  assert(obufvar[3] == 128);
+  assert(obufvar[4] == 1568);
+  assert(obufvar[5] == -448);
 
   Channel ch3(2,1,1);
   int sid3 = ch3.streamID;
