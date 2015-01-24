@@ -855,12 +855,9 @@ void Accumulator::snapshot_variance(double * buf) {
         }
     } else {
         // construct complex vector of data
-        vector<std::complex<int64_t>> cvec(data_.size()/2);
-        for (int i = 0; i < data_.size()/2; i++) {
-            cvec[i] = std::complex<int64_t>(data_[2*i], data_[2*i+1]);
-        }
+        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
         // calculate 3 components of variance
-        for(size_t ct=0; ct < cvec.size(); ct++) {
+        for(size_t ct=0; ct < data_.size()/2; ct++) {
             buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
             buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
             buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
@@ -886,9 +883,8 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
             return a + b*b;
         });
     } else {
-        // data is complex: real part is section from [0, recordLength_/2],
-        // imaginary part goes from [recordLength_/2 + 1, recordLength_].
-        // form a complex vector from the input buffer and square it
+        // data is complex: real/imaginary are interleaved every other point
+        // form a complex vector from the input buffer
         vector<std::complex<int64_t>> cvec(recordLength_/2);
         for (int i = 0; i < recordLength_/2; i++) {
             cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
