@@ -90,7 +90,9 @@ int main ()
 
   cout << "Transferring waveform ch1" << endl;
   vector<double> buffer(10240);
-  transfer_waveform(0, 1, 0, 0, buffer.data(), 10240);
+  ChannelTuple rawch = {1, 0, 0};
+  ChannelTuple channels[1] = {rawch};
+  transfer_waveform(0, channels, 1, buffer.data(), 10240);
 
   cout << "Stopping" << endl;
 

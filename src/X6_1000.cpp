@@ -478,9 +478,9 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
-    uint16_t sid = Channel(a,b,c).streamID;
+    uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         return INVALID_CHANNEL;
@@ -491,9 +491,9 @@ X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned 
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_variance(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
-    uint16_t sid = Channel(a,b,c).streamID;
+    uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
         return INVALID_CHANNEL;
@@ -536,9 +536,26 @@ X6_1000::ErrorCodes X6_1000::transfer_correlation_variance(vector<Channel> & cha
     return SUCCESS;
 }
 
-int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
-    uint16_t sid = Channel(a,b,c).streamID;
-    return accumulators_[sid].get_buffer_size();
+int X6_1000::get_buffer_size(vector<Channel> & channels) {
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (channels.size() == 1) {
+        return accumulators_[sids[0]].get_buffer_size();
+    } else {
+        return correlators_[sids].get_buffer_size();
+    }
+}
+
+int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (channels.size() == 1) {
+        return accumulators_[sids[0]].get_variance_buffer_size();
+    } else {
+        return correlators_[sids].get_variance_buffer_size();
+    }
 }
 
 void X6_1000::initialize_correlators() {
@@ -837,6 +854,10 @@ size_t Accumulator::get_buffer_size() {
     return data_.size();
 }
 
+size_t Accumulator::get_variance_buffer_size() {
+    return data2_.size();
+}
+
 void Accumulator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
     double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
@@ -994,6 +1015,10 @@ void Correlator::correlate() {
 
 size_t Correlator::get_buffer_size() {
     return data_.size();
+}
+
+size_t Correlator::get_variance_buffer_size() {
+    return data2_.size();
 }
 
 void Correlator::snapshot(double * buf) {

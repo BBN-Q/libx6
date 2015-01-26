@@ -153,37 +153,50 @@ int stop(int deviceID) {
 	return X6s_[deviceID]->stop();
 }
 
-int transfer_waveform(int deviceID, unsigned a, unsigned b, unsigned c, double *buffer, unsigned bufferLength) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->transfer_waveform(a, b, c, buffer, bufferLength);
-}
-
-int transfer_variance(int deviceID, unsigned a, unsigned b, unsigned c, double *buffer, unsigned bufferLength) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->transfer_variance(a, b, c, buffer, bufferLength);
-}
-
-int transfer_correlation(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+int transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
+	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	vector<Channel> channels(numChannels);
 	for (int i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return X6s_[deviceID]->transfer_correlation(channels, buffer, bufferLength);
+	if (numChannels == 1) {
+		return X6s_[deviceID]->transfer_waveform(channels[0], buffer, bufferLength);
+	} else {
+		return X6s_[deviceID]->transfer_correlation(channels, buffer, bufferLength);
+	}
 }
 
-int transfer_correlation_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+int transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	vector<Channel> channels(numChannels);
 	for (int i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return X6s_[deviceID]->transfer_correlation_variance(channels, buffer, bufferLength);
+	if (numChannels == 1) {
+		return X6s_[deviceID]->transfer_variance(channels[0], buffer, bufferLength);
+	} else {
+		return X6s_[deviceID]->transfer_correlation_variance(channels, buffer, bufferLength);
+	}
 }
 
-int get_buffer_size(int deviceID, unsigned a, unsigned b, unsigned c) {
+int get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->get_buffer_size(a, b, c);
+	vector<Channel> channels(numChannels);
+	for (int i = 0; i < numChannels; i++) {
+		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+	}
+	return X6s_[deviceID]->get_buffer_size(channels);
+}
+
+int get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	vector<Channel> channels(numChannels);
+	for (int i = 0; i < numChannels; i++) {
+		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+	}
+	return X6s_[deviceID]->get_variance_buffer_size(channels);
 }
 
 //Expects a null-terminated character array

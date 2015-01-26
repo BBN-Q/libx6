@@ -145,11 +145,12 @@ public:
 	bool       get_is_running();
 	bool       get_has_new_data();
 
-	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
-	ErrorCodes transfer_variance(unsigned, unsigned, unsigned, double *, size_t);
+	ErrorCodes transfer_waveform(Channel, double *, size_t);
+	ErrorCodes transfer_variance(Channel, double *, size_t);
 	ErrorCodes transfer_correlation(vector<Channel> &, double *, size_t);
 	ErrorCodes transfer_correlation_variance(vector<Channel> &, double *, size_t);
-	int get_buffer_size(unsigned, unsigned, unsigned);
+	int get_buffer_size(vector<Channel> &);
+	int get_variance_buffer_size(vector<Channel> &);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
@@ -269,6 +270,7 @@ public:
 	void snapshot(double *);
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
+	size_t get_variance_buffer_size();
 	size_t calc_record_length(const Channel &, const size_t &);
 	int fixed_to_float(const Channel &);
 
@@ -301,6 +303,7 @@ public:
 	void snapshot(double *);
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
+	size_t get_variance_buffer_size();
 
 	size_t recordsTaken;
 
