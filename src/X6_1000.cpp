@@ -828,7 +828,7 @@ int Accumulator::fixed_to_float(const Channel & chan) {
             break;
         case DEMOD:
         case RESULT:
-            return 1 << 14; // sfix16_14 from DDC
+            return 1 << 14; // sfix16_14 from DDC or sfix32_14 from DecisionEngine
             break;
     }
 }
@@ -855,7 +855,7 @@ void Accumulator::snapshot_variance(double * buf) {
         }
     } else {
         // construct complex vector of data
-        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
+        std::complex<int64_t>* cvec = reinterpret_cast<std::complex<int64_t> *>(data_.data());
         // calculate 3 components of variance
         for(size_t ct=0; ct < data_.size()/2; ct++) {
             buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
