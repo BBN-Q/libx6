@@ -67,10 +67,10 @@ EXPORT int wait_for_acquisition(int, int);
 EXPORT int get_is_running(int);
 EXPORT int get_has_new_data(int);
 EXPORT int stop(int);
-EXPORT int transfer_waveform(int, ChannelTuple *, unsigned, double *, unsigned);
-EXPORT int transfer_variance(int, ChannelTuple *, unsigned, double *, unsigned);
-EXPORT int get_buffer_size(int, ChannelTuple *, unsigned);
-EXPORT int get_variance_buffer_size(int, ChannelTuple *, unsigned);
+EXPORT int transfer_waveform(int, struct ChannelTuple *, unsigned, double *, unsigned);
+EXPORT int transfer_variance(int, struct ChannelTuple *, unsigned, double *, unsigned);
+EXPORT int get_buffer_size(int, struct ChannelTuple *, unsigned);
+EXPORT int get_variance_buffer_size(int, struct ChannelTuple *, unsigned);
 
 EXPORT int set_log(char *);
 int update_log(FILE * pFile);
