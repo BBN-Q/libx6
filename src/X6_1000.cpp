@@ -1069,6 +1069,7 @@ vector<vector<int>> combinations(int n, int r) {
     vector<vector<int>> c;
     vector<int> s(r);
     int i;
+    if (n < r) return c;
     for (i = 0; i < r; i++)
         s[i] = i;
     c.push_back(s);
