@@ -419,16 +419,16 @@ classdef X6 < hgsetget
             x6.set_nco_frequency(2, 2, 40e6);
             
             fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(128,1));
-            x6.write_kernel(1, 2, ones(128,1));
-            x6.write_kernel(2, 1, ones(128,1));
-            x6.write_kernel(2, 2, ones(128,1));
+            x6.write_kernel(1, 1, ones(100,1));
+            x6.write_kernel(1, 2, ones(100,1));
+            x6.write_kernel(2, 1, ones(100,1));
+            x6.write_kernel(2, 2, ones(100,1));
             
             fprintf('Writing decision engine thresholds\n');
-            x6.set_threshold(1, 1, 4000);
-            x6.set_threshold(1, 2, 4000);
-            x6.set_threshold(2, 1, 4000);
-            x6.set_threshold(2, 2, 4000);
+            x6.set_threshold(1, 1, 0.5);
+            x6.set_threshold(1, 2, 0.5);
+            x6.set_threshold(2, 1, 0.5);
+            x6.set_threshold(2, 2, 0.5);
             
             fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
@@ -436,7 +436,7 @@ classdef X6 < hgsetget
             fprintf('Acquiring\n');
             x6.acquire();
 
-            success = x6.wait_for_acquisition(0.1);
+            success = x6.wait_for_acquisition(1);
             fprintf('Wait for acquisition returned %d\n', success);
 
             fprintf('Stopping\n');
@@ -477,6 +477,12 @@ classdef X6 < hgsetget
                 plot(imag(wfs{ct+1}(:)), 'r');
                 title(sprintf('Virtual Channel %d',ct));
             end
+
+            fprintf('Result vectors:\n');
+            fprintf('Ch 1.1:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 1, 'c', 1))));
+            fprintf('Ch 1.2:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 2, 'c', 1))));
+            fprintf('Ch 2.1:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 1, 'c', 1))));
+            fprintf('Ch 2.2:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 2, 'c', 1))));
 
             x6.disconnect();
             unloadlibrary('libx6adc')
