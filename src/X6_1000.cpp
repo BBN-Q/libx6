@@ -677,7 +677,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
                 // correlate with other result channels
-                for (auto kv : correlators_) {
+                for (auto & kv : correlators_) {
                     if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
                         kv.second.accumulate(sid, ibufferDG);
                     }
@@ -851,6 +851,10 @@ void Accumulator::snapshot_variance(double * buf) {
         for(size_t ct=0; ct < data2_.size(); ct++){
             buf[ct] = 0.0;
         }
+    } else if (channel_.type == PHYSICAL) {
+        for (size_t ct = 0; ct < data2_.size(); ct++) {
+            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        }
     } else {
         // construct complex vector of data
         std::complex<int64_t>* cvec = reinterpret_cast<std::complex<int64_t> *>(data_.data());
@@ -1000,7 +1004,7 @@ size_t Correlator::get_variance_buffer_size() {
 
 void Correlator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
-    double N = max(static_cast<int>(recordsTaken), 1) / numSegments_;
+    double N = max(static_cast<int>(recordsTaken / numSegments_), 1);
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = data_[ct] / N;
     }

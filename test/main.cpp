@@ -86,7 +86,7 @@ int main ()
 
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
 
-  set_averager_settings(0, 2048, 9, 1, 1);
+  set_averager_settings(0, 2048, 9, 1, 2);
 
   cout << "Acquiring" << endl;
 
@@ -102,14 +102,21 @@ int main ()
     cout << "Unknown error in wait_for_acquisition" << endl;
   }
 
-
   cout << "Transferring waveform ch1" << endl;
   vector<double> buffer;
-  ChannelTuple rawch = {1, 0, 0};
-  ChannelTuple channels[1] = {rawch};
+  ChannelTuple channels[1] = {{1,0,0}};
   int bufsize = get_buffer_size(0, channels, 1);
   buffer.resize(bufsize);
   transfer_waveform(0, channels, 1, buffer.data(), buffer.size());
+
+  cout << "Transferring variance raw ch1" << endl;
+  transfer_variance(0, channels, 1, buffer.data(), buffer.size());
+
+  cout << "Transfer correlation" << endl;
+  ChannelTuple channels2[2] = {{1,1,1}, {2,1,1}};
+  bufsize = get_buffer_size(0, channels2, 2);
+  buffer.resize(bufsize);
+  transfer_waveform(0, channels2, 2, buffer.data(), buffer.size());
 
   cout << "Stopping" << endl;
 

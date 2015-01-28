@@ -225,7 +225,7 @@ classdef X6 < hgsetget
             assert(success == 0, 'transfer_variance failed');
 
             wf = struct('real', [], 'imag', [], 'prod', []);
-            if b == 0 % physical channel
+            if channels(1).b == 0 % physical channel
                 wf.real = wfPtr.Value;
                 wf.imag = zeros(length(wfPtr.Value), 1);
                 wf.prod = zeros(length(wfPtr.Value), 1);
@@ -234,7 +234,7 @@ classdef X6 < hgsetget
                 wf.imag = wfPtr.Value(1:3:end);
                 wf.prod = wfPtr.Value(3:3:end);
             end
-            if c == 0 % non-results streams should be reshaped
+            if channels(1).c == 0 % non-results streams should be reshaped
                 wf.real = reshape(wf.real, length(wf.real)/obj.nbrSegments, obj.nbrSegments);
                 wf.imag = reshape(wf.imag, length(wf.imag)/obj.nbrSegments, obj.nbrSegments);
                 wf.prod = reshape(wf.prod, length(wf.prod)/obj.nbrSegments, obj.nbrSegments);
