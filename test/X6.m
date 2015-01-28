@@ -285,7 +285,8 @@ classdef X6 < hgsetget
         end
         
         function set_threshold(obj, a, b, threshold)
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 56+(b-1), int32(threshold));
+            % results are sfix32_14, so scale threshold by 2^14.
+            obj.writeRegister(X6.DSP_WB_OFFSET(a), 56+(b-1), int32(threshold * 2^14));
         end
         
         %Instrument meta-setter that sets all parameters
