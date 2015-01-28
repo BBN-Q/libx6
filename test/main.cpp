@@ -18,7 +18,7 @@ int main ()
 {
   cout << "BBN X6-1000 Test Executable" << endl;
 
-  set_logging_level(5);
+  set_logging_level(8);
 
   int numDevices;
   numDevices = get_num_devices();
@@ -48,17 +48,17 @@ int main ()
 
   cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
 
-  cout << "Set sample rate to 100 MHz" << endl;
+  // cout << "Set sample rate to 100 MHz" << endl;
 
-  set_sampleRate(0,100e6);
+  // set_sampleRate(0,100e6);
 
-  cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
+  // cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
 
-  cout << "Set sample rate back to 1000 MHz" << endl;
+  // cout << "Set sample rate back to 1000 MHz" << endl;
 
-  set_sampleRate(0,1e9);
+  // set_sampleRate(0,1e9);
 
-  cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
+  // cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
 
   cout << "setting trigger source = EXTERNAL_TRIGGER" << endl;
 
@@ -68,17 +68,32 @@ int main ()
 
   cout << "Enabling physical channel 1" << endl;
   enable_stream(0, 1, 0, 0);
+  enable_stream(0, 1, 1, 0);
+  enable_stream(0, 1, 1, 1);
+  enable_stream(0, 1, 2, 0);
+  enable_stream(0, 1, 2, 1);
+  enable_stream(0, 2, 0, 0);
+  enable_stream(0, 2, 1, 0);
+  enable_stream(0, 2, 1, 1);
+  enable_stream(0, 2, 2, 0);
+  enable_stream(0, 2, 2, 1);
+
+  cout << "Writing kernel lengths" << endl;
+  write_register(0, 0x2000, 24+1-1, 2);
+  write_register(0, 0x2000, 24+2-1, 2);
+  write_register(0, 0x2100, 24+1-1, 2);
+  write_register(0, 0x2100, 24+2-1, 2);
 
   cout << "setting averager parameters to record 10 segments of 1024 samples" << endl;
 
-  set_averager_settings(0, 1024, 10, 1, 1);
+  set_averager_settings(0, 2048, 9, 1, 2);
 
   cout << "Acquiring" << endl;
 
   acquire(0);
 
   cout << "Waiting for acquisition to complete" << endl;
-  int success = wait_for_acquisition(0, 1);
+  int success = wait_for_acquisition(0, 2);
   if (success == X6_OK) {
     cout << "Acquistion finished" << endl;
   } else if (success == X6_1000::TIMEOUT) {
@@ -87,10 +102,21 @@ int main ()
     cout << "Unknown error in wait_for_acquisition" << endl;
   }
 
-
   cout << "Transferring waveform ch1" << endl;
-  vector<double> buffer(10240);
-  transfer_waveform(0, 1, 0, 0, buffer.data(), 10240);
+  vector<double> buffer;
+  ChannelTuple channels[1] = {{1,0,0}};
+  int bufsize = get_buffer_size(0, channels, 1);
+  buffer.resize(bufsize);
+  transfer_waveform(0, channels, 1, buffer.data(), buffer.size());
+
+  cout << "Transferring variance raw ch1" << endl;
+  transfer_variance(0, channels, 1, buffer.data(), buffer.size());
+
+  cout << "Transfer correlation" << endl;
+  ChannelTuple channels2[2] = {{1,1,1}, {2,1,1}};
+  bufsize = get_buffer_size(0, channels2, 2);
+  buffer.resize(bufsize);
+  transfer_waveform(0, channels2, 2, buffer.data(), buffer.size());
 
   cout << "Stopping" << endl;
 

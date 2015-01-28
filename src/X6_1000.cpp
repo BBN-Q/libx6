@@ -268,11 +268,6 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
     roundRobins_ = roundRobins;
     numRecords_ = numSegments * waveforms * roundRobins;
 
-    //Setup the accumulators
-    for (auto & kv : activeChannels_) {
-        accumulators_[kv.first].init(kv.second, recordLength_, numSegments_, waveforms_);
-    }
-
     return SUCCESS;
 }
 
@@ -281,7 +276,6 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
-    accumulators_[chan.streamID] = Accumulator(chan, recordLength_, numSegments_, waveforms_);
     return SUCCESS;
 }
 
@@ -289,7 +283,6 @@ X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) 
     //Find the channel
     uint16_t streamID = Channel(a,b,c).streamID;
     if (activeChannels_.count(streamID)){
-        accumulators_.erase(streamID);
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
         return SUCCESS;
@@ -385,6 +378,9 @@ X6_1000::ErrorCodes X6_1000::acquire() {
                 FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
         }
     }
+    initialize_accumulators();
+    initialize_correlators();
+
     VMPs_[0].Init(physChans_);
     VMPs_[0].OnDataAvailable.SetEvent(this, &X6_1000::HandlePhysicalStream);
 
@@ -415,10 +411,6 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     VMPs_[2].Resize(packetSize);
     VMPs_[2].Clear();
 
-    // reset the accumulators
-    for (auto & kv : accumulators_) {
-        kv.second.reset();
-    }
     recordsTaken_ = 0;
 
     module_.Velo().LoadAll_VeloDataSize(0x4000);
@@ -476,37 +468,110 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
-    uint16_t sid = Channel(a,b,c).streamID;
+    uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         return INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
     accumulators_[sid].snapshot(buffer);
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_variance(unsigned a, unsigned b, unsigned c, double * buffer, size_t length) {
+X6_1000::ErrorCodes X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
-    uint16_t sid = Channel(a,b,c).streamID;
+    uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
         return INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].data_.size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
     accumulators_[sid].snapshot_variance(buffer);
     return SUCCESS;
 }
 
-int X6_1000::get_buffer_size(unsigned a, unsigned b, unsigned c) {
-    uint16_t sid = Channel(a,b,c).streamID;
-    return accumulators_[sid].get_buffer_size();
+X6_1000::ErrorCodes X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+    // check that we have the correlator
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (correlators_.find(sids) == correlators_.end()) {
+        FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+        return INVALID_CHANNEL;
+    }
+    // Don't copy more than we have
+    if (length < correlators_[sids].get_buffer_size())
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    correlators_[sids].snapshot(buffer);
+    return SUCCESS;
 }
 
+X6_1000::ErrorCodes X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+    // check that we have the correlator
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (correlators_.find(sids) == correlators_.end()) {
+        FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+        return INVALID_CHANNEL;
+    }
+    // Don't copy more than we have
+    if (length < correlators_[sids].get_buffer_size())
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    correlators_[sids].snapshot_variance(buffer);
+    return SUCCESS;
+}
+
+int X6_1000::get_buffer_size(vector<Channel> & channels) {
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (channels.size() == 1) {
+        return accumulators_[sids[0]].get_buffer_size();
+    } else {
+        return correlators_[sids].get_buffer_size();
+    }
+}
+
+int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
+    vector<uint16_t> sids(channels.size());
+    for (int i = 0; i < channels.size(); i++)
+        sids[i] = channels[i].streamID;
+    if (channels.size() == 1) {
+        return accumulators_[sids[0]].get_variance_buffer_size();
+    } else {
+        return correlators_[sids].get_variance_buffer_size();
+    }
+}
+
+void X6_1000::initialize_accumulators() {
+    for (auto kv : activeChannels_) {
+        accumulators_[kv.first] = Accumulator(kv.second, recordLength_, numSegments_, waveforms_);
+    }
+}
+
+void X6_1000::initialize_correlators() {
+    vector<uint16_t> streamIDs = {};
+    vector<Channel> channels = {};
+
+    // create all n-body correlators
+    for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
+        streamIDs.resize(n);
+        channels.resize(n);
+
+        for (auto c : combinations(resultChans_.size(), n)) {
+            for (int i = 0; i < n; i++) {
+                streamIDs[i] = resultChans_[c[i]];
+                channels[i] = activeChannels_[streamIDs[i]];
+            }
+            correlators_[streamIDs] = Correlator(channels, numSegments_, waveforms_);
+        }
+    }
+}
 /****************************************************************************
  * Event Handlers 
  ****************************************************************************/
@@ -611,6 +676,12 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
+                // correlate with other result channels
+                for (auto & kv : correlators_) {
+                    if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
+                        kv.second.accumulate(sid, ibufferDG);
+                    }
+                }
             }
             break;
     }
@@ -707,26 +778,27 @@ Accumulator::Accumulator() :
     wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
 
 Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) : 
-                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+                         channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments, 0);
+    if (chan.type == PHYSICAL) {
+        data2_.assign(recordLength_*numSegments_, 0);
+    } else {
+        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
+        data2_.assign(recordLength_*numSegments*3/2, 0);
+    }
     idx2_ = data2_.begin();
     fixed_to_float_ = fixed_to_float(chan);
 };
 
-void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) {
-    recordLength_ = calc_record_length(chan, recordLength);
-    data_.assign(recordLength_*numSegments, 0);
+void Accumulator::reset() {
+    data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments, 0);
-    idx2_ = data2_.begin();
+    std::fill(data2_.begin(), data2_.end(), 0);
+    idx2_ = data_.begin();
     wfmCt_ = 0;
-    numSegments_ = numSegments;
-    numWaveforms_ = numWaveforms;
     recordsTaken = 0;
-    fixed_to_float_ = fixed_to_float(chan);
 }
 
 size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
@@ -750,7 +822,7 @@ int Accumulator::fixed_to_float(const Channel & chan) {
             break;
         case DEMOD:
         case RESULT:
-            return 1 << 14; // sfix16_14 from DDC
+            return 1 << 14; // sfix16_14 from DDC or sfix32_14 from DecisionEngine
             break;
     }
 }
@@ -759,32 +831,38 @@ size_t Accumulator::get_buffer_size() {
     return data_.size();
 }
 
-void Accumulator::reset() {
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
+size_t Accumulator::get_variance_buffer_size() {
+    return data2_.size();
 }
 
 void Accumulator::snapshot(double * buf) {
     /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / (numSegments_*numWaveforms_) * fixed_to_float_;
+    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
     for(size_t ct=0; ct < data_.size(); ct++){
         buf[ct] = static_cast<double>(data_[ct]) / scale;
     }
 }
 
 void Accumulator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / (numSegments_*numWaveforms_)), 1);
+    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
     double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
 
-    if (N == 0) {
-        for(size_t ct=0; ct < data_.size(); ct++){
+    if (N < 2) {
+        for(size_t ct=0; ct < data2_.size(); ct++){
             buf[ct] = 0.0;
         }
-    } else {
-        for(size_t ct=0; ct < data_.size(); ct++){
+    } else if (channel_.type == PHYSICAL) {
+        for (size_t ct = 0; ct < data2_.size(); ct++) {
             buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
+        }
+    } else {
+        // construct complex vector of data
+        std::complex<int64_t>* cvec = reinterpret_cast<std::complex<int64_t> *>(data_.data());
+        // calculate 3 components of variance
+        for(size_t ct=0; ct < data_.size()/2; ct++) {
+            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
+            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
+            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
         }
     }
 }
@@ -797,25 +875,157 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
     FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
 
-    //The assumption is that this will be called with a full record size
+    // The assumption is that this will be called with a full record size
+    // Accumulate the buffer into data_
     std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
     // record the square of the buffer as well
-    std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
-        return a + b*b;
-    });
+    if (channel_.type == PHYSICAL) {
+        // data is real, just square and sum it.
+        std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
+            return a + b*b;
+        });
+    } else {
+        // data is complex: real/imaginary are interleaved every other point
+        // form a complex vector from the input buffer
+        vector<std::complex<int64_t>> cvec(recordLength_/2);
+        for (int i = 0; i < recordLength_/2; i++) {
+            cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
+        }
+        // calculate 3-component correlations into a triple of successive points
+        for (int i = 0; i < cvec.size(); i++) {
+            idx2_[3*i] += cvec[i].real() * cvec[i].real();
+            idx2_[3*i+1] += cvec[i].imag() * cvec[i].imag();
+            idx2_[3*i+2] += cvec[i].real() * cvec[i].imag();
+        }
+    }
     recordsTaken++;
 
     //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
     if (++wfmCt_ == numWaveforms_) {
         wfmCt_ = 0;
         std::advance(idx_, recordLength_);
-        std::advance(idx2_, recordLength_);
+        if (channel_.type == PHYSICAL)
+            std::advance(idx2_, recordLength_);
+        else
+            std::advance(idx2_, recordLength_ * 3/2);
     }
 
     //Final check if we're at the end
     if (idx_ == data_.end()) {
         idx_ = data_.begin();
         idx2_ = data2_.begin();
+    }
+}
+
+Correlator::Correlator() : 
+    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
+
+Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) : 
+                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+    recordLength_ = 2; // assume a RESULT channel
+    buffers_.resize(channels.size());
+    data_.assign(recordLength_*numSegments, 0);
+    idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments*3/2, 0);
+    idx2_ = data2_.begin();
+    // set up mapping of SIDs to an index into buffers_
+    fixed_to_float_ = 1;
+    for (int i = 0; i < channels.size(); i++) {
+        bufferSID_[channels[i].streamID] = i;
+        fixed_to_float_ *= 1 << 14; // assumes a RESULT channel, grows with the number of terms in the correlation
+    }
+};
+
+void Correlator::reset() {
+    for (int i = 0; i < buffers_.size(); i++)
+        buffers_[i].clear();
+    data_.assign(recordLength_*numSegments_, 0);
+    idx_ = data_.begin();
+    data2_.assign(recordLength_*numSegments_*3/2, 0);
+    idx2_ = data2_.begin();
+    wfmCt_ = 0;
+    recordsTaken = 0;
+}
+
+template <class T>
+void Correlator::accumulate(const int & sid, const AccessDatagram<T> & buffer) {
+    // copy the data
+    for (int i = 0; i < buffer.size(); i++)
+        buffers_[bufferSID_[sid]].push_back(buffer[i]);
+    correlate();
+}
+
+void Correlator::correlate() {
+    vector<size_t> bufsizes(buffers_.size());
+    std::transform(buffers_.begin(), buffers_.end(), bufsizes.begin(), [](vector<int> b) {
+        return b.size();
+    });
+    size_t minsize = *std::min_element(bufsizes.begin(), bufsizes.end());
+    if (minsize == 0)
+        return;
+    
+    // correlate
+    // data is real/imag interleaved, so process a pair of points at a time from each channel
+    for (int i = 0; i < minsize; i += 2) {
+        std::complex<double> c = 1;
+        for (int j = 0; j < buffers_.size(); j++) {
+            c *= std::complex<double>(buffers_[j][i], buffers_[j][i+1]);
+        }
+        c /= fixed_to_float_;
+        idx_[0] += c.real();
+        idx_[1] += c.imag();
+        idx2_[0] += c.real()*c.real();
+        idx2_[1] += c.imag()*c.imag();
+        idx2_[2] += c.real()*c.imag();
+
+        if (++wfmCt_ == numWaveforms_) {
+            wfmCt_ = 0;
+            std::advance(idx_, 2);
+            std::advance(idx2_, 3);
+            if (idx_ == data_.end()) {
+                idx_ = data_.begin();
+                idx2_ = data2_.begin();
+            }
+        }
+    }
+    for (int j = 0; j < buffers_.size(); j++)
+        buffers_[j].erase(buffers_[j].begin(), buffers_[j].begin()+minsize);
+
+    recordsTaken += minsize/2;
+}
+
+size_t Correlator::get_buffer_size() {
+    return data_.size();
+}
+
+size_t Correlator::get_variance_buffer_size() {
+    return data2_.size();
+}
+
+void Correlator::snapshot(double * buf) {
+    /* Copies current data into a *preallocated* buffer*/
+    double N = max(static_cast<int>(recordsTaken / numSegments_), 1);
+    for(size_t ct=0; ct < data_.size(); ct++){
+        buf[ct] = data_[ct] / N;
+    }
+}
+
+void Correlator::snapshot_variance(double * buf) {
+    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
+
+    if (N < 2) {
+        for(size_t ct=0; ct < data2_.size(); ct++){
+            buf[ct] = 0.0;
+        }
+    } else {
+        // construct complex vector of data
+        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
+        // calculate 3 components of variance
+        for(size_t ct=0; ct < data_.size()/2; ct++) {
+            buf[3*ct] = (data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / (N-1);
+            buf[3*ct+1] = (data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / (N-1);
+            buf[3*ct+2] = (data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / (N-1);
+        }
     }
 }
 
@@ -831,3 +1041,29 @@ Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
         type = DEMOD;
     }
 };
+
+vector<vector<int>> combinations(int n, int r) {
+    /*
+     * Returns all combinations of r choices from the list of integers 0,1,...,n-1.
+     * Based upon code in the Julia standard library.
+     */
+    vector<vector<int>> c;
+    vector<int> s(r);
+    int i;
+    if (n < r) return c;
+    for (i = 0; i < r; i++)
+        s[i] = i;
+    c.push_back(s);
+    while (s[0] < n - r) {
+        for (i = r-1; i >= 0; i--) {
+            s[i] += 1;
+            if (s[i] > n - r + i)
+                continue;
+            for (int j = i+1; j < r; j++)
+                s[j] = s[j-1] + 1;
+            break;
+        }
+        c.push_back(s);
+    }
+    return c;
+}

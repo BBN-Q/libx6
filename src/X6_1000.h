@@ -25,6 +25,7 @@ using std::string;
  */
 
 class Accumulator;
+class Correlator;
 class Channel;
 
 enum channel_t { PHYSICAL, DEMOD, RESULT };
@@ -144,9 +145,12 @@ public:
 	bool       get_is_running();
 	bool       get_has_new_data();
 
-	ErrorCodes transfer_waveform(unsigned, unsigned, unsigned, double *, size_t);
-	ErrorCodes transfer_variance(unsigned, unsigned, unsigned, double *, size_t);
-	int get_buffer_size(unsigned, unsigned, unsigned);
+	ErrorCodes transfer_waveform(Channel, double *, size_t);
+	ErrorCodes transfer_variance(Channel, double *, size_t);
+	ErrorCodes transfer_correlation(vector<Channel> &, double *, size_t);
+	ErrorCodes transfer_correlation_variance(vector<Channel> &, double *, size_t);
+	int get_buffer_size(vector<Channel> &);
+	int get_variance_buffer_size(vector<Channel> &);
 
 	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
@@ -181,6 +185,7 @@ private:
 	vector<int> resultChans_;
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
+	map<vector<uint16_t>, Correlator> correlators_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
@@ -198,6 +203,9 @@ private:
 	void set_defaults();
 	void log_card_info();
 	bool check_done();
+
+	void initialize_accumulators();
+	void initialize_correlators();
 
 	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
     				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
@@ -238,6 +246,16 @@ private:
     void LogHandler(string handlerName);
 };
 
+class Channel{
+public:
+	Channel();
+	Channel(unsigned, unsigned, unsigned);
+
+	unsigned channelID[3];
+	uint16_t streamID;
+	channel_t type;
+};
+
 class Accumulator{
 friend X6_1000;
 
@@ -248,17 +266,18 @@ public:
 	template <class T>
 	void accumulate(const Innovative::AccessDatagram<T> &);
 
-	void init(const Channel &, const size_t &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
+	size_t get_variance_buffer_size();
 	size_t calc_record_length(const Channel &, const size_t &);
 	int fixed_to_float(const Channel &);
 
 	size_t recordsTaken;
 
 private:
+	Channel channel_;
 	size_t wfmCt_;
 	size_t numSegments_;
 	size_t numWaveforms_;
@@ -272,15 +291,42 @@ private:
 	vector<int64_t>::iterator idx2_;
 };
 
-class Channel{
+class Correlator {
 public:
-	Channel();
-	Channel(unsigned, unsigned, unsigned);
+	Correlator();
+	Correlator(const vector<Channel> &, const size_t &, const size_t &);
+	template <class T>
+	void accumulate(const int &, const Innovative::AccessDatagram<T> &);
+	void correlate();
 
-	unsigned channelID[3];
-	uint16_t streamID;
-	channel_t type;
+	void reset();
+	void snapshot(double *);
+	void snapshot_variance(double *);
+	size_t get_buffer_size();
+	size_t get_variance_buffer_size();
+
+	size_t recordsTaken;
+
+private:
+	size_t wfmCt_;
+	size_t numSegments_;
+	size_t numWaveforms_;
+	size_t recordLength_;
+	int64_t fixed_to_float_;
+
+	// buffers for raw data from the channels
+	vector<vector<int>> buffers_;
+	map<uint16_t, int> bufferSID_;
+
+	// buffer for the correlated values A*B(*C*D*...)
+	vector<double> data_;
+	vector<double>::iterator idx_;
+	// buffer for (A*B)^2
+	vector<double> data2_;
+	vector<double>::iterator idx2_;	
 };
+
+vector<vector<int>> combinations(int, int);
 
 
 #endif

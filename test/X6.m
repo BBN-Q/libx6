@@ -195,19 +195,49 @@ classdef X6 < hgsetget
             end
         end 
 
-        function wf = transfer_stream(obj, a, b, c)
-            bufSize = obj.libraryCall('get_buffer_size', a, b, c);
+        function wf = transfer_stream(obj, channels)
+            % expects channels to be a vector of structs of the form:
+            % struct('a', X, 'b', Y, 'c', Z)
+            % when passed a single channel struct, returns the corresponding waveform
+            % when passed multiple channels, returns the correlation of the channels
+            bufSize = obj.libraryCall('get_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
-            success = obj.libraryCall('transfer_waveform', a, b, c, wfPtr, bufSize);
+            success = obj.libraryCall('transfer_waveform', channels, length(channels), wfPtr, bufSize);
             assert(success == 0, 'transfer_waveform failed');
 
-            if b == 0 % physical channel
+            if channels(1).b == 0 % physical channel
                 wf = wfPtr.Value;
             else
-                wf = wfPtr.Value(1:2:end) +1i*wfPtr.Value(2:2:end);
+                % temporary swap until real/imaginary interleaving is fixed in firmware
+                wf = 1i*wfPtr.Value(1:2:end) + wfPtr.Value(2:2:end);
             end
-            if c == 0 % non-results streams should be reshaped
+            if channels(1).c == 0 % non-results streams should be reshaped
                 wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
+            end
+        end
+
+        function wf = transfer_stream_variance(obj, channels)
+            % expects channels to be a vector of structs of the form:
+            % struct('a', X, 'b', Y, 'c', Z)
+            bufSize = obj.libraryCall('get_variance_buffer_size', channels, length(channels));
+            wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
+            success = obj.libraryCall('transfer_variance', channels, length(channels), wfPtr, bufSize);
+            assert(success == 0, 'transfer_variance failed');
+
+            wf = struct('real', [], 'imag', [], 'prod', []);
+            if channels(1).b == 0 % physical channel
+                wf.real = wfPtr.Value;
+                wf.imag = zeros(length(wfPtr.Value), 1);
+                wf.prod = zeros(length(wfPtr.Value), 1);
+            else
+                wf.real = wfPtr.Value(2:3:end); % temporary swap of real and imag until real/imaginary interleaving is fixed in firmware
+                wf.imag = wfPtr.Value(1:3:end);
+                wf.prod = wfPtr.Value(3:3:end);
+            end
+            if channels(1).c == 0 % non-results streams should be reshaped
+                wf.real = reshape(wf.real, length(wf.real)/obj.nbrSegments, obj.nbrSegments);
+                wf.imag = reshape(wf.imag, length(wf.imag)/obj.nbrSegments, obj.nbrSegments);
+                wf.prod = reshape(wf.prod, length(wf.prod)/obj.nbrSegments, obj.nbrSegments);
             end
         end
         
@@ -389,16 +419,16 @@ classdef X6 < hgsetget
             x6.set_nco_frequency(2, 2, 40e6);
             
             fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(128,1));
-            x6.write_kernel(1, 2, ones(128,1));
-            x6.write_kernel(2, 1, ones(128,1));
-            x6.write_kernel(2, 2, ones(128,1));
+            x6.write_kernel(1, 1, ones(100,1));
+            x6.write_kernel(1, 2, ones(100,1));
+            x6.write_kernel(2, 1, ones(100,1));
+            x6.write_kernel(2, 2, ones(100,1));
             
             fprintf('Writing decision engine thresholds\n');
-            x6.set_threshold(1, 1, 4000);
-            x6.set_threshold(1, 2, 4000);
-            x6.set_threshold(2, 1, 4000);
-            x6.set_threshold(2, 2, 4000);
+            x6.set_threshold(1, 1, 0.5);
+            x6.set_threshold(1, 2, 0.5);
+            x6.set_threshold(2, 1, 0.5);
+            x6.set_threshold(2, 2, 0.5);
             
             fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
@@ -406,7 +436,7 @@ classdef X6 < hgsetget
             fprintf('Acquiring\n');
             x6.acquire();
 
-            success = x6.wait_for_acquisition(0.1);
+            success = x6.wait_for_acquisition(1);
             fprintf('Wait for acquisition returned %d\n', success);
 
             fprintf('Stopping\n');
@@ -416,7 +446,7 @@ classdef X6 < hgsetget
             numDemodChan = 2;
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(1,ct,0);
+                wfs{ct+1} = x6.transfer_stream(struct('a', 1, 'b', ct, 'c', 0));
             end
             figure();
             subplot(numDemodChan+1,1,1);
@@ -433,7 +463,7 @@ classdef X6 < hgsetget
             
             
             for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(2,ct,0);
+                wfs{ct+1} = x6.transfer_stream(struct('a', 2, 'b', ct, 'c', 0));
             end
             figure();
             subplot(numDemodChan+1,1,1);
@@ -447,6 +477,12 @@ classdef X6 < hgsetget
                 plot(imag(wfs{ct+1}(:)), 'r');
                 title(sprintf('Virtual Channel %d',ct));
             end
+
+            fprintf('Result vectors:\n');
+            fprintf('Ch 1.1:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 1, 'c', 1))));
+            fprintf('Ch 1.2:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 2, 'c', 1))));
+            fprintf('Ch 2.1:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 1, 'c', 1))));
+            fprintf('Ch 2.2:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 2, 'c', 1))));
 
             x6.disconnect();
             unloadlibrary('libx6adc')
