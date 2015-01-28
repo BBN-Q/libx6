@@ -9,6 +9,12 @@ const DSP_WB_OFFSET = [0x2000, 0x2100]
 const X6_LIBRARY = "C:\\Users\\qlab\\Documents\\GitHub\\libx6\\build\\libx6adc"
 const DECIMATION_FACTOR = 4
 
+immutable Channel
+	a::Cint
+	b::Cint
+	c::Cint
+end
+
 function connect!(dev::X6, id)
 	ret = ccall((:connect_by_ID, X6_LIBRARY), Int32, (Int32,), id)
 	if ret == 0
@@ -63,20 +69,20 @@ function set_reference(dev::X6, ref::String)
 	ccall((:set_reference, X6_LIBRARY), Int32, (Int32, Int32), dev.id, strMap[ref])
 end
 
-function enable_stream(dev::X6, a::Int, b::Int, c::Int)
+function enable_stream(dev::X6, a, b, c)
 	ccall((:enable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, a, b, c)
 end
 
-function disable_stream(dev::X6, a::Int, b::Int, c::Int)
+function disable_stream(dev::X6, a, b, c)
 	ccall((:disable_stream, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, a, b, c)
 end
 
-function read_register(dev::X6, addr::Uint16, offset::Uint16)
+function read_register(dev::X6, addr, offset)
 	#Read an address in the wishbone register space
 	ccall((:read_register, X6_LIBRARY), Int32, (Int32, Int32, Int32), dev.id, addr, offset)
 end
 
-function write_register(dev::X6, addr::Uint16, offset::Uint16, value::Int)
+function write_register(dev::X6, addr, offset, value)
 	#Write an address in the wishbone register space
 	ccall((:write_register, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, addr, offset, value)
 end	
@@ -99,15 +105,17 @@ function wait_for_acquisition(dev::X6, timeOut::Int)
 end
 
 function transfer_waveform(dev::X6, a, b, c)
-	bufSize = ccall(:get_buffer_size, X6_LIBRARY, Int32, (Int32, Uint32, Uint32, Uint32), dev.id, a, b, c)
+	channels = [Channel(a,b,c)]
+	bufSize = ccall((:get_buffer_size, X6_LIBRARY), Int32, (Int32, Ptr{Channel}, Uint32), dev.id, channels, length(channels))
 	wfs = Array(Float64, bufSize)
-	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Uint32, Uint32, Uint32, Ptr{Float64}, Int32),
-													dev.id, a, b, c, wfs, bufSize)
+	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Ptr{Channel}, Uint32, Ptr{Float64}, Int32),
+													dev.id, channels, length(channels), wfs, bufSize)
 	@assert success == 0 "Transferring waveforms failed!"
 	if (b == 0) # physical channel
 		return wfs
 	else
-		return wfs[1:2:end] + 1im*wfs[2:2:end]
+		# temporary swap of real and imaginary until fixed in firmware
+		return 1im*wfs[1:2:end] + wfs[2:2:end]
 	end
 end
 
@@ -128,13 +136,11 @@ function unittest()
 
 	println("Enabling streams...")
 	for physChan = 1:2
-		for demodChan = 0:4
-			if demodChan > 0
-				for resultChan = 0:0
-					enable_stream(x6, physChan, demodChan, resultChan)
-				end
-			else
-				enable_stream(x6, physChan, 0, 0)
+		# enable raw stream
+		enable_stream(x6, physChan, 0, 0)
+		for demodChan = 1:2
+			for resultChan = 0:1
+				enable_stream(x6, physChan, demodChan, resultChan)
 			end
 		end
 	end
@@ -146,11 +152,11 @@ function unittest()
 	write_register(x6, DSP_WB_OFFSET[2], 0x0010, int(round(1 * phaseInc * 2^18)))
 	write_register(x6, DSP_WB_OFFSET[2], 0x0011, int(round(1 * phaseInc * 2^18)))
 
-	println("Setting stream IDs...")
-	for ct = 0:4
-		write_register(x6, DSP_WB_OFFSET[1], uint16(0x0020+ct), 0x10100 + 16*ct)	
-		write_register(x6, DSP_WB_OFFSET[2], uint16(0x0020+ct), 0x20200 + 16*ct)	
-	end
+	println("Writing kernel lengths")
+	write_register(x6, DSP_WB_OFFSET[1], 24+1-1, 2)
+	write_register(x6, DSP_WB_OFFSET[1], 24+2-1, 2)
+	write_register(x6, DSP_WB_OFFSET[2], 24+1-1, 2)
+	write_register(x6, DSP_WB_OFFSET[2], 24+2-1, 2)
 
 	set_averager_settings(x6, 2048, 9, 1, 1)
 
@@ -160,11 +166,13 @@ function unittest()
 	println("Wait for acquisition returned $success")
 	stop(x6)
 
-	wfs = [transfer_waveform(x6, physChan, demodChan, 0) for physChan = 1:2, demodChan = 0:4]
+	rawwfs = [transfer_waveform(x6, physChan, 0, 0) for physChan = 1:2]
+	demodwfs = [transfer_waveform(x6, physChan, demodChan, 0) for physChan = 1:2, demodChan = 1:2]
+	resultwfs = [transfer_waveform(x6, physChan, demodChan, 1) for physChan = 1:2, demodChan = 1:2]
 
 	disconnect!(x6)
 
-	return wfs
+	return rawwfs, demodwfs, resultwfs
 end
 
 end #module
