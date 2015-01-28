@@ -11,33 +11,25 @@ SET ( CMAKE_BUILD_TYPE Debug )
 SET (  INNOVATIVEPATH "C:\\Innovative" )
 SET (  MALIBUPATH   ${INNOVATIVEPATH}/Malibu )
 
-
-# devel machine path may be removed if FIND_PACKAGE HDF5 works
-#	INCLUDE_DIRECTORIES("C:\\MinGW\\msys\\1.0\\local\\include\\cpp")
-#	INCLUDE_DIRECTORIES("C:\\MinGW\\msys\\1.0\\local\\include")	
-#	LINK_DIRECTORIES( ${LINK_DIRECTORIES} "C:\\MinGW\\msys\\1.0\\local\\lib")
-
-
 INCLUDE_DIRECTORIES(${MALIBUPATH})
-INCLUDE_DIRECTORIES(".")
+INCLUDE_DIRECTORIES("./lib/")
 
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
 	"C:\\Innovative\\Lib\\Gcc"
 )
 
-# following links against Innovative release libraries
+# following links against Innovative debug libraries
 LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
 	"C:\\Innovative\\Lib\\Gcc\\Debug"
 )
-
 
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-DGCC")
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static -lpthread")
 
 SET ( DLL_SRC 
-	./libx6adc.cpp
-	./X6_1000.cpp
+	./lib/libx6adc.cpp
+	./lib/X6_1000.cpp
 )
 
 SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
@@ -49,7 +41,7 @@ TARGET_LINK_LIBRARIES(x6test x6adc)
 
 ADD_EXECUTABLE(unit 
 	../test/unit.cpp
-	./X6_1000.cpp
+	./lib/X6_1000.cpp
 )
 TARGET_LINK_LIBRARIES(unit x6adc)
 

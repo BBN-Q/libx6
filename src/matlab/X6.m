@@ -26,7 +26,7 @@
 classdef X6 < hgsetget
     
     properties (Constant)
-        library_path = '../build/';
+        library_path = '../../build/';
     end
     
     properties
@@ -353,8 +353,8 @@ classdef X6 < hgsetget
             switch computer()
                 case 'PCWIN64'
                     libfname = 'libx6adc.dll';
-                    libheader = '../src/libx6adc.matlab.h';
-                    %protoFile = @obj.libaps64;
+                    libheader = 'libx6adc.matlab.h';
+                    %protoFile = @obj.libx6;
                 otherwise
                     error('Unsupported platform.');
             end
