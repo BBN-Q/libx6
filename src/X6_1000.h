@@ -204,6 +204,7 @@ private:
 	void log_card_info();
 	bool check_done();
 
+	void initialize_accumulators();
 	void initialize_correlators();
 
 	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
@@ -265,7 +266,6 @@ public:
 	template <class T>
 	void accumulate(const Innovative::AccessDatagram<T> &);
 
-	void init(const Channel &, const size_t &, const size_t &, const size_t &);
 	void reset();
 	void snapshot(double *);
 	void snapshot_variance(double *);

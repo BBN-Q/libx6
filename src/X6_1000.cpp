@@ -268,11 +268,6 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
     roundRobins_ = roundRobins;
     numRecords_ = numSegments * waveforms * roundRobins;
 
-    //Setup the accumulators
-    for (auto & kv : activeChannels_) {
-        accumulators_[kv.first].init(kv.second, recordLength_, numSegments_, waveforms_);
-    }
-
     return SUCCESS;
 }
 
@@ -281,7 +276,6 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
-    accumulators_[chan.streamID] = Accumulator(chan, recordLength_, numSegments_, waveforms_);
     return SUCCESS;
 }
 
@@ -289,7 +283,6 @@ X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) 
     //Find the channel
     uint16_t streamID = Channel(a,b,c).streamID;
     if (activeChannels_.count(streamID)){
-        accumulators_.erase(streamID);
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
         return SUCCESS;
@@ -385,6 +378,7 @@ X6_1000::ErrorCodes X6_1000::acquire() {
                 FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
         }
     }
+    initialize_accumulators();
     initialize_correlators();
 
     VMPs_[0].Init(physChans_);
@@ -417,10 +411,6 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     VMPs_[2].Resize(packetSize);
     VMPs_[2].Clear();
 
-    // reset the accumulators
-    for (auto & kv : accumulators_) {
-        kv.second.reset();
-    }
     recordsTaken_ = 0;
 
     module_.Velo().LoadAll_VeloDataSize(0x4000);
@@ -555,6 +545,12 @@ int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
         return accumulators_[sids[0]].get_variance_buffer_size();
     } else {
         return correlators_[sids].get_variance_buffer_size();
+    }
+}
+
+void X6_1000::initialize_accumulators() {
+    for (auto kv : activeChannels_) {
+        accumulators_[kv.first] = Accumulator(kv.second, recordLength_, numSegments_, waveforms_);
     }
 }
 
@@ -795,25 +791,6 @@ Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, cons
     idx2_ = data2_.begin();
     fixed_to_float_ = fixed_to_float(chan);
 };
-
-void Accumulator::init(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) {
-    channel_ = chan;
-    recordLength_ = calc_record_length(chan, recordLength);
-    data_.assign(recordLength_*numSegments, 0);
-    idx_ = data_.begin();
-    if (chan.type == PHYSICAL) {
-        data2_.assign(recordLength_*numSegments, 0);
-    } else {
-        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
-        data2_.assign(recordLength_*numSegments*3/2, 0);
-    }
-    idx2_ = data2_.begin();
-    wfmCt_ = 0;
-    numSegments_ = numSegments;
-    numWaveforms_ = numWaveforms;
-    recordsTaken = 0;
-    fixed_to_float_ = fixed_to_float(chan);
-}
 
 void Accumulator::reset() {
     data_.assign(recordLength_*numSegments_, 0);
