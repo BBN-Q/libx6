@@ -189,8 +189,8 @@ classdef X6 < hgsetget
             data = struct();
             for stream = obj.enabledStreams
                 if stream{1}(1) == channel
-                    s = num2cell(stream{1});
-                    data.(['s' sprintf('%d',stream{1})]) = feval(@obj.transfer_stream, s{:});
+                    s = struct('a', stream{1}(1), 'b', stream{1}(2), 'c', stream{1}(3));
+                    data.(['s' sprintf('%d',stream{1})]) = obj.transfer_stream(s);
                 end
             end
         end 
