@@ -334,6 +334,12 @@ classdef X6 < hgsetget
             end
             obj.set_nco_frequency(a, b, settings.IFfreq);
             if ~isempty(settings.kernel)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.kernel))
+                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.kernel)), 'uint8');
+                   tmp = typecast(tmp, 'double');
+                   settings.kernel = tmp(1:2:end) + 1j*tmp(2:2:end);
+                end
                 obj.write_kernel(a, b, settings.kernel);
             end
             obj.set_threshold(a, b, settings.threshold);
