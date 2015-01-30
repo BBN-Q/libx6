@@ -120,11 +120,6 @@ classdef X6 < hgsetget
         function val = enable_stream(obj, a, b, c)
             val = obj.libraryCall('enable_stream', a, b, c);
             obj.enabledStreams{end+1} = [a,b,c];
-            
-            % bit bashing of stream_enable register
-            reg = obj.readRegister(X6.DSP_WB_OFFSET(a), 8);
-            reg = bitset(reg, 1 + b + 7*logical(c), 1); % matlab's bitset is 1-indexed
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 8, int32(reg));
         end
         
         function val = disable_stream(obj, a, b, c)
@@ -136,10 +131,6 @@ classdef X6 < hgsetget
                     break
                 end
             end
-            % bit bashing of stream_enable register
-            reg = obj.readRegister(X6.DSP_WB_OFFSET(a), 8);
-            reg = bitset(reg, 1 + b + 7*logical(c), 0); % matlab's bitset is 1-indexed
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 8, int32(reg));
         end
         
         function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)

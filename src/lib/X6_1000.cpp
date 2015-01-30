@@ -273,6 +273,13 @@ X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, con
 
 X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
+
+    // set the appropriate bit in stream_enable register
+    int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
+    reg |= 1 << (b + 7*(c & 0x1));
+    FILE_LOG(logDEBUG4) << "Setting stream_enable register to " << myhex << reg;
+    write_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET, reg);
+
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
@@ -280,14 +287,20 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 }
 
 X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
+    // clear the appropriate bit in stream_enable register
+    int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
+    reg &= ~(1 << (b + 7*(c & 0x1)));
+    FILE_LOG(logDEBUG4) << "Setting stream_enable register to " << myhex << reg;
+    write_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET, reg);
+
     //Find the channel
     uint16_t streamID = Channel(a,b,c).streamID;
-    if (activeChannels_.count(streamID)){
+    if (activeChannels_.count(streamID)) {
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
         return SUCCESS;
     } 
-    else{
+    else {
         FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
         return SUCCESS;
     }  
