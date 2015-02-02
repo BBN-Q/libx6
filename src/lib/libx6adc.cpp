@@ -138,6 +138,11 @@ int set_threshold(int deviceID, int a, int b, double threshold) {
 	return X6s_[deviceID]->set_threshold(a, b, threshold);
 }
 
+int write_kernel(int deviceID, int a, int b, double *kernel, unsigned length) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->write_kernel(a, b, kernel, length);
+}
+
 int acquire(int deviceID) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->acquire();

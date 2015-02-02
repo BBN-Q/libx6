@@ -265,13 +265,13 @@ classdef X6 < hgsetget
             obj.libraryCall('set_nco_frequency', a, b, freq)
         end
         
-        function write_kernel(obj, phys, demod, kernel)
-            obj.writeRegister(obj.DSP_WB_OFFSET(phys), 24+demod-1, length(kernel));
-            kernel = int32(kernel * (2^15-1)); % scale up to integers
+        function write_kernel(obj, a, b, kernel)
+            packedkernel = zeros(2*length(kernel), 1);
             for ct = 1:length(kernel)
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1)+1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
+                packedkernel(2*ct - 1) = real(kernel(ct));
+                packedkernel(2*ct) = imag(kernel(ct));
             end
+            obj.libraryCall('write_kernel', a, b, packedkernel, length(packedkernel));
         end
         
         function set_threshold(obj, a, b, threshold)

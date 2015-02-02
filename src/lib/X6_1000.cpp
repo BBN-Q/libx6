@@ -327,6 +327,18 @@ X6_1000::ErrorCodes X6_1000::set_threshold(int a, int b, double threshold) {
     write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
 }
 
+X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
+    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << " kernel of length to: " << bufsize/2;
+    write_dsp_register(a-1, WB_KERNEL_LENGTH_OFFSET + (b-1), bufsize/2);
+    for (int i = 0; i < bufsize/2; i += 2) {
+        int32_t scaled_re = kernel[i] * ((1 << 15) - 1);
+        int32_t scaled_im = kernel[i+1] * ((1 << 15) - 1);
+        uint32_t packedval = (scaled_re << 16) | (scaled_im & 0xffff);
+        write_dsp_register(a-1, WB_KERNEL_ADDR_OFFSET + 2*(b-1), i);
+        write_dsp_register(a-1, WB_KERNEL_DATA_OFFSET + 2*(b-1), packedval);
+    }
+}
+
 X6_1000::ErrorCodes X6_1000::set_active_channels() {
     ErrorCodes status = SUCCESS;
 

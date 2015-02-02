@@ -55,6 +55,7 @@ EXPORT int disable_stream(int, int, int, int);
 EXPORT int set_averager_settings(int, int, int, int, int);
 EXPORT int set_nco_frequency(int, int, int, double);
 EXPORT int set_threshold(int, int, int, double);
+EXPORT int write_kernel(int, int, int, double *, unsigned);
 
 EXPORT int acquire(int);
 EXPORT int wait_for_acquisition(int, int);
