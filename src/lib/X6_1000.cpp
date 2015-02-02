@@ -312,6 +312,21 @@ bool X6_1000::get_channel_enable(int channel) {
     return true;
 }
 
+X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double frequency) {
+    // NCO runs at quarter rate
+    double nfreq = 4 * freq/get_pll_frequency();
+    int32_t phase_increment = rint(nfreq * (1 << 18));
+    FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " NCO frequency to: " << frequency/1e6 << " MHz (" << phase_increment << ")";
+    write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
+}
+
+X6_1000::ErrorCodes X6_1000::set_threshold(int a, int b, double threshold) {
+    // results are sfix32_14, so scale threshold by 2^14.
+    int32_t scaled_threshold = threshold * (1 << 14);
+    FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " threshold to: " << threshold << " (" << scaled_threshold << ")";
+    write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
+}
+
 X6_1000::ErrorCodes X6_1000::set_active_channels() {
     ErrorCodes status = SUCCESS;
 

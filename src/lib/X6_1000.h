@@ -127,6 +127,8 @@ public:
 	ErrorCodes set_digitizer_mode(const DIGITIZER_MODE &);
 	DIGITIZER_MODE get_digitizer_mode() const;
 
+	ErrorCodes set_nco_frequency(int a, int b, double frequency);
+	ErrorCodes set_threshold(int a, int b, double threshold);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board

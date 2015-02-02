@@ -262,8 +262,7 @@ classdef X6 < hgsetget
         end
         
         function set_nco_frequency(obj, a, b, freq)
-            phase_increment = 4 * freq/obj.samplingRate; % NCO runs at quarter rate
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 16+(b-1), round(1 * phase_increment * 2^18));
+            obj.libraryCall('set_nco_frequency', a, b, freq)
         end
         
         function write_kernel(obj, phys, demod, kernel)
@@ -276,8 +275,7 @@ classdef X6 < hgsetget
         end
         
         function set_threshold(obj, a, b, threshold)
-            % results are sfix32_14, so scale threshold by 2^14.
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 56+(b-1), int32(threshold * 2^14));
+            obj.libraryCall('set_threshold', a, b, threshold);
         end
         
         %Instrument meta-setter that sets all parameters
@@ -319,9 +317,13 @@ classdef X6 < hgsetget
             b = str2double(label(3));
             if settings.enableDemodStream
                 obj.enable_stream(a, b, 0);
+            else
+                obj.disable_stream(a, b, 0);
             end
             if settings.enableResultStream
                 obj.enable_stream(a, b, 1);
+            else
+                obj.disable_stream(a, b, 1);
             end
             obj.set_nco_frequency(a, b, settings.IFfreq);
             if ~isempty(settings.kernel)
