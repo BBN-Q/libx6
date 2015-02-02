@@ -97,8 +97,49 @@ wf = x6.transfer_stream(struct('a', 1, 'b', 1, 'c', 0));
 
 ### SetAll example
 
-TODO
+The settings structure groups together the virtual channel information into
+groups labeled by first two indices in the channel tuple (i.e. `a` and `b` in
+`(a,b,c)`).
 
+```matlab
+settings = struct(
+	'address', '0',
+	'deviceName', 'X6',
+	'reference', 'external',
+	'averager', struct(
+		'recordLength', 2048,
+		'nbrSegments', 10,
+		'nbrWaveforms', 1,
+		'nbrRoundRobins', 1000)
+	),
+	'enableRawStreams', false,
+	'channels', struct(
+		's11', struct(
+			'IFfreq', 10e6,
+			'enableDemodStream', true,
+			'enableResultStream', true,
+			'kernel', ones(100,1), % may alternatively supply a base64 encoded string of kernel
+			'threshold', 0.5
+		),
+		's21', struct(
+			'IFfreq', 10e6,
+			'enableDemodStream', true,
+			'enableResultStream', true,
+			'kernel', ones(100,1),
+			'threshold', 0.5
+		)
+		% and so on for other channels...
+	)
+);
+x6 = X6();
+x6.connect(0);
+x6.setAll(settings);
+
+% then continue as above
+x6.acquire();
+% ...
+
+```
 
 ## C API
 
