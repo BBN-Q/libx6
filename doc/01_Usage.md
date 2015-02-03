@@ -167,6 +167,19 @@ Disable stream (a,b,c).
 
 `set_averager_settings(int ID, int recordLength, int segments, int waveforms, int roundrobins)`
 
+`set_nco_frequency(int ID, int a, int b, double frequency)`
+
+Set the NCO/IF frequency for channels (a,b,0) and (a,b,1).
+
+`write_kernel(int ID, int a, int b, double *kernel, unsigned bufsize)`
+
+Transfer integration kernel for channel (a,b,1) to the X6. `kernel` is expected
+to have interleaved real and imaginary data in the range [-1, 1].
+
+`set_threshold(int ID, int a, int b, double threshold)`
+
+Sets the decision engine threshold for channel (a,b,1).
+
 `acquire(int ID)`
 
 `wait_for_acquisition(int ID, int timeout)`
