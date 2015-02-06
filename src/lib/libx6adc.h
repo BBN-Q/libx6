@@ -80,7 +80,7 @@ int update_log(FILE * pFile);
 EXPORT int set_logging_level(int);
 
 /* debug methods */
-EXPORT int read_register(int, int, int);
+EXPORT unsigned read_register(int, int, int);
 EXPORT int write_register(int, int, int, int);
 
 // II X6-1000M Test Interface
