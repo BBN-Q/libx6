@@ -81,7 +81,7 @@ EXPORT int set_sampleRate(int, double);
 EXPORT double get_sampleRate(int);
 
 /* debug methods */
-EXPORT int read_register(int, int, int);
+EXPORT unsigned read_register(int, int, int);
 EXPORT int write_register(int, int, int, int);
 
 // II X6-1000M Test Interface

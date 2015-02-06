@@ -1,33 +1,60 @@
 # build using
 # mkdir build
 # cd build
-# cmake -G "MSYS Makefiles" ../src/
+# cmake -G "MSYS Makefiles" -DINNOVATIVE_PATH="C:\\Innovative" ../src/  # for Windows
+# cmake -DINNOVATIVE_PATH=/home/cryan/Downloads/II ../src   # for Linux
 # make
 
+
 PROJECT( libx6adc )
+
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+
 SET ( CMAKE_BUILD_TYPE Debug )
 
-SET (  INNOVATIVEPATH "C:\\Innovative" )
-SET (  MALIBUPATH   ${INNOVATIVEPATH}/Malibu )
+#include Malibu headers
+if(WIN32)
+	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
+else()
+	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.7/Malibu)
+endif()
 
-INCLUDE_DIRECTORIES(${MALIBUPATH})
+#and our own library headers
 INCLUDE_DIRECTORIES("./lib/")
 
-LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
-	"C:\\Innovative\\Lib\\Gcc"
-)
+#Malibu shared libraries
+if(WIN32)
+	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
+else()
+	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}//usr/Innovative/Malibu-1.7/Lib)
+endif()
 
-# following links against Innovative debug libraries
-LINK_DIRECTORIES( ${LINK_DIRECTORIES} 
-	"C:\\Innovative\\Lib\\Gcc\\Debug"
-)
+LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc)
+LINK_DIRECTORIES( ${INNOVATIVE_LIB_PATH}/Gcc/Debug)
 
+#Intel IPP shared libraries
+if(UNIX)
+	LINK_DIRECTORIES(${INNOVATIVE_PATH}/opt/intel/composer_xe_2011_sp1.9.293/ipp/lib/intel64)
+	SET(IPP_LIB "ipps")
+else()
+	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
+	SET(IPP_LIB "ipps-7.0")
+endif()
+
+if(UNIX)
+	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-11.5/lib)
+endif()
+
+#Some compile flags
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-DGCC")
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11")
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static -lpthread")
 
-SET ( DLL_SRC 
+#on windows we statically link in the GCC runtime to avoid dependcies
+if(WIN32)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static -lpthread")
+endif()
+
+SET ( DLL_SRC
 	./lib/libx6adc.cpp
 	./lib/X6_1000.cpp
 )
@@ -39,7 +66,7 @@ ADD_LIBRARY( x6adc SHARED ${DLL_SRC} )
 ADD_EXECUTABLE(x6test ../test/main.cpp )
 TARGET_LINK_LIBRARIES(x6test x6adc)
 
-ADD_EXECUTABLE(unit 
+ADD_EXECUTABLE(unit
 	../test/unit.cpp
 	./lib/X6_1000.cpp
 )
@@ -57,12 +84,11 @@ TARGET_LINK_LIBRARIES(x6adc
 	Pci_Mb
 	Ficl_Mb
 	-Wl,--end-group
-	
+
 	wdapi # WinDriver library in Innovative\lib\gcc
-	ipps-7.0  # in Intel IPP directory listed above
-	
+	${IPP_LIB} # in Intel IPP directory listed above
+
 	# The following libraries are not currently required
-	#Framework_Win 
+	#Framework_Win
 	#Vpx_Mb  ##
 )
-

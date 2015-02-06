@@ -251,7 +251,7 @@ int set_logging_level(int logLevel) {
 	return 0;
 }
 
-int read_register(int deviceID, int wbAddr, int offset){
+unsigned read_register(int deviceID, int wbAddr, int offset){
 	return X6s_[deviceID]->read_wishbone_register(wbAddr, offset);
 }
 
