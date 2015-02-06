@@ -128,6 +128,21 @@ int set_averager_settings(int deviceID, int recordLength, int numSegments, int w
 	return X6s_[deviceID]->set_averager_settings(recordLength, numSegments, waveforms, roundRobins);
 }
 
+int set_nco_frequency(int deviceID, int a, int b, double freq) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->set_nco_frequency(a, b, freq);
+}
+
+int set_threshold(int deviceID, int a, int b, double threshold) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->set_threshold(a, b, threshold);
+}
+
+int write_kernel(int deviceID, int a, int b, double *kernel, unsigned length) {
+	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+	return X6s_[deviceID]->write_kernel(a, b, kernel, length);
+}
+
 int acquire(int deviceID) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
 	return X6s_[deviceID]->acquire();

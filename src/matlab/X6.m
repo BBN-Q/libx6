@@ -262,22 +262,20 @@ classdef X6 < hgsetget
         end
         
         function set_nco_frequency(obj, a, b, freq)
-            phase_increment = 4 * freq/obj.samplingRate; % NCO runs at quarter rate
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 16+(b-1), round(1 * phase_increment * 2^18));
+            obj.libraryCall('set_nco_frequency', a, b, freq)
         end
         
-        function write_kernel(obj, phys, demod, kernel)
-            obj.writeRegister(obj.DSP_WB_OFFSET(phys), 24+demod-1, length(kernel));
-            kernel = int32(kernel * (2^15-1)); % scale up to integers
+        function write_kernel(obj, a, b, kernel)
+            packedkernel = zeros(2*length(kernel), 1);
             for ct = 1:length(kernel)
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1), ct-1);
-                obj.writeRegister(obj.DSP_WB_OFFSET(phys), 48+2*(demod-1)+1, bitshift(real(kernel(ct)), 16) + bitand(imag(kernel(ct)), hex2dec('FFFF')));
+                packedkernel(2*ct - 1) = real(kernel(ct));
+                packedkernel(2*ct) = imag(kernel(ct));
             end
+            obj.libraryCall('write_kernel', a, b, packedkernel, length(packedkernel));
         end
         
         function set_threshold(obj, a, b, threshold)
-            % results are sfix32_14, so scale threshold by 2^14.
-            obj.writeRegister(X6.DSP_WB_OFFSET(a), 56+(b-1), int32(threshold * 2^14));
+            obj.libraryCall('set_threshold', a, b, threshold);
         end
         
         %Instrument meta-setter that sets all parameters
@@ -319,9 +317,13 @@ classdef X6 < hgsetget
             b = str2double(label(3));
             if settings.enableDemodStream
                 obj.enable_stream(a, b, 0);
+            else
+                obj.disable_stream(a, b, 0);
             end
             if settings.enableResultStream
                 obj.enable_stream(a, b, 1);
+            else
+                obj.disable_stream(a, b, 1);
             end
             obj.set_nco_frequency(a, b, settings.IFfreq);
             if ~isempty(settings.kernel)

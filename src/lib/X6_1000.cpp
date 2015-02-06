@@ -11,19 +11,19 @@ using namespace Innovative;
 X6_1000::X6_1000() :
     isOpen_{false}, isRunning_{false} {
 
-    // Use IPP performance memory functions.    
+    // Use IPP performance memory functions.
     Init::UsePerformanceMemoryFunctions();
 }
 
 X6_1000::~X6_1000() {
-	if (isOpen_) close();   
+	if (isOpen_) close();
 }
 
 unsigned int X6_1000::get_num_channels() {
     return module_.Input().Channels();
 }
 
-void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event, 
+void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event,
     void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event)) {
 
     event.SetEvent(this, CallBackFunction );
@@ -83,16 +83,16 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
         FILE_LOG(logINFO) << "Module Device Open Failure!";
         return MODULE_ERROR;
     }
-        
+
     module_.Reset();
     FILE_LOG(logINFO) << "Module Device Opened Successfully...";
-    
+
     isOpen_ = true;
 
     log_card_info();
 
     set_defaults();
-    
+
     //  Connect Stream
     stream_.ConnectTo(&module_);
     FILE_LOG(logINFO) << "Stream Connected...";
@@ -109,7 +109,7 @@ X6_1000::ErrorCodes X6_1000::init() {
     */
     return SUCCESS;
 }
- 
+
 X6_1000::ErrorCodes X6_1000::close() {
     stream_.Disconnect();
     module_.Close();
@@ -132,7 +132,7 @@ float X6_1000::get_logic_temperature() {
 
 float X6_1000::get_logic_temperature_by_reg() {
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(module_);
-    const unsigned int wbTemp_offset = 0x200;    
+    const unsigned int wbTemp_offset = 0x200;
     const unsigned int tempControl_offset = 0;
     Innovative::WishboneBusSpace wbs = Innovative::WishboneBusSpace(logicMemory, wbTemp_offset);
     Innovative::Register reg = Innovative::Register(wbs, tempControl_offset );
@@ -203,9 +203,9 @@ X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
 }
 
 X6_1000::TriggerSource X6_1000::get_trigger_source() const {
-    // return cached trigger source until 
+    // return cached trigger source until
     // TODO: identify method for getting source from card
-    if (triggerSource_) 
+    if (triggerSource_)
         return EXTERNAL_TRIGGER;
     else
         return SOFTWARE_TRIGGER;
@@ -299,17 +299,44 @@ X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) 
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
         return SUCCESS;
-    } 
+    }
     else {
         FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
         return SUCCESS;
-    }  
+    }
 }
 
 bool X6_1000::get_channel_enable(int channel) {
     // TODO get active channel status from board
     if (channel >= get_num_channels()) return false;
     return true;
+}
+
+X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double freq) {
+    // NCO runs at quarter rate
+    double nfreq = 4 * freq/get_pll_frequency();
+    int32_t phase_increment = rint(nfreq * (1 << 18));
+    FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " NCO frequency to: " << freq/1e6 << " MHz (" << phase_increment << ")";
+    write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
+}
+
+X6_1000::ErrorCodes X6_1000::set_threshold(int a, int b, double threshold) {
+    // results are sfix32_14, so scale threshold by 2^14.
+    int32_t scaled_threshold = threshold * (1 << 14);
+    FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " threshold to: " << threshold << " (" << scaled_threshold << ")";
+    write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
+}
+
+X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
+    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << " kernel of length to: " << bufsize/2;
+    write_dsp_register(a-1, WB_KERNEL_LENGTH_OFFSET + (b-1), bufsize/2);
+    for (int i = 0; i < bufsize/2; i += 2) {
+        int32_t scaled_re = kernel[i] * ((1 << 15) - 1);
+        int32_t scaled_im = kernel[i+1] * ((1 << 15) - 1);
+        uint32_t packedval = (scaled_re << 16) | (scaled_im & 0xffff);
+        write_dsp_register(a-1, WB_KERNEL_ADDR_OFFSET + 2*(b-1), i);
+        write_dsp_register(a-1, WB_KERNEL_DATA_OFFSET + 2*(b-1), packedval);
+    }
 }
 
 X6_1000::ErrorCodes X6_1000::set_active_channels() {
@@ -343,7 +370,7 @@ void X6_1000::set_defaults() {
     set_active_channels();
     set_dsp_stream_ids();
 
-    // disable test mode 
+    // disable test mode
     module_.Input().TestModeEnabled( false, 0);
     module_.Output().TestModeEnabled( false, 0);
 }
@@ -419,7 +446,7 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     VMPs_[1].Clear();
 
     //Result channels are real/imag 32bit integers
-    packetSize = 2; 
+    packetSize = 2;
     FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
     VMPs_[2].Resize(packetSize);
     VMPs_[2].Clear();
@@ -431,16 +458,16 @@ X6_1000::ErrorCodes X6_1000::acquire() {
 
     // is this necessary??
     stream_.PrefillPacketCount(prefillPacketCount_);
-    
+
     trigger_.AtStreamStart();
 
     // flag must be set before calling stream start
-    isRunning_ = true; 
+    isRunning_ = true;
 
     //  Start Streaming
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
-    
+
     return SUCCESS;
 }
 
@@ -586,7 +613,7 @@ void X6_1000::initialize_correlators() {
     }
 }
 /****************************************************************************
- * Event Handlers 
+ * Event Handlers
  ****************************************************************************/
 
  void  X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
@@ -656,7 +683,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
         return;
     }
     // StreamID is now encoded in the PeripheralID of the VMP Vita buffer
-    // PeripheralID is just the order of the streamID in the filter   
+    // PeripheralID is just the order of the streamID in the filter
     PacketBufferHeader header(Event.Data);
     uint16_t sid;
 
@@ -671,7 +698,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             sid = resultChans_[header.PeripheralId()];
             break;
     }
-    
+
     // interpret the data as 16 or 32-bit integers depending on the channel type
     ShortDG sbufferDG(Event.Data);
     IntegerDG ibufferDG(Event.Data);
@@ -698,7 +725,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             }
             break;
     }
-    
+
 }
 
 bool X6_1000::check_done() {
@@ -787,10 +814,10 @@ uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
     return read_wishbone_register(BASE_DSP[instance], offset);
 }
 
-Accumulator::Accumulator() : 
-    wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
+Accumulator::Accumulator() :
+    wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {};
 
-Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) : 
+Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) :
                          channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
@@ -930,10 +957,10 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
     }
 }
 
-Correlator::Correlator() : 
-    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {}; 
+Correlator::Correlator() :
+    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {};
 
-Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) : 
+Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) :
                          wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
     recordLength_ = 2; // assume a RESULT channel
     buffers_.resize(channels.size());
@@ -976,7 +1003,7 @@ void Correlator::correlate() {
     size_t minsize = *std::min_element(bufsizes.begin(), bufsizes.end());
     if (minsize == 0)
         return;
-    
+
     // correlate
     // data is real/imag interleaved, so process a pair of points at a time from each channel
     for (int i = 0; i < minsize; i += 2) {
