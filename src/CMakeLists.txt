@@ -1,7 +1,7 @@
 # build using
 # mkdir build
 # cd build
-# cmake -G "MSYS Makefiles" -DINNOVATIVE_PATH=C:\\Innovative ../src/  # for Windows
+# cmake -G "MSYS Makefiles" -DINNOVATIVE_PATH="C:\\Innovative" ../src/  # for Windows
 # cmake -DINNOVATIVE_PATH=/home/cryan/Downloads/II ../src   # for Linux
 # make
 
@@ -35,8 +35,10 @@ LINK_DIRECTORIES( ${INNOVATIVE_LIB_PATH}/Gcc/Debug)
 #Intel IPP shared libraries
 if(UNIX)
 	LINK_DIRECTORIES(${INNOVATIVE_PATH}/opt/intel/composer_xe_2011_sp1.9.293/ipp/lib/intel64)
+	SET(IPP_LIB "ipps")
 else()
 	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
+	SET(IPP_LIB "ipps-7.0")
 endif()
 
 if(UNIX)
@@ -84,7 +86,7 @@ TARGET_LINK_LIBRARIES(x6adc
 	-Wl,--end-group
 
 	wdapi # WinDriver library in Innovative\lib\gcc
-	ipps  # in Intel IPP directory listed above
+	${IPP_LIB} # in Intel IPP directory listed above
 
 	# The following libraries are not currently required
 	#Framework_Win
