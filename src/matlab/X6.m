@@ -262,7 +262,7 @@ classdef X6 < hgsetget
         end
         
         function set_nco_frequency(obj, a, b, freq)
-            obj.libraryCall('set_nco_frequency', a, b, freq)
+            obj.libraryCall('set_nco_frequency', a, b, freq);
         end
         
         function write_kernel(obj, a, b, kernel)

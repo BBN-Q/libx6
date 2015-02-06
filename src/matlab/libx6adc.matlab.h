@@ -41,18 +41,7 @@ EXPORT int connect_by_ID(int);
 EXPORT int disconnect(int);
 EXPORT unsigned get_num_devices();
 EXPORT int is_open(int);
-
-EXPORT int initX6(int);
 EXPORT int read_firmware_version(int);
-
-EXPORT int set_digitizer_mode(int, int);
-EXPORT int get_digitizer_mode(int);
-
-EXPORT int set_sampleRate(int, double);
-EXPORT double get_sampleRate(int);
-
-EXPORT int set_trigger_source(int, int);
-EXPORT int get_trigger_source(int);
 
 EXPORT int set_reference(int, int);
 EXPORT int get_reference(int);
@@ -61,6 +50,9 @@ EXPORT int enable_stream(int, int, int, int);
 EXPORT int disable_stream(int, int, int, int);
 
 EXPORT int set_averager_settings(int, int, int, int, int);
+EXPORT int set_nco_frequency(int, int, int, double);
+EXPORT int set_threshold(int, int, int, double);
+EXPORT int write_kernel(int, int, int, double *, unsigned);
 
 EXPORT int acquire(int);
 EXPORT int wait_for_acquisition(int, int);
@@ -75,6 +67,15 @@ EXPORT int get_variance_buffer_size(int, struct ChannelTuple *, unsigned);
 EXPORT int set_log(char *);
 int update_log(FILE * pFile);
 EXPORT int set_logging_level(int);
+
+/* unused/unfinished methods */
+EXPORT int initX6(int);
+EXPORT int set_digitizer_mode(int, int);
+EXPORT int get_digitizer_mode(int);
+EXPORT int set_trigger_source(int, int);
+EXPORT int get_trigger_source(int);
+EXPORT int set_sampleRate(int, double);
+EXPORT double get_sampleRate(int);
 
 /* debug methods */
 EXPORT unsigned read_register(int, int, int);
