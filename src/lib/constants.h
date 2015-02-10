@@ -27,7 +27,7 @@ static const int WB_ADDR_DIGITIZER_MODE = 0x11; //update me
 static const int WB_OFFSET_DIGITIZER_MODE = 0x01; //update me
 
 static const int WB_FRAME_SIZE_OFFSET    = 0x00;
-static const int WB_STREAM_ENABLE_OFFSET = 0x08;
+static const int WB_STREAM_ENABLE_OFFSET = 0x0f;
 static const int WB_PHASE_INC_OFFSET     = 0x10;
 static const int WB_KERNEL_LENGTH_OFFSET = 0x18;
 static const int WB_STREAM_ID_OFFSET     = 0x20;

@@ -114,8 +114,7 @@ function transfer_waveform(dev::X6, a, b, c)
 	if (b == 0) # physical channel
 		return wfs
 	else
-		# temporary swap of real and imaginary until fixed in firmware
-		return 1im*wfs[1:2:end] + wfs[2:2:end]
+		return wfs[1:2:end] + 1im*wfs[2:2:end]
 	end
 end
 

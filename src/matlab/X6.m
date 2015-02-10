@@ -66,8 +66,8 @@ classdef X6 < hgsetget
                 obj.deviceID = id;
             end
             % temporary fix for stream enable register
-            obj.writeRegister(X6.DSP_WB_OFFSET(1), 8, 0);
-            obj.writeRegister(X6.DSP_WB_OFFSET(2), 8, 0);
+            obj.writeRegister(X6.DSP_WB_OFFSET(1), 15, 0);
+            obj.writeRegister(X6.DSP_WB_OFFSET(2), 15, 0);
         end
 
         function val = disconnect(obj)
@@ -199,8 +199,7 @@ classdef X6 < hgsetget
             if channels(1).b == 0 % physical channel
                 wf = wfPtr.Value;
             else
-                % temporary swap until real/imaginary interleaving is fixed in firmware
-                wf = 1i*wfPtr.Value(1:2:end) + wfPtr.Value(2:2:end);
+                wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
             end
             if channels(1).c == 0 % non-results streams should be reshaped
                 wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
@@ -221,8 +220,8 @@ classdef X6 < hgsetget
                 wf.imag = zeros(length(wfPtr.Value), 1);
                 wf.prod = zeros(length(wfPtr.Value), 1);
             else
-                wf.real = wfPtr.Value(2:3:end); % temporary swap of real and imag until real/imaginary interleaving is fixed in firmware
-                wf.imag = wfPtr.Value(1:3:end);
+                wf.real = wfPtr.Value(1:3:end);
+                wf.imag = wfPtr.Value(2:3:end);
                 wf.prod = wfPtr.Value(3:3:end);
             end
             if channels(1).c == 0 % non-results streams should be reshaped
