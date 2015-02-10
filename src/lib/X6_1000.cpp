@@ -618,6 +618,7 @@ void X6_1000::initialize_correlators() {
  ****************************************************************************/
 
  void  X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
+    //Seems to be called when AtConfigure is called on the trigger module
     FILE_LOG(logDEBUG) << "X6_1000::HandleDisableTrigger";
     module_.Input().Trigger().External(false);
     module_.Output().Trigger().External(false);
@@ -625,6 +626,8 @@ void X6_1000::initialize_correlators() {
 
 
 void  X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
+    //This is called when ``AtStreamStart`` is called on the trigger manager module
+    // and external trigger has been set with ExternalTrigger(true) being called on the trigger module
     FILE_LOG(logDEBUG) << "X6_1000::HandleExternalTrigger";
     module_.Input().Trigger().External(true);
     // module_.Input().Trigger().External( (triggerSource_ == EXTERNAL_TRIGGER) ? true : false );
