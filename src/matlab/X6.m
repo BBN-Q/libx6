@@ -432,15 +432,24 @@ classdef X6 < hgsetget
             fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 9, 1, 1);
 
+            for ct = 1:2048
+                x6.writeRegister(hex2dec('2200'), 9, ct-1);
+                x6.writeRegister(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
+            end
+            x6.writeRegister(hex2dec('2200'), 8, 1024);
+            
+            %DAC trigger window
+            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
             fprintf('Acquiring\n');
             x6.acquire();
 
             success = x6.wait_for_acquisition(1);
             fprintf('Wait for acquisition returned %d\n', success);
-
+          
             fprintf('Stopping\n');
             x6.stop();
 
+            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
             fprintf('Transferring waveforms\n');
             numDemodChan = 2;
             wfs = cell(numDemodChan+1,1);

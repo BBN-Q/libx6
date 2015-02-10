@@ -248,6 +248,9 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
     module_.Input().Pulse().Reset();
     module_.Input().Pulse().Enabled(false);
 
+    module_.Output().Pulse().Reset();
+    module_.Output().Pulse().Enabled(false);
+
     // set frame sizes (2 samples per word), virtual channels are complex so 2*
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
 
@@ -350,6 +353,9 @@ X6_1000::ErrorCodes X6_1000::set_active_channels() {
         FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
         module_.Input().ChannelEnabled(cnt, 1);
     }
+
+    module_.Output().ChannelEnabled(0, true);
+
     return status;
 }
 
@@ -462,6 +468,8 @@ X6_1000::ErrorCodes X6_1000::acquire() {
 
     trigger_.AtStreamStart();
 
+    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
+
     // flag must be set before calling stream start
     isRunning_ = true;
 
@@ -469,6 +477,8 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
 
+    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
+    
     return SUCCESS;
 }
 
@@ -629,8 +639,13 @@ void  X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
     //This is called when ``AtStreamStart`` is called on the trigger manager module
     // and external trigger has been set with ExternalTrigger(true) being called on the trigger module
     FILE_LOG(logDEBUG) << "X6_1000::HandleExternalTrigger";
+    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
     module_.Input().Trigger().External(true);
-    // module_.Input().Trigger().External( (triggerSource_ == EXTERNAL_TRIGGER) ? true : false );
+    module_.Output().Trigger().External(true);
+    module_.Output().Trigger().FramedMode(true);
+    module_.Output().Trigger().Edge(true);
+    module_.Output().Trigger().FrameSize(1024);
+    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
 }
 
 
