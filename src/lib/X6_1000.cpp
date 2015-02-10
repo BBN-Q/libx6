@@ -253,6 +253,7 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
 
     for (int inst = 0; inst <= 1; ++inst) {
         write_dsp_register(inst, WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord + 8);
+        write_dsp_register(inst, WB_RECORD_LENGTH_OFFSET, recordLength_);
         for (int vchan = 1; vchan <= 4; ++vchan) {
             write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord + 8);
         }

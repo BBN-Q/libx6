@@ -34,6 +34,7 @@ static const int WB_STREAM_ID_OFFSET     = 0x20;
 static const int WB_KERNEL_ADDR_OFFSET   = 0x30;
 static const int WB_KERNEL_DATA_OFFSET   = 0x31;
 static const int WB_THRESHOLD_OFFSET     = 0x38;
+static const int WB_RECORD_LENGTH_OFFSET = 0x3f;
 
 //Expected version
 static const int FIRMWARE_VERSION =  0x1;
