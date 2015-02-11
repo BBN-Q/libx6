@@ -277,7 +277,7 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 
     // set the appropriate bit in stream_enable register
     int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
-    reg |= 1 << (b + 7*(c & 0x1));
+    reg |= 1 << (b + 15*(c & 0x1));
     FILE_LOG(logDEBUG4) << "Setting stream_enable register to " << myhex << reg;
     write_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET, reg);
 
