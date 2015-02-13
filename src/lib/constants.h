@@ -42,7 +42,7 @@ static const int FIRMWARE_VERSION =  0x1;
 typedef enum {DIGITIZE=0, AVERGAGE, FILTER, FILTER_AND_AVERAGE} DIGITIZER_MODE;
 
 //Readout filter parameters
-static const int VIRTUAL_CH_RATIO = 2; // Number of virtual channels per physical channel
+static const int VIRTUAL_CH_RATIO = 4; // Number of virtual channels per physical channel
 static const int DECIMATION_FACTOR = 16;
 
 // Correlations

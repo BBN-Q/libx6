@@ -402,9 +402,10 @@ classdef X6 < hgsetget
             x6.reference = 'external';
             
             fprintf('Enabling streams\n');
+            numDemodChan = 3;
             for phys = 1:2
                 x6.enable_stream(phys, 0, 0); % the raw stream
-                for demod = 1:2
+                for demod = 1:numDemodChan
                     for result = 0:1
                         x6.enable_stream(phys, demod, result);
                     end
@@ -414,14 +415,18 @@ classdef X6 < hgsetget
             fprintf('Setting NCO phase increments\n');
             x6.set_nco_frequency(1, 1, 10e6);
             x6.set_nco_frequency(1, 2, 30e6);
+            x6.set_nco_frequency(1, 3, 50e6);
             x6.set_nco_frequency(2, 1, 20e6);
             x6.set_nco_frequency(2, 2, 40e6);
+            x6.set_nco_frequency(2, 3, 60e6);
             
             fprintf('Writing integration kernels\n');
             x6.write_kernel(1, 1, ones(100,1));
             x6.write_kernel(1, 2, ones(100,1));
+            x6.write_kernel(1, 3, ones(100,1));
             x6.write_kernel(2, 1, ones(100,1));
             x6.write_kernel(2, 2, ones(100,1));
+            x6.write_kernel(2, 3, ones(100,1));
             
             fprintf('Writing decision engine thresholds\n');
             x6.set_threshold(1, 1, 0.5);
@@ -429,8 +434,8 @@ classdef X6 < hgsetget
             x6.set_threshold(2, 1, 0.5);
             x6.set_threshold(2, 2, 0.5);
             
-            fprintf('setting averager parameters to record 9 segments of 2048 samples\n');
-            x6.set_averager_settings(2048, 9, 1, 1);
+            fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
+            x6.set_averager_settings(2048, 16, 1, 1);
 
             for ct = 1:2048
                 x6.writeRegister(hex2dec('2200'), 9, ct-1);
@@ -451,7 +456,6 @@ classdef X6 < hgsetget
 
             fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
             fprintf('Transferring waveforms\n');
-            numDemodChan = 2;
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
                 wfs{ct+1} = x6.transfer_stream(struct('a', 1, 'b', ct, 'c', 0));
