@@ -3,7 +3,6 @@
 #include <IppMemoryUtils_Mb.h>  // for Init::UsePerformanceMemoryFunctions
 #include <BufferDatagrams_Mb.h> // for ShortDG
 #include <algorithm>            // std::max
-#include <cstdlib>              // for rand
 
 using namespace Innovative;
 
