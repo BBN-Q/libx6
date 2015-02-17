@@ -16,20 +16,11 @@
 
 #include <stdio.h>
 
+#include "X6_errno.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum X6ErrorCode {
-	X6_OK,
-	X6_UNKNOWN_ERROR = -1,
-	X6_BUFFER_OVERFLOW = -2,
-	X6_NOT_IMPLEMENTED_ERROR = -3,
-	X6_INVALID_CHANNEL = -4,
-	X6_FILE_ERROR = -5,
-	X6_INVALID_DEVICEID = -6,
-	X6_TIMEOUT = -7
-};
 
 struct ChannelTuple {
 	int a;
@@ -42,7 +33,7 @@ void cleanup() __attribute__((destructor));
 
 EXPORT int connect_by_ID(int);
 EXPORT int disconnect(int);
-EXPORT unsigned get_num_devices();
+EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);
 EXPORT int read_firmware_version(int);
 

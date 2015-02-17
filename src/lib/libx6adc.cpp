@@ -19,7 +19,8 @@ void init() {
 	FILE* pFile = fopen("libx6.log", "a");
 	Output2FILE::Stream() = pFile;
 
-	numDevices_ = get_num_devices();
+	static Innovative::X6_1000M x6;
+	numDevices_ = static_cast<unsigned int>(x6.BoardCount());
 	FILE_LOG(logINFO) << "Initializing BBN libx6 with " << numDevices_ << " device" << (numDevices_ > 1 ? "s" : "") << " found.";
 }
 
@@ -31,13 +32,60 @@ void cleanup(){
 	}
 }
 
+//Define a couple of templated wrapper functions to make library calls and catch thrown errors
+//First one for void calls
+template<typename F>
+X6_STATUS x6_call(const unsigned deviceSerial, F func){
+	try {
+		func(X6s_.at(deviceSerial));
+		//Nothing thrown then assume OK
+		return X6_OK;
+	}
+	catch (std::out_of_range e) {
+		if (X6s_.find(deviceSerial) == X6s_.end()) {
+			return X6_UNCONNECTED;
+		} else {
+			return X6_UNKNOWN_ERROR;
+		}
+	}
+	catch (X6_STATUS status) {
+		return status;
+	}
+	catch (...) {
+		return X6_UNKNOWN_ERROR;
+	}
+}
+
+//and one for to store getter values in pointer passed to library
+template<typename R, typename F>
+X6_STATUS x6_getter(const unsigned deviceSerial, F func, R* resPtr){
+	try {
+		*resPtr = func(X6s_.at(deviceSerial));
+		//Nothing thrown then assume OK
+		return X6_OK;
+	}
+	catch (std::out_of_range e) {
+		if (X6s_.find(deviceSerial) == X6s_.end()) {
+			return X6_UNCONNECTED;
+		} else {
+			return X6_UNKNOWN_ERROR;
+		}
+	}
+	catch (X6_STATUS status) {
+		return status;
+	}
+	catch (...) {
+		return X6_UNKNOWN_ERROR;
+	}
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-unsigned get_num_devices() {
-    static Innovative::X6_1000M x6;
-    return static_cast<unsigned int>(x6.BoardCount());
+X6_STATUS get_num_devices(unsigned * numDevices) {
+	*numDevices = numDevices_;
+	return X6_OK;
 }
 
 int connect_by_ID(int deviceID) {
@@ -160,7 +208,7 @@ int get_is_running(int deviceID) {
 
 int get_has_new_data(int deviceID) {
 	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->get_has_new_data();	
+	return X6s_[deviceID]->get_has_new_data();
 }
 
 int stop(int deviceID) {
@@ -269,4 +317,3 @@ float get_logic_temperature(int deviceID, int method) {
 #ifdef __cplusplus
 }
 #endif
-

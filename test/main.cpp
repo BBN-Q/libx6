@@ -20,8 +20,8 @@ int main ()
 
   set_logging_level(8);
 
-  int numDevices;
-  numDevices = get_num_devices();
+  unsigned numDevices;
+  get_num_devices(&numDevices);
 
   cout << numDevices << " X6 device" << (numDevices > 1 ? "s": "")  << " found" << endl;
 
