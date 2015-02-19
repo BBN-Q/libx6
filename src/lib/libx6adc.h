@@ -32,10 +32,10 @@ void init() __attribute__((constructor));
 void cleanup() __attribute__((destructor));
 
 EXPORT X6_STATUS connect_by_ID(int);
-EXPORT int disconnect(int);
+EXPORT X6_STATUS disconnect(int);
 EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);
-EXPORT int read_firmware_version(int);
+EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
 
 EXPORT int set_reference(int, int);
 EXPORT int get_reference(int);
@@ -63,7 +63,7 @@ int update_log(FILE * pFile);
 EXPORT int set_logging_level(int);
 
 /* unused/unfinished methods */
-EXPORT int initX6(int);
+EXPORT X6_STATUS initX6(int);
 EXPORT int set_digitizer_mode(int, int);
 EXPORT int get_digitizer_mode(int);
 EXPORT int set_trigger_source(int, int);

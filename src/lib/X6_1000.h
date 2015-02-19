@@ -1,4 +1,3 @@
-
 #include "headings.h"
 
 #include <X6_1000M_Mb.h>
@@ -30,7 +29,7 @@ class Channel;
 
 enum channel_t { PHYSICAL, DEMOD, RESULT };
 
-class X6_1000 
+class X6_1000
 {
 public:
 
@@ -91,8 +90,8 @@ public:
 	 *  \param extSrc FRONT_PANEL || P16
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_clock(ClockSource src = INTERNAL_CLOCK, 
-		                 float frequency = 1e9, 
+	ErrorCodes set_clock(ClockSource src = INTERNAL_CLOCK,
+		                 float frequency = 1e9,
 		                 ExtSource extSrc = FRONT_PANEL);
 
 	/** Set up clock and trigger routes
@@ -138,9 +137,9 @@ public:
 
 	unsigned int get_num_channels();
 
-	ErrorCodes open(int deviceID);
-	ErrorCodes init();
-	ErrorCodes close();
+	void open(int deviceID);
+	void init();
+	void close();
 
 	ErrorCodes acquire();
 	ErrorCodes wait_for_acquisition(unsigned);
@@ -164,7 +163,7 @@ public:
 	const int BusmasterSize = 4; /**< Rx & Tx BusMaster size in MB */
 	const int MHz = 1e6;         /**< Constant for converting MHz */
 	const int Meg = 1024 * 1024;
- 
+
 private:
 	// disable copying because some the innovative stuff it holds on to is non-copyable
 	X6_1000(const X6_1000&) = delete;
@@ -210,11 +209,11 @@ private:
 	void initialize_accumulators();
 	void initialize_correlators();
 
-	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
+	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event,
     				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
 
 	// Malibu Event handlers
-	
+
 	void HandleDisableTrigger(OpenWire::NotifyEvent & Event);
 	void HandleExternalTrigger(OpenWire::NotifyEvent & Event);
 	void HandleSoftwareTrigger(OpenWire::NotifyEvent & Event);
@@ -326,7 +325,7 @@ private:
 	vector<double>::iterator idx_;
 	// buffer for (A*B)^2
 	vector<double> data2_;
-	vector<double>::iterator idx2_;	
+	vector<double>::iterator idx2_;
 };
 
 vector<vector<int>> combinations(int, int);

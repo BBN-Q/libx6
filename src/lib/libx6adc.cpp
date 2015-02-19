@@ -5,13 +5,6 @@
  *      Author: qlab
  */
 
-
-#include <functional>
-
-using namespace std::placeholders;
-using std::function;
-using std::bind;
-
 #include "headings.h"
 #include "X6_1000.h"
 #include "libx6adc.h"
@@ -41,12 +34,10 @@ void cleanup(){
 
 //Define a couple of templated wrapper functions to make library calls and catch thrown errors
 //First one for void calls
-template<typename F>
-X6_STATUS x6_call(const unsigned deviceID, F func){
-	try {
-		func(X6s_.at(deviceID));
-		//Nothing thrown then assume OK
-		return X6_OK;
+template<typename F, typename... Args>
+X6_STATUS x6_call(const unsigned deviceID, F func, Args... args){
+	try{
+		(X6s_.at(deviceID).get()->*func)(args...); // for some reason the compiler can't infer the correct dereference operator without the get function
 	}
 	catch (std::out_of_range e) {
 		if (X6s_.find(deviceID) == X6s_.end()) {
@@ -67,7 +58,7 @@ X6_STATUS x6_call(const unsigned deviceID, F func){
 template<typename R, typename F>
 X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr){
 	try {
-		*resPtr = func(X6s_.at(deviceID));
+		*resPtr = (X6s_.at(deviceID).get()->*func)();
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
@@ -100,33 +91,24 @@ X6_STATUS connect_by_ID(int deviceID) {
 	if (X6s_.find(deviceID) == X6s_.end()){
 		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000()); //turn-into make_unique when we can go to gcc 4.9
 	}
-	auto func = bind(&X6_1000::open, _1, deviceID);
-	return x6_call(deviceID, func);
+	return x6_call(deviceID, &X6_1000::open, deviceID);
 }
 
-int disconnect(int deviceID) {
-	if (deviceID >= numDevices_) return X6_1000::INVALID_DEVICEID;
-	X6s_[deviceID]->close();
-	X6s_.erase(deviceID);
-}
+X6_STATUS disconnect(int deviceID) {
+	X6_STATUS status = x6_call(deviceID, &X6_1000::close);
 
-int is_open(int deviceID){
-	//First check that we have it in the X6s_ map
-	if (X6s_.find(deviceID) == X6s_.end()){
-		FILE_LOG(logERROR) << "Device " << deviceID << " not yet connected.";
-		return 0;
+	if (status == X6_OK){
+		X6s_.erase(deviceID);
 	}
-	return 1;
+	return status;
 }
 
-int initX6(int deviceID) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->init();
+X6_STATUS initX6(int deviceID) {
+	return x6_call(deviceID, &X6_1000::init);
 }
 
-int read_firmware_version(int deviceID) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
-	return X6s_[deviceID]->read_firmware_version();
+X6_STATUS read_firmware_version(int deviceID, uint32_t* version) {
+	return x6_getter(deviceID, &X6_1000::read_firmware_version, version);
 }
 
 int set_digitizer_mode(int deviceID, int mode) {

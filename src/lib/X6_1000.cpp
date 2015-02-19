@@ -29,12 +29,12 @@ void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event,
     event.Unsynchronize();
 }
 
-X6_1000::ErrorCodes X6_1000::open(int deviceID) {
+void X6_1000::open(int deviceID) {
     /* Connects to the II module with the given device ID returns MODULE_ERROR
      * if the device cannot be found
      */
 
-    if (isOpen_) return SUCCESS;
+    if (isOpen_) return;
     deviceID_ = deviceID;
 
     // Timer event handlers
@@ -73,15 +73,9 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     module_.OutgoingBusMasterSize(TxBmSize * Meg);
     module_.Target(deviceID);
 
-    try {
-        module_.Open();
-        FILE_LOG(logINFO) << "Opened Device " << deviceID;
-        FILE_LOG(logINFO) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
-    }
-    catch(...) {
-        FILE_LOG(logINFO) << "Module Device Open Failure!";
-        return MODULE_ERROR;
-    }
+    module_.Open();
+    FILE_LOG(logINFO) << "Opened Device " << deviceID;
+    FILE_LOG(logINFO) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
 
     module_.Reset();
     FILE_LOG(logINFO) << "Module Device Opened Successfully...";
@@ -98,24 +92,20 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
 
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
-
-    return SUCCESS;
   }
 
-X6_1000::ErrorCodes X6_1000::init() {
+void X6_1000::init() {
     /*
     TODO: some standard setup stuff here.  Maybe move some of the open code here.
     */
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::close() {
+void X6_1000::close() {
     stream_.Disconnect();
     module_.Close();
 
     isOpen_ = false;
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
-	return SUCCESS;
 }
 
 int X6_1000::read_firmware_version() {
