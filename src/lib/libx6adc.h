@@ -31,7 +31,7 @@ struct ChannelTuple {
 void init() __attribute__((constructor));
 void cleanup() __attribute__((destructor));
 
-EXPORT int connect_by_ID(int);
+EXPORT X6_STATUS connect_by_ID(int);
 EXPORT int disconnect(int);
 EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);

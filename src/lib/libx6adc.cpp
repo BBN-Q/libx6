@@ -5,6 +5,13 @@
  *      Author: qlab
  */
 
+
+#include <functional>
+
+using namespace std::placeholders;
+using std::function;
+using std::bind;
+
 #include "headings.h"
 #include "X6_1000.h"
 #include "libx6adc.h"
@@ -35,14 +42,14 @@ void cleanup(){
 //Define a couple of templated wrapper functions to make library calls and catch thrown errors
 //First one for void calls
 template<typename F>
-X6_STATUS x6_call(const unsigned deviceSerial, F func){
+X6_STATUS x6_call(const unsigned deviceID, F func){
 	try {
-		func(X6s_.at(deviceSerial));
+		func(X6s_.at(deviceID));
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
 	catch (std::out_of_range e) {
-		if (X6s_.find(deviceSerial) == X6s_.end()) {
+		if (X6s_.find(deviceID) == X6s_.end()) {
 			return X6_UNCONNECTED;
 		} else {
 			return X6_UNKNOWN_ERROR;
@@ -58,14 +65,14 @@ X6_STATUS x6_call(const unsigned deviceSerial, F func){
 
 //and one for to store getter values in pointer passed to library
 template<typename R, typename F>
-X6_STATUS x6_getter(const unsigned deviceSerial, F func, R* resPtr){
+X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr){
 	try {
-		*resPtr = func(X6s_.at(deviceSerial));
+		*resPtr = func(X6s_.at(deviceID));
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
 	catch (std::out_of_range e) {
-		if (X6s_.find(deviceSerial) == X6s_.end()) {
+		if (X6s_.find(deviceID) == X6s_.end()) {
 			return X6_UNCONNECTED;
 		} else {
 			return X6_UNKNOWN_ERROR;
@@ -88,12 +95,13 @@ X6_STATUS get_num_devices(unsigned * numDevices) {
 	return X6_OK;
 }
 
-int connect_by_ID(int deviceID) {
-	if (deviceID >= numDevices_) return X6_1000::INVALID_DEVICEID;
+X6_STATUS connect_by_ID(int deviceID) {
+	if (deviceID >= numDevices_) return X6_NO_DEVICE_FOUND;
 	if (X6s_.find(deviceID) == X6s_.end()){
 		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000()); //turn-into make_unique when we can go to gcc 4.9
 	}
-	return X6s_[deviceID]->open(deviceID);
+	auto func = bind(&X6_1000::open, _1, deviceID);
+	return x6_call(deviceID, func);
 }
 
 int disconnect(int deviceID) {
