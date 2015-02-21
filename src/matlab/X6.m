@@ -237,12 +237,12 @@ classdef X6 < hgsetget
             end
         end
         
-        function val = writeRegister(obj, addr, offset, data)
+        function val = write_register(obj, addr, offset, data)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('write_register', addr, offset, data);
         end
 
-        function val = readRegister(obj, addr, offset)
+        function val = read_register(obj, addr, offset)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('read_register', addr, offset);
         end
