@@ -138,8 +138,6 @@ classdef X6 < hgsetget
 
         function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
-            obj.write_register(obj.DSP_WB_OFFSET(1), 63, recordLength-4);
-            obj.write_register(obj.DSP_WB_OFFSET(2), 63, recordLength-4);
             obj.recordLength = recordLength;
             obj.nbrSegments = nbrSegments;
             obj.nbrWaveforms = waveforms;
