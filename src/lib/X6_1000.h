@@ -94,41 +94,39 @@ public:
 		                 float frequency = 1e9,
 		                 ExtSource extSrc = FRONT_PANEL);
 
-	/** Set up clock and trigger routes
-	 * \returns SUCCESS
-	 */
-	ErrorCodes set_routes();
+	/** Set up clock and trigger routes */
+	void set_routes();
 
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	ErrorCodes set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
+	void set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
 	TriggerSource get_trigger_source() const;
 
-	ErrorCodes set_trigger_delay(float delay = 0.0);
+	void set_trigger_delay(float delay = 0.0);
 
 	/** Set Decimation Factor (current for both Tx and Rx)
 	 * \params enabled set to true to enable
 	 * \params factor Decimaton factor
 	 * \returns SUCCESS
 	 */
-	ErrorCodes set_decimation(bool enabled = false, int factor = 1);
+	void set_decimation(bool enabled = false, int factor = 1);
 	int get_decimation();
 
-	ErrorCodes set_frame(int recordLength);
-	ErrorCodes set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
+	void set_frame(int recordLength);
+	void set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
 
-	ErrorCodes enable_stream(unsigned, unsigned, unsigned);
-	ErrorCodes disable_stream(unsigned, unsigned, unsigned);
+	void enable_stream(unsigned, unsigned, unsigned);
+	void disable_stream(unsigned, unsigned, unsigned);
 
 	bool get_channel_enable(int channel);
 
 	void set_digitizer_mode(const DIGITIZER_MODE &);
 	DIGITIZER_MODE get_digitizer_mode() const;
 
-	ErrorCodes set_nco_frequency(int, int, double);
-	ErrorCodes set_threshold(int, int, double);
-	ErrorCodes write_kernel(int, int, double *, size_t);
+	void set_nco_frequency(int, int, double);
+	void set_threshold(int, int, double);
+	void write_kernel(int, int, double *, size_t);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
@@ -200,7 +198,7 @@ private:
 	unsigned roundRobins_;
 	unsigned recordsTaken_;
 
-	ErrorCodes set_active_channels();
+	void set_active_channels();
 	void set_dsp_stream_ids();
 	void set_defaults();
 	void log_card_info();

@@ -131,15 +131,13 @@ float X6_1000::get_logic_temperature_by_reg() {
     return static_cast<float>(Temperature.Value());
 }
 
-X6_1000::ErrorCodes X6_1000::set_routes() {
+void X6_1000::set_routes() {
     // Route external clock source from front panel (other option is cslP16)
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
 
     // route external sync source from front panel (other option is essP16)
     module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
     module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-
-    return SUCCESS;
 }
 
 void X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
@@ -153,7 +151,7 @@ void X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
     module_.Clock().ReferenceFrequency(frequency);
 }
 
-X6_1000::ReferenceSource X6_1000::get_reference() {
+ReferenceSource X6_1000::get_reference() {
     auto iiref = module_.Clock().Reference();
     return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
 }
@@ -177,7 +175,7 @@ double X6_1000::get_pll_frequency() {
 
 }
 
-X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
+void X6_1000::set_trigger_source(TriggerSource trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
 
@@ -185,8 +183,6 @@ X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
 
     trigger_.ExternalTrigger( (trgSrc == EXTERNAL_TRIGGER) ? true : false);
     trigger_.AtConfigure();
-
-    return SUCCESS;
 }
 
 X6_1000::TriggerSource X6_1000::get_trigger_source() const {
@@ -198,17 +194,15 @@ X6_1000::TriggerSource X6_1000::get_trigger_source() const {
         return SOFTWARE_TRIGGER;
 }
 
-X6_1000::ErrorCodes X6_1000::set_trigger_delay(float delay) {
+void X6_1000::set_trigger_delay(float delay) {
     // going to require a trigger engine modification to work
     // leaving as a TODO for now
     // Something like this might work:
     // trigger_.DelayedTriggerPeriod(delay);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_decimation(bool enabled, int factor) {
+void X6_1000::set_decimation(bool enabled, int factor) {
     module_.Input().Decimation((enabled ) ? factor : 0);
-    return SUCCESS;
 }
 
 int X6_1000::get_decimation() {
@@ -216,7 +210,7 @@ int X6_1000::get_decimation() {
     return (decimation > 0) ? decimation : 1;
 }
 
-X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
+void X6_1000::set_frame(int recordLength) {
     FILE_LOG(logINFO) << "Setting recordLength_ = " << recordLength;
 
     recordLength_ = recordLength;
@@ -225,7 +219,7 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
     int frameGranularity = module_.Input().Info().TriggerFrameGranularity();
     if (recordLength % frameGranularity != 0) {
         FILE_LOG(logERROR) << "Invalid frame size: " << recordLength;
-        return INVALID_FRAMESIZE;
+        throw INVALID_FRAMESIZE;
     }
     module_.Input().Trigger().FramedMode(true);
     module_.Input().Trigger().Edge(true);
@@ -245,21 +239,17 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
             write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord + 8);
         }
     }
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
+void X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
     set_frame(recordLength);
     numSegments_ = numSegments;
     waveforms_ = waveforms;
     roundRobins_ = roundRobins;
     numRecords_ = numSegments * waveforms * roundRobins;
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
+void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
 
     // set the appropriate bit in stream_enable register
@@ -271,10 +261,9 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
+void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     // clear the appropriate bit in stream_enable register
     int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
     reg &= ~(1 << (b + 7*(c & 0x1)));
@@ -286,11 +275,9 @@ X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) 
     if (activeChannels_.count(streamID)) {
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
-        return SUCCESS;
     }
     else {
         FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
-        return SUCCESS;
     }
 }
 
@@ -300,7 +287,7 @@ bool X6_1000::get_channel_enable(int channel) {
     return true;
 }
 
-X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double freq) {
+void X6_1000::set_nco_frequency(int a, int b, double freq) {
     // NCO runs at quarter rate
     double nfreq = 4 * freq/get_pll_frequency();
     int32_t phase_increment = rint(nfreq * (1 << 18));
@@ -308,14 +295,14 @@ X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double freq) {
     write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
 }
 
-X6_1000::ErrorCodes X6_1000::set_threshold(int a, int b, double threshold) {
+void X6_1000::set_threshold(int a, int b, double threshold) {
     // results are sfix32_14, so scale threshold by 2^14.
     int32_t scaled_threshold = threshold * (1 << 14);
     FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " threshold to: " << threshold << " (" << scaled_threshold << ")";
     write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
 }
 
-X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
+void X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
     FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << " kernel of length to: " << bufsize/2;
     write_dsp_register(a-1, WB_KERNEL_LENGTH_OFFSET + (b-1), bufsize/2);
     for (int i = 0; i < bufsize/2; i += 2) {
@@ -327,9 +314,7 @@ X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t b
     }
 }
 
-X6_1000::ErrorCodes X6_1000::set_active_channels() {
-    ErrorCodes status = SUCCESS;
-
+void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
@@ -337,7 +322,6 @@ X6_1000::ErrorCodes X6_1000::set_active_channels() {
         FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
         module_.Input().ChannelEnabled(cnt, 1);
     }
-    return status;
 }
 
 void X6_1000::set_dsp_stream_ids() {
