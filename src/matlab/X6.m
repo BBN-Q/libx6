@@ -38,6 +38,9 @@ classdef X6 < hgsetget
         enabledStreams = {}
         dataTimer
         nbrSegments
+        recordLength
+        nbrWaveforms
+        nbrRoundRobins
     end
     
     properties(Constant)
@@ -66,8 +69,8 @@ classdef X6 < hgsetget
                 obj.deviceID = id;
             end
             % temporary fix for stream enable register
-            obj.writeRegister(X6.DSP_WB_OFFSET(1), 15, 0);
-            obj.writeRegister(X6.DSP_WB_OFFSET(2), 15, 0);
+            obj.write_register(X6.DSP_WB_OFFSET(1), 15, 0);
+            obj.write_register(X6.DSP_WB_OFFSET(2), 15, 0);
         end
 
         function val = disconnect(obj)
@@ -135,7 +138,12 @@ classdef X6 < hgsetget
         
         function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
+            obj.write_register(obj.DSP_WB_OFFSET(1), 63, recordLength-4);
+            obj.write_register(obj.DSP_WB_OFFSET(2), 63, recordLength-4);
+            obj.recordLength = recordLength;
             obj.nbrSegments = nbrSegments;
+            obj.nbrWaveforms = waveforms;
+            obj.nbrRoundRobins = roundRobins;
         end
 
         function val = acquire(obj)
@@ -231,12 +239,12 @@ classdef X6 < hgsetget
             end
         end
         
-        function val = writeRegister(obj, addr, offset, data)
+        function val = write_register(obj, addr, offset, data)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('write_register', addr, offset, data);
         end
 
-        function val = readRegister(obj, addr, offset)
+        function val = read_register(obj, addr, offset)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('read_register', addr, offset);
         end
