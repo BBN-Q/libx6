@@ -154,10 +154,10 @@ public:
 	int get_buffer_size(vector<Channel> &);
 	int get_variance_buffer_size(vector<Channel> &);
 
-	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
+	void write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
 
-	ErrorCodes write_dsp_register(unsigned, uint32_t, uint32_t);
+	void write_dsp_register(unsigned, uint32_t, uint32_t);
 	uint32_t read_dsp_register(unsigned, uint32_t) const;
 
 	const int BusmasterSize = 4; /**< Rx & Tx BusMaster size in MB */

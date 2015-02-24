@@ -772,13 +772,12 @@ DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
     return DIGITIZER_MODE(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
 }
 
-X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
+void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
     Innovative::WishboneBusSpace WB_X6 = Innovative::WishboneBusSpace(logicMemory, baseAddr);
     Innovative::Register reg = Register(WB_X6, offset);
     reg.Value(data);
-    return SUCCESS;
 }
 
 
@@ -789,8 +788,8 @@ uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) con
     return reg.Value();
 }
 
-X6_1000::ErrorCodes X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t data) {
-    return write_wishbone_register(BASE_DSP[instance], offset, data);
+void X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t data) {
+    write_wishbone_register(BASE_DSP[instance], offset, data);
 }
 
 uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {

@@ -55,10 +55,10 @@ X6_STATUS x6_call(const unsigned deviceID, F func, Args... args){
 }
 
 //and one for to store getter values in pointer passed to library
-template<typename R, typename F>
-X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr){
+template<typename R, typename F, typename... Args>
+X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr, Args... args){
 	try {
-		*resPtr = (X6s_.at(deviceID).get()->*func)();
+		*resPtr = (X6s_.at(deviceID).get()->*func)(args...);
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
@@ -216,26 +216,24 @@ X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned 
 	}
 }
 
-int get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
 	vector<Channel> channels(numChannels);
 	for (int i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return X6s_[deviceID]->get_buffer_size(channels);
+	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, channels);
 }
 
-int get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels) {
-	if (!is_open(deviceID)) return X6_1000::DEVICE_NOT_CONNECTED;
+X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
 	vector<Channel> channels(numChannels);
 	for (int i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return X6s_[deviceID]->get_variance_buffer_size(channels);
+	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, channels);
 }
 
 //Expects a null-terminated character array
-int set_log(char * fileNameArr) {
+X6_STATUS set_log(char * fileNameArr) {
 	string fileName(fileNameArr);
 	if (fileName.compare("stdout") == 0){
 		return update_log(stdout);
@@ -247,43 +245,43 @@ int set_log(char * fileNameArr) {
 
 		FILE* pFile = fopen(fileName.c_str(), "a");
 		if (!pFile) {
-			return X6_1000::FILE_ERROR;
+			return X6_FILE_ERROR;
 		}
 
 		return update_log(pFile);
 	}
 }
 
-int update_log(FILE * pFile) {
+X6_STATUS update_log(FILE * pFile) {
 	if (pFile) {
 		//Close the current file
 		if (Output2FILE::Stream()) fclose(Output2FILE::Stream());
 		//Assign the new one
 		Output2FILE::Stream() = pFile;
-		return X6_1000::SUCCESS;
+		return X6_OK;
 	} else {
-		return X6_1000::FILE_ERROR;
+		return X6_FILE_ERROR;
 	}
 }
 
-int set_logging_level(int logLevel) {
+X6_STATUS set_logging_level(int logLevel) {
 	FILELog::ReportingLevel() = TLogLevel(logLevel);
-	return 0;
+	return X6_OK;
 }
 
-unsigned read_register(int deviceID, int wbAddr, int offset){
-	return X6s_[deviceID]->read_wishbone_register(wbAddr, offset);
+X6_STATUS read_register(int deviceID, int wbAddr, int offset, uint32_t* regValue){
+	return x6_getter(deviceID, &X6_1000::read_wishbone_register, regValue, wbAddr, offset);
 }
 
-int write_register(int deviceID, int wbAddr, int offset, int data){
-	return X6s_[deviceID]->write_wishbone_register(wbAddr, offset, data);
+X6_STATUS write_register(int deviceID, int wbAddr, int offset, int data){
+	return x6_call(deviceID, &X6_1000::write_wishbone_register, wbAddr, offset, data);
 }
 
-float get_logic_temperature(int deviceID, int method) {
+X6_STATUS get_logic_temperature(int deviceID, int method, float* temp) {
 	if (method == 0)
-		return X6s_[deviceID]->get_logic_temperature();
+		return x6_getter(deviceID, &X6_1000::get_logic_temperature, temp);
 	else
-		return X6s_[deviceID]->get_logic_temperature_by_reg();
+		return x6_getter(deviceID, &X6_1000::get_logic_temperature_by_reg, temp);
 }
 
 #ifdef __cplusplus

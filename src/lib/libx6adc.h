@@ -55,12 +55,12 @@ EXPORT X6_STATUS get_has_new_data(int, int*);
 EXPORT X6_STATUS stop(int);
 EXPORT X6_STATUS transfer_waveform(int, ChannelTuple *, unsigned, double *, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple *, unsigned, double *, unsigned);
-EXPORT int get_buffer_size(int, ChannelTuple *, unsigned);
-EXPORT int get_variance_buffer_size(int, ChannelTuple *, unsigned);
+EXPORT X6_STATUS get_buffer_size(int, ChannelTuple *, unsigned, int*);
+EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple *, unsigned, int*);
 
-EXPORT int set_log(char *);
-int update_log(FILE * pFile);
-EXPORT int set_logging_level(int);
+EXPORT X6_STATUS set_log(char *);
+X6_STATUS update_log(FILE * pFile);
+EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
@@ -72,11 +72,11 @@ EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* debug methods */
-EXPORT unsigned read_register(int, int, int);
-EXPORT int write_register(int, int, int, int);
+EXPORT X6_STATUS read_register(int, int, int, uint32_t*);
+EXPORT X6_STATUS write_register(int, int, int, int);
 
 // II X6-1000M Test Interface
-EXPORT float get_logic_temperature(int,int);
+EXPORT X6_STATUS get_logic_temperature(int, int, float*);
 
 #ifdef __cplusplus
 }
