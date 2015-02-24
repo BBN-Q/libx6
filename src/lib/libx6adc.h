@@ -37,24 +37,24 @@ EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);
 EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
 
-EXPORT int set_reference(int, int);
-EXPORT int get_reference(int);
+EXPORT X6_STATUS set_reference(int, int);
+EXPORT X6_STATUS get_reference(int, int*);
 
-EXPORT int enable_stream(int, int, int, int);
-EXPORT int disable_stream(int, int, int, int);
+EXPORT X6_STATUS enable_stream(int, int, int, int);
+EXPORT X6_STATUS disable_stream(int, int, int, int);
 
-EXPORT int set_averager_settings(int, int, int, int, int);
-EXPORT int set_nco_frequency(int, int, int, double);
-EXPORT int set_threshold(int, int, int, double);
-EXPORT int write_kernel(int, int, int, double *, unsigned);
+EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
+EXPORT X6_STATUS set_nco_frequency(int, int, int, double);
+EXPORT X6_STATUS set_threshold(int, int, int, double);
+EXPORT X6_STATUS write_kernel(int, int, int, double *, unsigned);
 
-EXPORT int acquire(int);
-EXPORT int wait_for_acquisition(int, int);
-EXPORT int get_is_running(int);
-EXPORT int get_has_new_data(int);
-EXPORT int stop(int);
-EXPORT int transfer_waveform(int, ChannelTuple *, unsigned, double *, unsigned);
-EXPORT int transfer_variance(int, ChannelTuple *, unsigned, double *, unsigned);
+EXPORT X6_STATUS acquire(int);
+EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
+EXPORT X6_STATUS get_is_running(int, int*);
+EXPORT X6_STATUS get_has_new_data(int, int*);
+EXPORT X6_STATUS stop(int);
+EXPORT X6_STATUS transfer_waveform(int, ChannelTuple *, unsigned, double *, unsigned);
+EXPORT X6_STATUS transfer_variance(int, ChannelTuple *, unsigned, double *, unsigned);
 EXPORT int get_buffer_size(int, ChannelTuple *, unsigned);
 EXPORT int get_variance_buffer_size(int, ChannelTuple *, unsigned);
 
@@ -64,12 +64,12 @@ EXPORT int set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
-EXPORT int set_digitizer_mode(int, int);
-EXPORT int get_digitizer_mode(int);
-EXPORT int set_trigger_source(int, int);
-EXPORT int get_trigger_source(int);
-EXPORT int set_sampleRate(int, double);
-EXPORT double get_sampleRate(int);
+EXPORT X6_STATUS set_digitizer_mode(int, int);
+EXPORT X6_STATUS get_digitizer_mode(int, int*);
+EXPORT X6_STATUS set_trigger_source(int, int);
+EXPORT X6_STATUS get_trigger_source(int, int*);
+EXPORT X6_STATUS set_sampleRate(int, double);
+EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* debug methods */
 EXPORT unsigned read_register(int, int, int);

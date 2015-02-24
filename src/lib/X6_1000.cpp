@@ -1,4 +1,5 @@
 #include "X6_1000.h"
+#include "X6_errno.h"
 
 #include <IppMemoryUtils_Mb.h>  // for Init::UsePerformanceMemoryFunctions
 #include <BufferDatagrams_Mb.h> // for ShortDG
@@ -141,16 +142,15 @@ X6_1000::ErrorCodes X6_1000::set_routes() {
     return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
+void X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
     IX6ClockIo::IIReferenceSource x6ref; // reference source
-    if (frequency < 0) return INVALID_FREQUENCY;
+    if (frequency < 0) throw X6_INVALID_FREQUENCY;
 
     x6ref = (ref == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
     FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
 
     module_.Clock().Reference(x6ref);
     module_.Clock().ReferenceFrequency(frequency);
-    return SUCCESS;
 }
 
 X6_1000::ReferenceSource X6_1000::get_reference() {
@@ -158,18 +158,16 @@ X6_1000::ReferenceSource X6_1000::get_reference() {
     return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
 }
 
-X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ClockSource src , float frequency, ExtSource extSrc) {
+void X6_1000::set_clock(X6_1000::ClockSource src , float frequency, ExtSource extSrc) {
 
     IX6ClockIo::IIClockSource x6clksrc; // clock source
-    if (frequency < 0) return INVALID_FREQUENCY;
+    if (frequency < 0) throw X6_INVALID_FREQUENCY;
 
     FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
     // Route clock
     x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
     module_.Clock().Source(x6clksrc);
     module_.Clock().Frequency(frequency);
-
-    return SUCCESS;
 }
 
 double X6_1000::get_pll_frequency() {
@@ -380,7 +378,7 @@ void X6_1000::log_card_info() {
     FILE_LOG(logINFO)  << "PCI Express Lanes: " << module_.Debug()->LaneCount();
 }
 
-X6_1000::ErrorCodes X6_1000::acquire() {
+void X6_1000::acquire() {
     set_active_channels();
     // should only need to call this once, but for now we call it every time
     stream_.Preconfigure();
@@ -457,29 +455,25 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     //  Start Streaming
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::wait_for_acquisition(unsigned timeOut){
+void X6_1000::wait_for_acquisition(unsigned timeOut){
     /* Blocking wait until all the records have been acquired. */
 
     auto start = std::chrono::system_clock::now();
     auto end = start + std::chrono::seconds(timeOut);
     while (get_is_running()) {
         if (std::chrono::system_clock::now() > end)
-            return X6_1000::TIMEOUT;
+            throw X6_TIMEOUT;
         std::this_thread::sleep_for( std::chrono::milliseconds(100) );
     }
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::stop() {
+void X6_1000::stop() {
     isRunning_ = false;
     stream_.Stop();
     timer_.Enabled(false);
     trigger_.AtStreamStop();
-    return SUCCESS;
 }
 
 bool X6_1000::get_is_running() {
@@ -498,62 +492,58 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
+void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
     uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
     if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
     accumulators_[sid].snapshot(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
+void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
     uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
     if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
     accumulators_[sid].snapshot_variance(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
     for (int i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
     if (length < correlators_[sids].get_buffer_size())
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
     correlators_[sids].snapshot(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
     for (int i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
     if (length < correlators_[sids].get_buffer_size())
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
     correlators_[sids].snapshot_variance(buffer);
-    return SUCCESS;
 }
 
 int X6_1000::get_buffer_size(vector<Channel> & channels) {
@@ -773,9 +763,9 @@ void X6_1000::LogHandler(string handlerName) {
     FILE_LOG(logINFO) << "Alert:" << handlerName;
 }
 
-X6_1000::ErrorCodes X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
+void X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
     FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
-    return write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
+    write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
 }
 
 DIGITIZER_MODE X6_1000::get_digitizer_mode() const {

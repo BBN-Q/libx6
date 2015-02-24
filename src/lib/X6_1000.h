@@ -80,7 +80,7 @@ public:
 	 *  \param frequency Frequency in Hz
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
+	void set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
 
 	ReferenceSource get_reference();
 
@@ -90,7 +90,7 @@ public:
 	 *  \param extSrc FRONT_PANEL || P16
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_clock(ClockSource src = INTERNAL_CLOCK,
+	void set_clock(ClockSource src = INTERNAL_CLOCK,
 		                 float frequency = 1e9,
 		                 ExtSource extSrc = FRONT_PANEL);
 
@@ -123,7 +123,7 @@ public:
 
 	bool get_channel_enable(int channel);
 
-	ErrorCodes set_digitizer_mode(const DIGITIZER_MODE &);
+	void set_digitizer_mode(const DIGITIZER_MODE &);
 	DIGITIZER_MODE get_digitizer_mode() const;
 
 	ErrorCodes set_nco_frequency(int, int, double);
@@ -141,16 +141,16 @@ public:
 	void init();
 	void close();
 
-	ErrorCodes acquire();
-	ErrorCodes wait_for_acquisition(unsigned);
-	ErrorCodes stop();
-	bool       get_is_running();
-	bool       get_has_new_data();
+	void acquire();
+	void wait_for_acquisition(unsigned);
+	void stop();
+	bool get_is_running();
+	bool get_has_new_data();
 
-	ErrorCodes transfer_waveform(Channel, double *, size_t);
-	ErrorCodes transfer_variance(Channel, double *, size_t);
-	ErrorCodes transfer_correlation(vector<Channel> &, double *, size_t);
-	ErrorCodes transfer_correlation_variance(vector<Channel> &, double *, size_t);
+	void transfer_waveform(Channel, double *, size_t);
+	void transfer_variance(Channel, double *, size_t);
+	void transfer_correlation(vector<Channel> &, double *, size_t);
+	void transfer_correlation_variance(vector<Channel> &, double *, size_t);
 	int get_buffer_size(vector<Channel> &);
 	int get_variance_buffer_size(vector<Channel> &);
 
