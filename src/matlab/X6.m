@@ -128,11 +128,9 @@ classdef X6 < hgsetget
         function disable_stream(obj, a, b, c)
             x6_call(obj, 'disable_stream', a, b, c);
             % remove the stream from the enabledStreams list
-            for ct = 1:length(obj.enabledStreams)
-                if isequal(obj.enabledStreams{ct}, [a,b,c])
-                    obj.enabledStreams = {obj.enabledStreams{1:(ct-1)}, obj.enabledStreams{(ct+1):end}};
-                    break
-                end
+            idx = find(cellfun(@(x) isequal(x, [a,b,c]));
+            if ~isempty(idx)
+                obj.enabledStreams(idx) = []
             end
         end
 
