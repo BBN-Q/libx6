@@ -24,11 +24,11 @@
 % limitations under the License.
 
 classdef X6 < hgsetget
-    
+
     properties (Constant)
         library_path = '../../build/';
     end
-    
+
     properties
         samplingRate = 1e9;
         triggerSource
@@ -42,17 +42,17 @@ classdef X6 < hgsetget
         nbrWaveforms
         nbrRoundRobins
     end
-    
+
     properties(Constant)
         DECIM_FACTOR = 4;
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
         SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
     end
-    
+
     events
         DataReady
     end
-    
+
     methods
         function obj = X6()
             obj.load_library();
@@ -110,21 +110,21 @@ classdef X6 < hgsetget
         function set.triggerSource(obj, source)
             obj.libraryCall('set_trigger_source', source);
         end
-        
+
         function set.reference(obj, reference)
             valMap = containers.Map({'int', 'internal', 'ext', 'external'}, {0, 0, 1, 1});
             obj.libraryCall('set_reference', valMap(lower(reference)));
         end
-        
+
         function val = get.reference(obj)
             val = obj.libraryCall('get_reference');
         end
-        
+
         function val = enable_stream(obj, a, b, c)
             val = obj.libraryCall('enable_stream', a, b, c);
             obj.enabledStreams{end+1} = [a,b,c];
         end
-        
+
         function val = disable_stream(obj, a, b, c)
             val = obj.libraryCall('disable_stream', a, b, c);
             % remove the stream from the enabledStreams list
@@ -135,7 +135,7 @@ classdef X6 < hgsetget
                 end
             end
         end
-        
+
         function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
             obj.write_register(obj.DSP_WB_OFFSET(1), 63, recordLength-4);
@@ -159,7 +159,7 @@ classdef X6 < hgsetget
             obj.dataTimer = timer('TimerFcn', @do_poll, 'StopFcn', @(~,~) notify(obj, 'DataReady'), 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
             start(obj.dataTimer);
         end
-        
+
         function val = wait_for_acquisition(obj, timeout)
             t = tic;
             val = -1;
@@ -181,7 +181,7 @@ classdef X6 < hgsetget
                 obj.dataTimer = [];
             end
         end
-        
+
         function data = transfer_waveform(obj, channel)
             % returns a structure of streams associated with the given
             % channel
@@ -192,7 +192,7 @@ classdef X6 < hgsetget
                     data.(['s' sprintf('%d',stream{1})]) = obj.transfer_stream(s);
                 end
             end
-        end 
+        end
 
         function wf = transfer_stream(obj, channels)
             % expects channels to be a vector of structs of the form:
@@ -238,7 +238,7 @@ classdef X6 < hgsetget
                 wf.prod = reshape(wf.prod, length(wf.prod)/obj.nbrSegments, obj.nbrSegments);
             end
         end
-        
+
         function val = write_register(obj, addr, offset, data)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('write_register', addr, offset, data);
@@ -248,30 +248,30 @@ classdef X6 < hgsetget
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('read_register', addr, offset);
         end
-        
+
         function write_spi(obj, chip, addr, data)
            %read flag is low so just address
            val = bitshift(addr, 16) + data;
-           obj.writeRegister(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+           obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
         end
 
         function val = read_spi(obj, chip, addr)
            %read flag is high
            val = bitshift(1, 28) + bitshift(addr, 16);
-           obj.writeRegister(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
-           val = int32(obj.readRegister(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
+           obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+           val = int32(obj.read_register(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
            assert(bitget(val, 32) == 1, 'Oops! Read valid flag was not set!');
         end
-        
+
         function val = getLogicTemperature(obj)
             % get temprature using method one based on Malibu Objects
             val = obj.libraryCall('get_logic_temperature', 0);
         end
-        
+
         function set_nco_frequency(obj, a, b, freq)
             obj.libraryCall('set_nco_frequency', a, b, freq);
         end
-        
+
         function write_kernel(obj, a, b, kernel)
             packedkernel = zeros(2*length(kernel), 1);
             for ct = 1:length(kernel)
@@ -280,11 +280,11 @@ classdef X6 < hgsetget
             end
             obj.libraryCall('write_kernel', a, b, packedkernel, length(packedkernel));
         end
-        
+
         function set_threshold(obj, a, b, threshold)
             obj.libraryCall('set_threshold', a, b, threshold);
         end
-        
+
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
             fields = fieldnames(settings);
@@ -317,7 +317,7 @@ classdef X6 < hgsetget
                 end
             end
         end
-        
+
         function set_channel_settings(obj, label, settings)
             % channel labels are of the form 'sAB'
             a = str2double(label(2));
@@ -345,7 +345,7 @@ classdef X6 < hgsetget
             obj.set_threshold(a, b, settings.threshold);
         end
     end
-    
+
     methods (Access = protected)
         % overide APS load_library
         function load_library(obj)
@@ -368,11 +368,11 @@ classdef X6 < hgsetget
         end
 
         function val = libraryCall(obj,func,varargin)
-            %Helper function to pass through to calllib with the X6 device ID first 
+            %Helper function to pass through to calllib with the X6 device ID first
             if ~(obj.is_open)
                 error('X6:libraryCall','X6 is not open');
             end
-                        
+
             if size(varargin,2) == 0
                 val = calllib('libx6adc', func, obj.deviceID);
             else
@@ -380,35 +380,35 @@ classdef X6 < hgsetget
             end
         end
     end
-    
+
     methods (Static)
-        
+
         function set_debug_level(level)
             % sets logging level in libx6.log
             % level = {logERROR=0, logWARNING, logINFO, logDEBUG, logDEBUG1, logDEBUG2, logDEBUG3, logDEBUG4}
             calllib('libx6adc', 'set_logging_level', level);
         end
-        
+
         function UnitTest()
-            
+
             fprintf('BBN X6-1000 Test Executable\n')
-            
+
             x6 = X6();
-            
+
             x6.set_debug_level(8);
-            
+
             x6.connect(0);
-            
+
             if (~x6.is_open)
                 error('Could not open X6')
             end
 
             fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
-            
+
             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
             fprintf('Setting clock reference to external\n');
             x6.reference = 'external';
-            
+
             fprintf('Enabling streams\n');
             numDemodChan = 3;
             for phys = 1:2
@@ -419,7 +419,7 @@ classdef X6 < hgsetget
                     end
                 end
             end
-            
+
             fprintf('Setting NCO phase increments\n');
             x6.set_nco_frequency(1, 1, 10e6);
             x6.set_nco_frequency(1, 2, 30e6);
@@ -427,7 +427,7 @@ classdef X6 < hgsetget
             x6.set_nco_frequency(2, 1, 20e6);
             x6.set_nco_frequency(2, 2, 40e6);
             x6.set_nco_frequency(2, 3, 60e6);
-            
+
             fprintf('Writing integration kernels\n');
             x6.write_kernel(1, 1, ones(100,1));
             x6.write_kernel(1, 2, ones(100,1));
@@ -435,34 +435,34 @@ classdef X6 < hgsetget
             x6.write_kernel(2, 1, ones(100,1));
             x6.write_kernel(2, 2, ones(100,1));
             x6.write_kernel(2, 3, ones(100,1));
-            
+
             fprintf('Writing decision engine thresholds\n');
             x6.set_threshold(1, 1, 0.5);
             x6.set_threshold(1, 2, 0.5);
             x6.set_threshold(2, 1, 0.5);
             x6.set_threshold(2, 2, 0.5);
-            
+
             fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 16, 1, 1);
 
             for ct = 1:2048
-                x6.writeRegister(hex2dec('2200'), 9, ct-1);
-                x6.writeRegister(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
+                x6.write_register(hex2dec('2200'), 9, ct-1);
+                x6.write_register(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
             end
-            x6.writeRegister(hex2dec('2200'), 8, 1024);
-            
+            x6.write_register(hex2dec('2200'), 8, 1024);
+
             %DAC trigger window
-            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
+            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Acquiring\n');
             x6.acquire();
 
             success = x6.wait_for_acquisition(1);
             fprintf('Wait for acquisition returned %d\n', success);
-          
+
             fprintf('Stopping\n');
             x6.stop();
 
-            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
+            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Transferring waveforms\n');
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
@@ -480,8 +480,8 @@ classdef X6 < hgsetget
                 plot(imag(wfs{ct+1}(:)), 'r');
                 title(sprintf('Virtual Channel %d',ct));
             end
-            
-            
+
+
             for ct = 0:numDemodChan
                 wfs{ct+1} = x6.transfer_stream(struct('a', 2, 'b', ct, 'c', 0));
             end
@@ -507,7 +507,7 @@ classdef X6 < hgsetget
             x6.disconnect();
             unloadlibrary('libx6adc')
         end
-        
+
     end
-    
+
 end
