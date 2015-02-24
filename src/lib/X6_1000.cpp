@@ -140,7 +140,7 @@ void X6_1000::set_routes() {
     module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
 }
 
-void X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
+void X6_1000::set_reference(ReferenceSource ref, float frequency) {
     IX6ClockIo::IIReferenceSource x6ref; // reference source
     if (frequency < 0) throw X6_INVALID_FREQUENCY;
 
@@ -156,7 +156,7 @@ ReferenceSource X6_1000::get_reference() {
     return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
 }
 
-void X6_1000::set_clock(X6_1000::ClockSource src , float frequency, ExtSource extSrc) {
+void X6_1000::set_clock(ClockSource src , float frequency, ExtSource extSrc) {
 
     IX6ClockIo::IIClockSource x6clksrc; // clock source
     if (frequency < 0) throw X6_INVALID_FREQUENCY;
@@ -185,7 +185,7 @@ void X6_1000::set_trigger_source(TriggerSource trgSrc) {
     trigger_.AtConfigure();
 }
 
-X6_1000::TriggerSource X6_1000::get_trigger_source() const {
+TriggerSource X6_1000::get_trigger_source() const {
     // return cached trigger source until
     // TODO: identify method for getting source from card
     if (triggerSource_)
@@ -219,7 +219,7 @@ void X6_1000::set_frame(int recordLength) {
     int frameGranularity = module_.Input().Info().TriggerFrameGranularity();
     if (recordLength % frameGranularity != 0) {
         FILE_LOG(logERROR) << "Invalid frame size: " << recordLength;
-        throw INVALID_FRAMESIZE;
+        throw X6_INVALID_FRAMESIZE;
     }
     module_.Input().Trigger().FramedMode(true);
     module_.Input().Trigger().Edge(true);
@@ -747,13 +747,13 @@ void X6_1000::LogHandler(string handlerName) {
     FILE_LOG(logINFO) << "Alert:" << handlerName;
 }
 
-void X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
+void X6_1000::set_digitizer_mode(const DigitizerMode & mode) {
     FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
     write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
 }
 
-DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
-    return DIGITIZER_MODE(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
+DigitizerMode X6_1000::get_digitizer_mode() const {
+    return DigitizerMode(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
 }
 
 void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {

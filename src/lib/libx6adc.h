@@ -16,7 +16,9 @@
 
 #include <stdio.h>
 
+#include "X6_1000.h"
 #include "X6_errno.h"
+#include "X6_enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,8 +39,8 @@ EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);
 EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
 
-EXPORT X6_STATUS set_reference(int, int);
-EXPORT X6_STATUS get_reference(int, int*);
+EXPORT X6_STATUS set_reference(int, ReferenceSource);
+EXPORT X6_STATUS get_reference(int, ReferenceSource*);
 
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
@@ -64,10 +66,10 @@ EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
-EXPORT X6_STATUS set_digitizer_mode(int, int);
-EXPORT X6_STATUS get_digitizer_mode(int, int*);
-EXPORT X6_STATUS set_trigger_source(int, int);
-EXPORT X6_STATUS get_trigger_source(int, int*);
+EXPORT X6_STATUS set_digitizer_mode(int, DigitizerMode);
+EXPORT X6_STATUS get_digitizer_mode(int, DigitizerMode*);
+EXPORT X6_STATUS set_trigger_source(int, TriggerSource);
+EXPORT X6_STATUS get_trigger_source(int, TriggerSource*);
 EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 

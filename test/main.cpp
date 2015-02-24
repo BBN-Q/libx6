@@ -72,11 +72,11 @@ int main ()
 
   cout << "setting trigger source = EXTERNAL_TRIGGER" << endl;
 
-  set_trigger_source(0, X6_1000::EXTERNAL_TRIGGER);
+  set_trigger_source(0, EXTERNAL_TRIGGER);
 
-  int triggerSource;
+  TriggerSource triggerSource;
   get_trigger_source(0, &triggerSource);
-  cout << "get trigger source returns " << ((triggerSource == X6_1000::SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
+  cout << "get trigger source returns " << ((triggerSource == SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 
   cout << "Enabling physical channel 1" << endl;
   enable_stream(0, 1, 0, 0);

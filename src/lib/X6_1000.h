@@ -1,5 +1,7 @@
 #include "headings.h"
 
+#include "X6_enums.h"
+
 #include <X6_1000M_Mb.h>
 #include <VitaPacketStream_Mb.h>
 #include <SoftwareTimer_Mb.h>
@@ -12,8 +14,6 @@
 
 using std::vector;
 using std::string;
-
-
 
 /**
  * X6_1000 Class: Provides interface to Innovative Illustrations X6_1000 card
@@ -32,40 +32,6 @@ enum channel_t { PHYSICAL, DEMOD, RESULT };
 class X6_1000
 {
 public:
-
-	enum ErrorCodes {
-    	SUCCESS = 0,
-    	INVALID_DEVICEID = -1,
-    	DEVICE_NOT_CONNECTED = -2,
-    	MODULE_ERROR = -3,
-    	NOT_IMPLEMENTED = -4,
-    	FILE_ERROR = -5,
-    	TIMEOUT = -6,
-    	INVALID_FREQUENCY = -0x10,
-    	INVALID_CHANNEL = -0x11,
-    	INVALID_INTERVAL = -0x12,
-    	INVALID_FRAMESIZE = -0x13
-	};
-
-	enum ClockSource {
-		EXTERNAL_CLOCK = 0,   /**< External Input */
-		INTERNAL_CLOCK        /**< Internal Generation */
-	};
-
-	enum ReferenceSource {
-		EXTERNAL_REFERENCE = 0,   /**< External Input */
-		INTERNAL_REFERENCE        /**< Internal Generation */
-	};
-
-	enum ExtSource {
-		FRONT_PANEL = 0, /**< Front panel input */
-		P16              /**< P16 input */
-	};
-
-	enum TriggerSource {
-		SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
-		EXTERNAL_TRIGGER         /**< External trigger */
-	};
 
 	X6_1000();
 	~X6_1000();
@@ -121,8 +87,8 @@ public:
 
 	bool get_channel_enable(int channel);
 
-	void set_digitizer_mode(const DIGITIZER_MODE &);
-	DIGITIZER_MODE get_digitizer_mode() const;
+	void set_digitizer_mode(const DigitizerMode &);
+	DigitizerMode get_digitizer_mode() const;
 
 	void set_nco_frequency(int, int, double);
 	void set_threshold(int, int, double);
