@@ -25,17 +25,12 @@
 
 classdef X6 < hgsetget
 
-    properties (Constant)
-        library_path = '../../build/';
-    end
-
     properties
         samplingRate = 1e9;
         triggerSource
         reference
-        is_open = 0;
         deviceID = 0;
-        enabledStreams = {}
+        enabledStreams = {} %keep track of enabled streams so we can transfer them all
         dataTimer
         nbrSegments
         recordLength
@@ -44,6 +39,7 @@ classdef X6 < hgsetget
     end
 
     properties(Constant)
+        LIBRARY_PATH = '../../build/';
         DECIM_FACTOR = 4;
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
         SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
@@ -55,78 +51,82 @@ classdef X6 < hgsetget
 
     methods
         function obj = X6()
-            obj.load_library();
+            X6.load_library();
             obj.set_debug_level(4);
         end
 
-        function val = connect(obj, id)
+        function x6_call(obj, func, varargin)
+          status = calllib('libx6adc', func, obj.deviceID, varargin{:});
+          X6.check_status(status);
+        end
+
+        function val = x6_getter(obj, func, varargin)
+          [status, ~, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+          X6.check_status(status);
+        end
+
+        function connect(obj, id)
             if ischar(id)
                 id = str2double(id);
             end
-            val = calllib('libx6adc', 'connect_by_ID', id);
-            if (val == 0)
-                obj.is_open = 1;
-                obj.deviceID = id;
-            end
+            obj.deviceID = id;
+            val = x6_call(obj, 'connect_by_ID');
             % temporary fix for stream enable register
             obj.write_register(X6.DSP_WB_OFFSET(1), 15, 0);
             obj.write_register(X6.DSP_WB_OFFSET(2), 15, 0);
         end
 
-        function val = disconnect(obj)
-            val = obj.libraryCall('disconnect');
-            obj.is_open = 0;
+        function disconnect(obj)
+            x6_call(obj, 'disconnect');
         end
 
         function delete(obj)
-            if (obj.is_open)
-                obj.disconnect();
-            end
+            disconnect(obj);
             if ~isempty(obj.dataTimer)
                 delete(obj.dataTimer);
             end
         end
 
         function val = num_devices(obj)
-            val = calllib('libx6adc', 'get_num_devices');
+            val = x6_getter('get_num_devices');
         end
 
-        function val = init(obj)
-            val = obj.libraryCall('initX6');
+        function init(obj)
+            x6_call(obj, 'initX6');
         end
 
         function val = get.samplingRate(obj)
-            val = obj.libraryCall('get_sampleRate');
+            val = x6_getter(obj, 'get_sampleRate');
         end
 
         function set.samplingRate(obj, rate)
-            val = obj.libraryCall('set_sampleRate', rate);
+            x6_call(obj, 'set_sampleRate', rate);
         end
 
         function val = get.triggerSource(obj)
-            val = obj.libraryCall('get_trigger_source');
+            val = x6_getter(obj, 'get_trigger_source');
         end
 
         function set.triggerSource(obj, source)
-            obj.libraryCall('set_trigger_source', source);
+            x6_call(obj, 'set_trigger_source', source)
         end
 
         function set.reference(obj, reference)
             valMap = containers.Map({'int', 'internal', 'ext', 'external'}, {0, 0, 1, 1});
-            obj.libraryCall('set_reference', valMap(lower(reference)));
+            x6_call(obj, 'set_reference', valMap(lower(reference)));
         end
 
         function val = get.reference(obj)
-            val = obj.libraryCall('get_reference');
+            val = x6_getter(obj, 'get_reference');
         end
 
-        function val = enable_stream(obj, a, b, c)
-            val = obj.libraryCall('enable_stream', a, b, c);
+        function enable_stream(obj, a, b, c)
+            x6_call(obj, 'enable_stream', a, b, c)
             obj.enabledStreams{end+1} = [a,b,c];
         end
 
-        function val = disable_stream(obj, a, b, c)
-            val = obj.libraryCall('disable_stream', a, b, c);
+        function disable_stream(obj, a, b, c)
+            x6_call(obj, 'disable_stream', a, b, c);
             % remove the stream from the enabledStreams list
             for ct = 1:length(obj.enabledStreams)
                 if isequal(obj.enabledStreams{ct}, [a,b,c])
@@ -136,21 +136,21 @@ classdef X6 < hgsetget
             end
         end
 
-        function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
-            val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
+        function set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
+            x6_call(obj, 'set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
             obj.recordLength = recordLength;
             obj.nbrSegments = nbrSegments;
             obj.nbrWaveforms = waveforms;
             obj.nbrRoundRobins = roundRobins;
         end
 
-        function val = acquire(obj)
-            val = obj.libraryCall('acquire');
+        function acquire(obj)
+            x6_call(obj, 'acquire');
             %Since we cannot easily pass callbacks to the C library to fire
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
             function do_poll(~,~)
-                if (obj.libraryCall('get_has_new_data'))
+                if (x6_getter(obj, 'get_has_new_data'))
                     notify(obj, 'DataReady');
                 end
             end
@@ -162,7 +162,7 @@ classdef X6 < hgsetget
             t = tic;
             val = -1;
             while toc(t) < timeout
-                if ~obj.libraryCall('get_is_running')
+                if ~x6_getter(obj, 'get_is_running')
                     val = 0;
                     break
                 end
@@ -171,8 +171,8 @@ classdef X6 < hgsetget
             stop(obj);
         end
 
-        function val = stop(obj)
-            val = obj.libraryCall('stop');
+        function stop(obj)
+            x6_call(obj, 'stop');
             if ~isempty(obj.dataTimer)
                 stop(obj.dataTimer);
                 delete(obj.dataTimer);
@@ -197,10 +197,9 @@ classdef X6 < hgsetget
             % struct('a', X, 'b', Y, 'c', Z)
             % when passed a single channel struct, returns the corresponding waveform
             % when passed multiple channels, returns the correlation of the channels
-            bufSize = obj.libraryCall('get_buffer_size', channels, length(channels));
+            bufSize = x6_getter(obj, 'get_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
-            success = obj.libraryCall('transfer_waveform', channels, length(channels), wfPtr, bufSize);
-            assert(success == 0, 'transfer_waveform failed');
+            x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 
             if channels(1).b == 0 % physical channel
                 wf = wfPtr.Value;
@@ -215,10 +214,9 @@ classdef X6 < hgsetget
         function wf = transfer_stream_variance(obj, channels)
             % expects channels to be a vector of structs of the form:
             % struct('a', X, 'b', Y, 'c', Z)
-            bufSize = obj.libraryCall('get_variance_buffer_size', channels, length(channels));
+            bufSize = x6_getter(obj, 'get_variance_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
-            success = obj.libraryCall('transfer_variance', channels, length(channels), wfPtr, bufSize);
-            assert(success == 0, 'transfer_variance failed');
+            x6_call(obj, 'transfer_variance', channels, length(channels), wfPtr, bufSize);
 
             wf = struct('real', [], 'imag', [], 'prod', []);
             if channels(1).b == 0 % physical channel
@@ -237,17 +235,15 @@ classdef X6 < hgsetget
             end
         end
 
-        function val = write_register(obj, addr, offset, data)
-            % get temprature using method one based on Malibu Objects
-            val = obj.libraryCall('write_register', addr, offset, data);
+        function write_register(obj, addr, offset, data)
+            x6_call(obj, 'write_register', addr, offset, data);
         end
 
         function val = read_register(obj, addr, offset)
-            % get temprature using method one based on Malibu Objects
-            val = obj.libraryCall('read_register', addr, offset);
+            val = x6_getter(obj, 'read_register', addr, offset);
         end
 
-        function write_spi(obj, chip, addr, data)
+        function write_spi(obj, chip, addr, data)s
            %read flag is low so just address
            val = bitshift(addr, 16) + data;
            obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
@@ -263,11 +259,11 @@ classdef X6 < hgsetget
 
         function val = getLogicTemperature(obj)
             % get temprature using method one based on Malibu Objects
-            val = obj.libraryCall('get_logic_temperature', 0);
+            val = x6_getter('get_logic_temperature', 0);
         end
 
         function set_nco_frequency(obj, a, b, freq)
-            obj.libraryCall('set_nco_frequency', a, b, freq);
+            x6_call(obj, 'set_nco_frequency', a, b, freq);
         end
 
         function write_kernel(obj, a, b, kernel)
@@ -276,11 +272,11 @@ classdef X6 < hgsetget
                 packedkernel(2*ct - 1) = real(kernel(ct));
                 packedkernel(2*ct) = imag(kernel(ct));
             end
-            obj.libraryCall('write_kernel', a, b, packedkernel, length(packedkernel));
+            x6_call(obj, 'write_kernel', a, b, packedkernel, length(packedkernel));
         end
 
         function set_threshold(obj, a, b, threshold)
-            obj.libraryCall('set_threshold', a, b, threshold);
+            x6_call(obj, 'set_threshold', a, b, threshold);
         end
 
         %Instrument meta-setter that sets all parameters
@@ -344,9 +340,9 @@ classdef X6 < hgsetget
         end
     end
 
-    methods (Access = protected)
-        % overide APS load_library
-        function load_library(obj)
+    methods (Static)
+
+        function load_library()
             %Helper functtion to load the platform dependent library
             switch computer()
                 case 'PCWIN64'
@@ -358,28 +354,20 @@ classdef X6 < hgsetget
             end
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
-                [mypath,~] = fileparts(mfilename('fullpath'));
-                lib_path = fullfile(mypath, obj.library_path, libfname);
+                myPath = fileparts(mfilename('fullpath'));
+                lib_path = fullfile(mypath, X6.LIBRARY_PATH, libfname);
                 header_path = fullfile(mypath, libheader);
-                loadlibrary(lib_path, header_path);
+                loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
         end
 
-        function val = libraryCall(obj,func,varargin)
-            %Helper function to pass through to calllib with the X6 device ID first
-            if ~(obj.is_open)
-                error('X6:libraryCall','X6 is not open');
-            end
+        function check_status(status)
+          X6.load_library();
+          assert(strcmp(status, 'X6_OK')),...
+            'X6 library call failed with status: %s', status);
+          %TODO: implement error message lookup in library and call here
 
-            if size(varargin,2) == 0
-                val = calllib('libx6adc', func, obj.deviceID);
-            else
-                val = calllib('libx6adc', func, obj.deviceID, varargin{:});
-            end
         end
-    end
-
-    methods (Static)
 
         function set_debug_level(level)
             % sets logging level in libx6.log
