@@ -138,8 +138,6 @@ classdef X6 < hgsetget
         
         function val = set_averager_settings(obj, recordLength, nbrSegments, waveforms, roundRobins)
             val = obj.libraryCall('set_averager_settings', recordLength, nbrSegments, waveforms, roundRobins);
-            obj.write_register(obj.DSP_WB_OFFSET(1), 63, recordLength-4);
-            obj.write_register(obj.DSP_WB_OFFSET(2), 63, recordLength-4);
             obj.recordLength = recordLength;
             obj.nbrSegments = nbrSegments;
             obj.nbrWaveforms = waveforms;
@@ -395,7 +393,7 @@ classdef X6 < hgsetget
             
             x6 = X6();
             
-            x6.set_debug_level(8);
+            x6.set_debug_level(6);
             
             x6.connect(0);
             
@@ -410,31 +408,29 @@ classdef X6 < hgsetget
             x6.reference = 'external';
             
             fprintf('Enabling streams\n');
-            numDemodChan = 3;
+            numDemodChan = 1;
+            numMatchFilters = 2; % 4
             for phys = 1:2
                 x6.enable_stream(phys, 0, 0); % the raw stream
-                for demod = 1:numDemodChan
-                    for result = 0:1
-                        x6.enable_stream(phys, demod, result);
-                    end
+                x6.enable_stream(phys, 1, 0); % the demod stream
+                for demod = 1:numMatchFilters
+                    x6.enable_stream(phys, demod, 1);
                 end
             end
             
             fprintf('Setting NCO phase increments\n');
             x6.set_nco_frequency(1, 1, 10e6);
-            x6.set_nco_frequency(1, 2, 30e6);
-            x6.set_nco_frequency(1, 3, 50e6);
             x6.set_nco_frequency(2, 1, 20e6);
-            x6.set_nco_frequency(2, 2, 40e6);
-            x6.set_nco_frequency(2, 3, 60e6);
             
             fprintf('Writing integration kernels\n');
             x6.write_kernel(1, 1, ones(100,1));
             x6.write_kernel(1, 2, ones(100,1));
             x6.write_kernel(1, 3, ones(100,1));
+            x6.write_kernel(1, 4, ones(100,1));
             x6.write_kernel(2, 1, ones(100,1));
             x6.write_kernel(2, 2, ones(100,1));
             x6.write_kernel(2, 3, ones(100,1));
+            x6.write_kernel(2, 4, ones(100,1));
             
             fprintf('Writing decision engine thresholds\n');
             x6.set_threshold(1, 1, 0.5);
@@ -445,14 +441,16 @@ classdef X6 < hgsetget
             fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
             x6.set_averager_settings(2048, 16, 1, 1);
 
+            % write a waveform into transmitter memory
             for ct = 1:2048
-                x6.writeRegister(hex2dec('2200'), 9, ct-1);
-                x6.writeRegister(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
+                x6.write_register(hex2dec('2200'), 9, ct-1);
+                x6.write_register(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
             end
-            x6.writeRegister(hex2dec('2200'), 8, 1024);
+            % write waveform length
+            x6.write_register(hex2dec('2200'), 8, 1024);
             
             %DAC trigger window
-            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
+            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Acquiring\n');
             x6.acquire();
 
@@ -462,7 +460,7 @@ classdef X6 < hgsetget
             fprintf('Stopping\n');
             x6.stop();
 
-            fprintf('DAC trigger window: 0x%08x\n', x6.readRegister(hex2dec('0800'), 129))
+            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Transferring waveforms\n');
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
