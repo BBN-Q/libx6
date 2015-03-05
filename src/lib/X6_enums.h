@@ -23,4 +23,10 @@ enum TriggerSource {
     EXTERNAL_TRIGGER         /**< External trigger */
 };
 
+struct ChannelTuple {
+    int a;
+    int b;
+    int c;
+};
+
 #endif

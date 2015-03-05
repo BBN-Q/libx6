@@ -7,6 +7,7 @@
 
 #include "headings.h"
 #include "libx6adc.h"
+#include "X6_1000.h"
 
 // globals
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;

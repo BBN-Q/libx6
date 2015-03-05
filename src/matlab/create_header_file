@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Creates the Matlab compatible version of the header file
+
+cp ../lib/libx6adc.h libx6adc.matlab.h
+
+#Strip out the contstructor/destructor attributes Matlab can't handle
+#Change the path to the includes
+#add a struct to the channel tuple pointers
+sed -i '
+/.*attribute.*/d
+s/^#include "X6/#include "..\/X6/g
+s/ChannelTuple/struct ChannelTuple/g' libx6adc.matlab.h

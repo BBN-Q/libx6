@@ -16,19 +16,12 @@
 
 #include <stdio.h>
 
-#include "X6_1000.h"
 #include "X6_errno.h"
 #include "X6_enums.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct ChannelTuple {
-	int a;
-	int b;
-	int c;
-};
 
 void init() __attribute__((constructor));
 void cleanup() __attribute__((destructor));
