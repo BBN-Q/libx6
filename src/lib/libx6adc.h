@@ -1,8 +1,6 @@
 /*
- * libaps.h
+ * libx6.h
  *
- *  Created on: Jun 25, 2012
- *      Author: qlab
  */
 
 #ifndef LIBX6ADC_H
@@ -22,6 +20,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//Add typedefs for the enums for C compatibility
+typedef enum X6_STATUS X6_STATUS;
+typedef enum ReferenceSource ReferenceSource;
+typedef struct ChannelTuple ChannelTuple;
+typedef enum DigitizerMode DigitizerMode;
+typedef enum TriggerSource TriggerSource;
 
 void init() __attribute__((constructor));
 void cleanup() __attribute__((destructor));

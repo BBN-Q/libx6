@@ -1,8 +1,6 @@
 /*
- * libaps.h
+ * libx6.h
  *
- *  Created on: Jun 25, 2012
- *      Author: qlab
  */
 
 #ifndef LIBX6ADC_H
@@ -22,6 +20,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+//Add typedefs for the enums for C compatibility
+typedef enum X6_STATUS X6_STATUS;
+typedef enum ReferenceSource ReferenceSource;
+typedef struct ChannelTuple ChannelTuple;
+typedef enum DigitizerMode DigitizerMode;
+typedef enum TriggerSource TriggerSource;
 
 
 EXPORT X6_STATUS connect_by_ID(int);
@@ -46,10 +51,10 @@ EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
 EXPORT X6_STATUS get_is_running(int, int*);
 EXPORT X6_STATUS get_has_new_data(int, int*);
 EXPORT X6_STATUS stop(int);
-EXPORT X6_STATUS transfer_waveform(int, struct ChannelTuple *, unsigned, double *, unsigned);
-EXPORT X6_STATUS transfer_variance(int, struct ChannelTuple *, unsigned, double *, unsigned);
-EXPORT X6_STATUS get_buffer_size(int, struct ChannelTuple *, unsigned, int*);
-EXPORT X6_STATUS get_variance_buffer_size(int, struct ChannelTuple *, unsigned, int*);
+EXPORT X6_STATUS transfer_waveform(int, ChannelTuple *, unsigned, double *, unsigned);
+EXPORT X6_STATUS transfer_variance(int, ChannelTuple *, unsigned, double *, unsigned);
+EXPORT X6_STATUS get_buffer_size(int, ChannelTuple *, unsigned, int*);
+EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple *, unsigned, int*);
 
 EXPORT X6_STATUS set_log(char *);
 X6_STATUS update_log(FILE * pFile);
