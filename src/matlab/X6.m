@@ -367,7 +367,7 @@ classdef X6 < hgsetget
         function check_status(status)
           X6.load_library();
           assert(strcmp(status, 'X6_OK'),...
-            'X6 library call failed with status: %s', status);
+            'X6 library call failed with status: %s', calllib('libx6adc', 'get_error_msg', status));
           %TODO: implement error message lookup in library and call here
         end
 

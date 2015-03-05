@@ -1,9 +1,6 @@
 #ifndef X6_ERRNO_H_
 #define X6_ERRNO_H_
 
-#include <map>
-#include <string>
-
 enum X6_STATUS {
   X6_OK,
   X6_UNKNOWN_ERROR = -1,
@@ -16,6 +13,11 @@ enum X6_STATUS {
   X6_INVALID_FRAMESIZE = -8
 };
 
+#ifdef __cplusplus
+
+#include <map>
+#include <string>
+
 static std::map<X6_STATUS, std::string> errorsMsgs = {
 {X6_UNKNOWN_ERROR, "API call failed with unknown exeption. Sorry :-("},
 {X6_NO_DEVICE_FOUND, "Unable to connect to requested X6 card.  Make sure it is in the computer."},
@@ -26,5 +28,7 @@ static std::map<X6_STATUS, std::string> errorsMsgs = {
 {X6_LOGFILE_ERROR, "Failed to open log file."},
 {X6_INVALID_FRAMESIZE, "Invalid frame size, frame size must be a mulitple of 4."}
 };
+
+#endif
 
 #endif
