@@ -14,8 +14,8 @@
 
 #include <stdio.h>
 
-#include "../X6_errno.h"
-#include "../X6_enums.h"
+#include "../lib/X6_errno.h"
+#include "../lib/X6_enums.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -9,4 +9,4 @@ cp ../lib/libx6adc.h libx6adc.matlab.h
 #add a struct to the channel tuple pointers
 sed -i '
 /.*attribute.*/d
-s/^#include "X6/#include "..\/X6/g' libx6adc.matlab.h
+s/^#include "X6/#include "..\/lib\/X6/g' libx6adc.matlab.h
