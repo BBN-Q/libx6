@@ -58,7 +58,6 @@ EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, int*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
 EXPORT X6_STATUS set_log(char*);
-X6_STATUS update_log(FILE*);
 EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */

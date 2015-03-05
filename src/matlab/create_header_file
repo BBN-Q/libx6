@@ -6,8 +6,10 @@ cp ../lib/libx6adc.h libx6adc.matlab.h
 
 #Strip out the contstructor/destructor attributes Matlab can't handle
 #Change the path to the includes
-#add a struct to the channel tuple pointers
+#Change uint32_t to unsigned
+#Remove unexported update_log function
 sed -i '
 /.*attribute.*/d
 s/^#include "X6/#include "..\/lib\/X6/g
-s/uint32_t/unsigned/g' libx6adc.matlab.h
+s/uint32_t/unsigned/g
+/^X6_STATUS update_log/d' libx6adc.matlab.h
