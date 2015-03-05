@@ -33,7 +33,7 @@ EXPORT X6_STATUS connect_by_ID(int);
 EXPORT X6_STATUS disconnect(int);
 EXPORT X6_STATUS get_num_devices(unsigned *);
 EXPORT int is_open(int);
-EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
+EXPORT X6_STATUS read_firmware_version(int, unsigned*);
 
 EXPORT X6_STATUS set_reference(int, ReferenceSource);
 EXPORT X6_STATUS get_reference(int, ReferenceSource*);
@@ -70,7 +70,7 @@ EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* debug methods */
-EXPORT X6_STATUS read_register(int, int, int, uint32_t*);
+EXPORT X6_STATUS read_register(int, int, int, unsigned*);
 EXPORT X6_STATUS write_register(int, int, int, int);
 
 // II X6-1000M Test Interface
