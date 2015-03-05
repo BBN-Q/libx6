@@ -56,13 +56,21 @@ classdef X6 < hgsetget
         end
 
         function x6_call(obj, func, varargin)
-          status = calllib('libx6adc', func, obj.deviceID, varargin{:});
-          X6.check_status(status);
+            % Make void call to the library
+            status = calllib('libx6adc', func, obj.deviceID, varargin{:});
+            X6.check_status(status);
         end
 
         function val = x6_getter(obj, func, varargin)
-          [status, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
-          X6.check_status(status);
+            % Make a getter call to the library passing and returning a pointer
+            [status, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+            X6.check_status(status);
+        end
+
+        function val = x6_channel_getter(obj, func, varargin)
+            % Specialized getter for API's that also take a ChannelTuple pointer
+            [status, ~, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+            X6.check_status(status);
         end
 
         function connect(obj, id)
@@ -191,7 +199,7 @@ classdef X6 < hgsetget
             % struct('a', X, 'b', Y, 'c', Z)
             % when passed a single channel struct, returns the corresponding waveform
             % when passed multiple channels, returns the correlation of the channels
-            bufSize = x6_getter(obj, 'get_buffer_size', channels, length(channels));
+            bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 
@@ -208,7 +216,7 @@ classdef X6 < hgsetget
         function wf = transfer_stream_variance(obj, channels)
             % expects channels to be a vector of structs of the form:
             % struct('a', X, 'b', Y, 'c', Z)
-            bufSize = x6_getter(obj, 'get_variance_buffer_size', channels, length(channels));
+            bufSize = x6_channel_getter(obj, 'get_variance_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_variance', channels, length(channels), wfPtr, bufSize);
 
