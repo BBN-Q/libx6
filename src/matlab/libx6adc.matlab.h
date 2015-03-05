@@ -28,6 +28,8 @@ typedef struct ChannelTuple ChannelTuple;
 typedef enum DigitizerMode DigitizerMode;
 typedef enum TriggerSource TriggerSource;
 
+EXPORT const char* get_error_msg(X6_STATUS);
+
 
 EXPORT X6_STATUS connect_by_ID(int);
 EXPORT X6_STATUS disconnect(int);
