@@ -70,7 +70,7 @@ classdef X6 < hgsetget
                 id = str2double(id);
             end
             obj.deviceID = id;
-            val = x6_call(obj, 'connect_by_ID');
+            x6_call(obj, 'connect_by_ID');
             % temporary fix for stream enable register
             obj.write_register(X6.DSP_WB_OFFSET(1), 15, 0);
             obj.write_register(X6.DSP_WB_OFFSET(2), 15, 0);
@@ -85,10 +85,6 @@ classdef X6 < hgsetget
             if ~isempty(obj.dataTimer)
                 delete(obj.dataTimer);
             end
-        end
-
-        function val = num_devices(obj)
-            val = x6_getter('get_num_devices');
         end
 
         function init(obj)
@@ -128,9 +124,9 @@ classdef X6 < hgsetget
         function disable_stream(obj, a, b, c)
             x6_call(obj, 'disable_stream', a, b, c);
             % remove the stream from the enabledStreams list
-            idx = find(cellfun(@(x) isequal(x, [a,b,c]));
+            idx = find(cellfun(@(x) isequal(x, [a,b,c])));
             if ~isempty(idx)
-                obj.enabledStreams(idx) = []
+                obj.enabledStreams(idx) = [];
             end
         end
 
@@ -241,7 +237,7 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'read_register', addr, offset);
         end
 
-        function write_spi(obj, chip, addr, data)s
+        function write_spi(obj, chip, addr, data)
            %read flag is low so just address
            val = bitshift(addr, 16) + data;
            obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
@@ -257,7 +253,7 @@ classdef X6 < hgsetget
 
         function val = getLogicTemperature(obj)
             % get temprature using method one based on Malibu Objects
-            val = x6_getter('get_logic_temperature', 0);
+            val = x6_getter(obj, 'get_logic_temperature', 0);
         end
 
         function set_nco_frequency(obj, a, b, freq)
@@ -353,19 +349,22 @@ classdef X6 < hgsetget
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
                 myPath = fileparts(mfilename('fullpath'));
-                lib_path = fullfile(mypath, X6.LIBRARY_PATH, libfname);
-                header_path = fullfile(mypath, libheader);
                 loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
         end
 
         function check_status(status)
           X6.load_library();
-          assert(strcmp(status, 'X6_OK')),...
+          assert(strcmp(status, 'X6_OK'),...
             'X6 library call failed with status: %s', status);
           %TODO: implement error message lookup in library and call here
-
         end
+
+        function val = num_devices()
+            [status, ~, val]  = callib('libx6adc', 'get_num_devices');
+            X6.check_status(status);
+        end
+
 
         function set_debug_level(level)
             % sets logging level in libx6.log
