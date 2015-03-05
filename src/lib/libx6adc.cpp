@@ -13,6 +13,15 @@
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
 unsigned numDevices_ = 0;
 
+const char* get_error_msg(X6_STATUS err) {
+	if (errorsMsgs.count(err)) {
+		return errorsMsgs[err].c_str();
+	}
+	else {
+		return "No error message for this status number.";
+	}
+}
+
 // initialize the library --contructor hook in header
 void init() {
 	//Open the logging file
@@ -247,7 +256,7 @@ X6_STATUS set_log(char* fileNameArr) {
 
 		FILE* pFile = fopen(fileName.c_str(), "a");
 		if (!pFile) {
-			return X6_FILE_ERROR;
+			return X6_LOGFILE_ERROR;
 		}
 
 		return update_log(pFile);
@@ -262,7 +271,7 @@ X6_STATUS update_log(FILE* pFile) {
 		Output2FILE::Stream() = pFile;
 		return X6_OK;
 	} else {
-		return X6_FILE_ERROR;
+		return X6_LOGFILE_ERROR;
 	}
 }
 
