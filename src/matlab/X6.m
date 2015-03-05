@@ -89,7 +89,10 @@ classdef X6 < hgsetget
         end
 
         function delete(obj)
-            disconnect(obj);
+            try
+                disconnect(obj);
+            catch
+            end
             if ~isempty(obj.dataTimer)
                 delete(obj.dataTimer);
             end
