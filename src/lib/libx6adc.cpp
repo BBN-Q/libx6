@@ -38,6 +38,8 @@ template<typename F, typename... Args>
 X6_STATUS x6_call(const unsigned deviceID, F func, Args... args){
 	try{
 		(X6s_.at(deviceID).get()->*func)(args...); // for some reason the compiler can't infer the correct dereference operator without the get function
+		//Nothing thrown then assume OK
+		return X6_OK;
 	}
 	catch (std::out_of_range e) {
 		if (X6s_.find(deviceID) == X6s_.end()) {
