@@ -81,7 +81,7 @@ X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr, Args... args){
 extern "C" {
 #endif
 
-X6_STATUS get_num_devices(unsigned * numDevices) {
+X6_STATUS get_num_devices(unsigned* numDevices) {
 	*numDevices = numDevices_;
 	return X6_OK;
 }
@@ -166,7 +166,7 @@ X6_STATUS set_threshold(int deviceID, int a, int b, double threshold) {
 	return x6_call(deviceID, &X6_1000::set_threshold, a, b, threshold);
 }
 
-X6_STATUS write_kernel(int deviceID, int a, int b, double *kernel, unsigned length) {
+X6_STATUS write_kernel(int deviceID, int a, int b, double* kernel, unsigned length) {
 	return x6_call(deviceID, &X6_1000::write_kernel, a, b, kernel, length);
 }
 
@@ -190,7 +190,7 @@ X6_STATUS stop(int deviceID) {
 	return x6_call(deviceID, &X6_1000::stop);
 }
 
-X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
 	vector<Channel> channels(numChannels);
@@ -204,7 +204,7 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 	}
 }
 
-X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double *buffer, unsigned bufferLength) {
+X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	vector<Channel> channels(numChannels);
 	for (int i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
@@ -233,7 +233,7 @@ X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, un
 }
 
 //Expects a null-terminated character array
-X6_STATUS set_log(char * fileNameArr) {
+X6_STATUS set_log(char* fileNameArr) {
 	string fileName(fileNameArr);
 	if (fileName.compare("stdout") == 0){
 		return update_log(stdout);
@@ -252,7 +252,7 @@ X6_STATUS set_log(char * fileNameArr) {
 	}
 }
 
-X6_STATUS update_log(FILE * pFile) {
+X6_STATUS update_log(FILE* pFile) {
 	if (pFile) {
 		//Close the current file
 		if (Output2FILE::Stream()) fclose(Output2FILE::Stream());
