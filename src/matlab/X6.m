@@ -378,15 +378,9 @@ classdef X6 < hgsetget
             fprintf('BBN X6-1000 Test Executable\n')
 
             x6 = X6();
-<<<<<<< HEAD
-
-            x6.set_debug_level(8);
-
-=======
 
             x6.set_debug_level(6);
 
->>>>>>> origin/master
             x6.connect(0);
 
             if (~x6.is_open)
@@ -413,13 +407,7 @@ classdef X6 < hgsetget
             fprintf('Setting NCO phase increments\n');
             x6.set_nco_frequency(1, 1, 10e6);
             x6.set_nco_frequency(2, 1, 20e6);
-<<<<<<< HEAD
-            x6.set_nco_frequency(2, 2, 40e6);
-            x6.set_nco_frequency(2, 3, 60e6);
 
-=======
-
->>>>>>> origin/master
             fprintf('Writing integration kernels\n');
             x6.write_kernel(1, 1, ones(100,1));
             x6.write_kernel(1, 2, ones(100,1));
@@ -428,12 +416,7 @@ classdef X6 < hgsetget
             x6.write_kernel(2, 1, ones(100,1));
             x6.write_kernel(2, 2, ones(100,1));
             x6.write_kernel(2, 3, ones(100,1));
-<<<<<<< HEAD
 
-=======
-            x6.write_kernel(2, 4, ones(100,1));
-
->>>>>>> origin/master
             fprintf('Writing decision engine thresholds\n');
             x6.set_threshold(1, 1, 0.5);
             x6.set_threshold(1, 2, 0.5);
@@ -448,14 +431,10 @@ classdef X6 < hgsetget
                 x6.write_register(hex2dec('2200'), 9, ct-1);
                 x6.write_register(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
             end
-<<<<<<< HEAD
-            x6.write_register(hex2dec('2200'), 8, 1024);
 
-=======
             % write waveform length
             x6.write_register(hex2dec('2200'), 8, 1024);
 
->>>>>>> origin/master
             %DAC trigger window
             fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Acquiring\n');
