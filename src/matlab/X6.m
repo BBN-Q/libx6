@@ -61,7 +61,7 @@ classdef X6 < hgsetget
         end
 
         function val = x6_getter(obj, func, varargin)
-          [status, ~, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+          [status, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
           X6.check_status(status);
         end
 
@@ -361,7 +361,8 @@ classdef X6 < hgsetget
         end
 
         function val = num_devices()
-            [status, ~, val]  = callib('libx6adc', 'get_num_devices');
+            X6.load_library();
+            [status, val]  = calllib('libx6adc', 'get_num_devices', 0);
             X6.check_status(status);
         end
 
@@ -381,10 +382,6 @@ classdef X6 < hgsetget
             x6.set_debug_level(6);
 
             x6.connect(0);
-
-            if (~x6.is_open)
-                error('Could not open X6')
-            end
 
             fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
 
