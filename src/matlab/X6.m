@@ -118,9 +118,8 @@ classdef X6 < hgsetget
             x6_call(obj, 'set_trigger_source', source)
         end
 
-        function set.reference(obj, reference)
-            valMap = containers.Map({'int', 'internal', 'ext', 'external'}, {0, 0, 1, 1});
-            x6_call(obj, 'set_reference', valMap(lower(reference)));
+        function set.reference(obj, ref)
+            x6_call(obj, 'set_reference', ref);
         end
 
         function val = get.reference(obj)
@@ -398,7 +397,7 @@ classdef X6 < hgsetget
 
             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
             fprintf('Setting clock reference to external\n');
-            x6.reference = 'external';
+            x6.reference = 'EXTERNAL_REFERENCE';
 
             fprintf('Enabling streams\n');
             numDemodChan = 1;
