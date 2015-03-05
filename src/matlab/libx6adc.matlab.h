@@ -32,7 +32,6 @@ typedef enum TriggerSource TriggerSource;
 EXPORT X6_STATUS connect_by_ID(int);
 EXPORT X6_STATUS disconnect(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
-EXPORT int is_open(int);
 EXPORT X6_STATUS read_firmware_version(int, unsigned*);
 
 EXPORT X6_STATUS set_reference(int, ReferenceSource);
@@ -56,8 +55,8 @@ EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsign
 EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, int*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
-EXPORT X6_STATUS set_log(char *);
-X6_STATUS update_log(FILE * pFile);
+EXPORT X6_STATUS set_log(char*);
+X6_STATUS update_log(FILE*);
 EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
