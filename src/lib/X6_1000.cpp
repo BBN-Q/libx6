@@ -363,6 +363,17 @@ void X6_1000::log_card_info() {
 }
 
 void X6_1000::acquire() {
+    //Some error checking frame sizes
+    //Because of some FIFO's and clocking  we can't have more than 4096 samples
+    Channel rawStream1 = Channel(1, 0, 0);
+    Channel rawStream2 = Channel(2, 0, 0);
+
+    if (activeChannels_.count(rawStream1.streamID) || activeChannels_.count(rawStream2.streamID)){
+        if (recordLength_ > MAX_LENGTH_RAW_STREAM) {
+            throw X6_RAW_STREAM_TOO_LONG;
+        }
+    }
+
     set_active_channels();
     // should only need to call this once, but for now we call it every time
     stream_.Preconfigure();

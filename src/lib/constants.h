@@ -14,6 +14,8 @@ static const int MAX_NUM_DEVICES = 5;
 static const int X6_READTIMEOUT = 1000;
 static const int X6_WRITETIMEOUT = 500;
 
+static const int MAX_LENGTH_RAW_STREAM = 4096;
+
 //Command byte bits
 static const int LSB_MASK = 0xFF;
 
