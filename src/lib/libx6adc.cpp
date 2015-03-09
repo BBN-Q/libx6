@@ -28,6 +28,7 @@ void init() {
 	FILE* pFile = fopen("libx6.log", "a");
 	Output2FILE::Stream() = pFile;
 
+	//TODO: figure out if this needs to be static
 	static Innovative::X6_1000M x6;
 	numDevices_ = static_cast<unsigned int>(x6.BoardCount());
 	FILE_LOG(logINFO) << "Initializing BBN libx6 with " << numDevices_ << " device" << (numDevices_ > 1 ? "s" : "") << " found.";
