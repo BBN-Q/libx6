@@ -20,8 +20,8 @@ int main ()
 
   set_logging_level(8);
 
-  int numDevices;
-  numDevices = get_num_devices();
+  unsigned numDevices;
+  get_num_devices(&numDevices);
 
   cout << numDevices << " X6 device" << (numDevices > 1 ? "s": "")  << " found" << endl;
 
@@ -38,15 +38,25 @@ int main ()
 
   cout << "connect(0) returned " << rc << endl;
 
-  cout << "Firmware revision: " << read_firmware_version(0) << endl;
+  uint32_t firmwareVersion;
+  read_firmware_version(0, &firmwareVersion);
+  cout << "Firmware revision: " << hexn<8> << firmwareVersion << endl;
 
-  cout << "current logic temperature method 1 = " << get_logic_temperature(0, 0) << endl;
-  cout << "current logic temperature method 2 = " << get_logic_temperature(0, 1) << endl;
+  float logicTemp;
+  get_logic_temperature(0, 0, &logicTemp);
+  cout << "current logic temperature method 1 = " << logicTemp << endl;
+  get_logic_temperature(0, 1, &logicTemp);
+  cout << "current logic temperature method 2 = " << logicTemp << endl;
 
-  cout << "ADC0 stream ID: " << hexn<8> << read_register(0, 0x0800, 64) << endl;
-  cout << "ADC1 stream ID: " << hexn<8> << read_register(0, 0x0800, 65) << std::dec << endl;
+  uint32_t regVal;
+  read_register(0, 0x0800, 64, &regVal);
+  cout << "ADC0 stream ID: " << hexn<8> << regVal << endl;
+  read_register(0, 0x0800, 65, &regVal);
+  cout << "ADC1 stream ID: " << hexn<8> << regVal << std::dec << endl;
 
-  cout << "current PLL frequency = " << get_sampleRate(0)/1e6 << " MHz" << endl;
+  double sampleRate;
+  get_sampleRate(0, &sampleRate);
+  cout << "current PLL frequency = " << sampleRate/1e6 << " MHz" << endl;
 
   // cout << "Set sample rate to 100 MHz" << endl;
 
@@ -62,9 +72,11 @@ int main ()
 
   cout << "setting trigger source = EXTERNAL_TRIGGER" << endl;
 
-  set_trigger_source(0, X6_1000::EXTERNAL_TRIGGER);
+  set_trigger_source(0, EXTERNAL_TRIGGER);
 
-  cout << "get trigger source returns " << ((get_trigger_source(0) == X6_1000::SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
+  TriggerSource triggerSource;
+  get_trigger_source(0, &triggerSource);
+  cout << "get trigger source returns " << ((triggerSource == SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 
   cout << "Enabling physical channel 1" << endl;
   enable_stream(0, 1, 0, 0);
@@ -96,7 +108,7 @@ int main ()
   int success = wait_for_acquisition(0, 2);
   if (success == X6_OK) {
     cout << "Acquistion finished" << endl;
-  } else if (success == X6_1000::TIMEOUT) {
+  } else if (success == X6_TIMEOUT) {
     cout << "Acquisition timed out" << endl;
   } else {
     cout << "Unknown error in wait_for_acquisition" << endl;
@@ -105,7 +117,8 @@ int main ()
   cout << "Transferring waveform ch1" << endl;
   vector<double> buffer;
   ChannelTuple channels[1] = {{1,0,0}};
-  int bufsize = get_buffer_size(0, channels, 1);
+  int bufsize;
+  get_buffer_size(0, channels, 1, &bufsize);
   buffer.resize(bufsize);
   transfer_waveform(0, channels, 1, buffer.data(), buffer.size());
 
@@ -114,7 +127,7 @@ int main ()
 
   cout << "Transfer correlation" << endl;
   ChannelTuple channels2[2] = {{1,1,1}, {2,1,1}};
-  bufsize = get_buffer_size(0, channels2, 2);
+  get_buffer_size(0, channels2, 2, &bufsize);
   buffer.resize(bufsize);
   transfer_waveform(0, channels2, 2, buffer.data(), buffer.size());
 

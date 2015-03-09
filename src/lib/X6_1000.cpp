@@ -1,4 +1,5 @@
 #include "X6_1000.h"
+#include "X6_errno.h"
 
 #include <IppMemoryUtils_Mb.h>  // for Init::UsePerformanceMemoryFunctions
 #include <BufferDatagrams_Mb.h> // for ShortDG
@@ -29,12 +30,12 @@ void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event,
     event.Unsynchronize();
 }
 
-X6_1000::ErrorCodes X6_1000::open(int deviceID) {
+void X6_1000::open(int deviceID) {
     /* Connects to the II module with the given device ID returns MODULE_ERROR
      * if the device cannot be found
      */
 
-    if (isOpen_) return SUCCESS;
+    if (isOpen_) return;
     deviceID_ = deviceID;
 
     // Timer event handlers
@@ -65,7 +66,6 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
 
-
     // Insure BM size is a multiple of four MB
     const int RxBmSize = std::max(BusmasterSize/4, 1) * 4;
     const int TxBmSize = std::max(BusmasterSize/4, 1) * 4;
@@ -80,7 +80,7 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
     }
     catch(...) {
         FILE_LOG(logINFO) << "Module Device Open Failure!";
-        return MODULE_ERROR;
+        throw X6_MODULE_ERROR;
     }
 
     module_.Reset();
@@ -98,24 +98,20 @@ X6_1000::ErrorCodes X6_1000::open(int deviceID) {
 
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
-
-    return SUCCESS;
   }
 
-X6_1000::ErrorCodes X6_1000::init() {
+void X6_1000::init() {
     /*
     TODO: some standard setup stuff here.  Maybe move some of the open code here.
     */
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::close() {
+void X6_1000::close() {
     stream_.Disconnect();
     module_.Close();
 
     isOpen_ = false;
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
-	return SUCCESS;
 }
 
 int X6_1000::read_firmware_version() {
@@ -140,46 +136,41 @@ float X6_1000::get_logic_temperature_by_reg() {
     return static_cast<float>(Temperature.Value());
 }
 
-X6_1000::ErrorCodes X6_1000::set_routes() {
+void X6_1000::set_routes() {
     // Route external clock source from front panel (other option is cslP16)
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
 
     // route external sync source from front panel (other option is essP16)
     module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
     module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_reference(X6_1000::ReferenceSource ref, float frequency) {
+void X6_1000::set_reference(ReferenceSource ref, float frequency) {
     IX6ClockIo::IIReferenceSource x6ref; // reference source
-    if (frequency < 0) return INVALID_FREQUENCY;
+    if (frequency < 0) throw X6_INVALID_FREQUENCY;
 
     x6ref = (ref == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
     FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
 
     module_.Clock().Reference(x6ref);
     module_.Clock().ReferenceFrequency(frequency);
-    return SUCCESS;
 }
 
-X6_1000::ReferenceSource X6_1000::get_reference() {
+ReferenceSource X6_1000::get_reference() {
     auto iiref = module_.Clock().Reference();
     return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
 }
 
-X6_1000::ErrorCodes X6_1000::set_clock(X6_1000::ClockSource src , float frequency, ExtSource extSrc) {
+void X6_1000::set_clock(ClockSource src , float frequency, ExtSource extSrc) {
 
     IX6ClockIo::IIClockSource x6clksrc; // clock source
-    if (frequency < 0) return INVALID_FREQUENCY;
+    if (frequency < 0) throw X6_INVALID_FREQUENCY;
 
     FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
     // Route clock
     x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
     module_.Clock().Source(x6clksrc);
     module_.Clock().Frequency(frequency);
-
-    return SUCCESS;
 }
 
 double X6_1000::get_pll_frequency() {
@@ -189,7 +180,7 @@ double X6_1000::get_pll_frequency() {
 
 }
 
-X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
+void X6_1000::set_trigger_source(TriggerSource trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
 
@@ -197,11 +188,9 @@ X6_1000::ErrorCodes X6_1000::set_trigger_source(TriggerSource trgSrc) {
 
     trigger_.ExternalTrigger( (trgSrc == EXTERNAL_TRIGGER) ? true : false);
     trigger_.AtConfigure();
-
-    return SUCCESS;
 }
 
-X6_1000::TriggerSource X6_1000::get_trigger_source() const {
+TriggerSource X6_1000::get_trigger_source() const {
     // return cached trigger source until
     // TODO: identify method for getting source from card
     if (triggerSource_)
@@ -210,17 +199,15 @@ X6_1000::TriggerSource X6_1000::get_trigger_source() const {
         return SOFTWARE_TRIGGER;
 }
 
-X6_1000::ErrorCodes X6_1000::set_trigger_delay(float delay) {
+void X6_1000::set_trigger_delay(float delay) {
     // going to require a trigger engine modification to work
     // leaving as a TODO for now
     // Something like this might work:
     // trigger_.DelayedTriggerPeriod(delay);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_decimation(bool enabled, int factor) {
+void X6_1000::set_decimation(bool enabled, int factor) {
     module_.Input().Decimation((enabled ) ? factor : 0);
-    return SUCCESS;
 }
 
 int X6_1000::get_decimation() {
@@ -228,7 +215,7 @@ int X6_1000::get_decimation() {
     return (decimation > 0) ? decimation : 1;
 }
 
-X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
+void X6_1000::set_frame(int recordLength) {
     FILE_LOG(logINFO) << "Setting recordLength_ = " << recordLength;
 
     recordLength_ = recordLength;
@@ -237,7 +224,7 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
     int frameGranularity = module_.Input().Info().TriggerFrameGranularity();
     if (recordLength % frameGranularity != 0) {
         FILE_LOG(logERROR) << "Invalid frame size: " << recordLength;
-        return INVALID_FRAMESIZE;
+        throw X6_INVALID_FRAMESIZE;
     }
     module_.Input().Trigger().FramedMode(true);
     module_.Input().Trigger().Edge(true);
@@ -257,21 +244,17 @@ X6_1000::ErrorCodes X6_1000::set_frame(int recordLength) {
             write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord + 8);
         }
     }
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
+void X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
     set_frame(recordLength);
     numSegments_ = numSegments;
     waveforms_ = waveforms;
     roundRobins_ = roundRobins;
     numRecords_ = numSegments * waveforms * roundRobins;
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
+void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
 
     // set the appropriate bit in stream_enable register
@@ -283,10 +266,9 @@ X6_1000::ErrorCodes X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
     activeChannels_[chan.streamID] = chan;
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
+void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     // clear the appropriate bit in stream_enable register
     int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
     reg &= ~(1 << (b + 7*(c & 0x1)));
@@ -298,11 +280,9 @@ X6_1000::ErrorCodes X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) 
     if (activeChannels_.count(streamID)) {
         activeChannels_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
-        return SUCCESS;
     }
     else {
         FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
-        return SUCCESS;
     }
 }
 
@@ -312,7 +292,7 @@ bool X6_1000::get_channel_enable(int channel) {
     return true;
 }
 
-X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double freq) {
+void X6_1000::set_nco_frequency(int a, int b, double freq) {
     // NCO runs at quarter rate
     double nfreq = 4 * freq/get_pll_frequency();
     int32_t phase_increment = rint(nfreq * (1 << 18));
@@ -320,14 +300,14 @@ X6_1000::ErrorCodes X6_1000::set_nco_frequency(int a, int b, double freq) {
     write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
 }
 
-X6_1000::ErrorCodes X6_1000::set_threshold(int a, int b, double threshold) {
+void X6_1000::set_threshold(int a, int b, double threshold) {
     // results are sfix32_14, so scale threshold by 2^14.
     int32_t scaled_threshold = threshold * (1 << 14);
     FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " threshold to: " << threshold << " (" << scaled_threshold << ")";
     write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
 }
 
-X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
+void X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
     FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << " kernel of length to: " << bufsize/2;
     write_dsp_register(a-1, WB_KERNEL_LENGTH_OFFSET + (b-1), bufsize/2);
     for (int i = 0; i < bufsize/2; i += 2) {
@@ -339,9 +319,7 @@ X6_1000::ErrorCodes X6_1000::write_kernel(int a, int b, double *kernel, size_t b
     }
 }
 
-X6_1000::ErrorCodes X6_1000::set_active_channels() {
-    ErrorCodes status = SUCCESS;
-
+void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
@@ -349,7 +327,6 @@ X6_1000::ErrorCodes X6_1000::set_active_channels() {
         FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
         module_.Input().ChannelEnabled(cnt, 1);
     }
-    return status;
 }
 
 void X6_1000::set_dsp_stream_ids() {
@@ -390,7 +367,18 @@ void X6_1000::log_card_info() {
     FILE_LOG(logINFO)  << "PCI Express Lanes: " << module_.Debug()->LaneCount();
 }
 
-X6_1000::ErrorCodes X6_1000::acquire() {
+void X6_1000::acquire() {
+    //Some error checking frame sizes
+    //Because of some FIFO's and clocking  we can't have more than 4096 samples
+    Channel rawStream1 = Channel(1, 0, 0);
+    Channel rawStream2 = Channel(2, 0, 0);
+
+    if (activeChannels_.count(rawStream1.streamID) || activeChannels_.count(rawStream2.streamID)){
+        if (recordLength_ > MAX_LENGTH_RAW_STREAM) {
+            throw X6_RAW_STREAM_TOO_LONG;
+        }
+    }
+
     set_active_channels();
     // should only need to call this once, but for now we call it every time
     stream_.Preconfigure();
@@ -467,29 +455,25 @@ X6_1000::ErrorCodes X6_1000::acquire() {
     //  Start Streaming
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
-
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::wait_for_acquisition(unsigned timeOut){
+void X6_1000::wait_for_acquisition(unsigned timeOut){
     /* Blocking wait until all the records have been acquired. */
 
     auto start = std::chrono::system_clock::now();
     auto end = start + std::chrono::seconds(timeOut);
     while (get_is_running()) {
         if (std::chrono::system_clock::now() > end)
-            return X6_1000::TIMEOUT;
+            throw X6_TIMEOUT;
         std::this_thread::sleep_for( std::chrono::milliseconds(100) );
     }
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::stop() {
+void X6_1000::stop() {
     isRunning_ = false;
     stream_.Stop();
     timer_.Enabled(false);
     trigger_.AtStreamStop();
-    return SUCCESS;
 }
 
 bool X6_1000::get_is_running() {
@@ -508,62 +492,58 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
+void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
     uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
     if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
     accumulators_[sid].snapshot(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
+void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
     //Check we have the channel
     uint16_t sid = channel.streamID;
     if(activeChannels_.find(sid) == activeChannels_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
     if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
     accumulators_[sid].snapshot_variance(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
     for (int i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
     if (length < correlators_[sids].get_buffer_size())
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
     correlators_[sids].snapshot(buffer);
-    return SUCCESS;
 }
 
-X6_1000::ErrorCodes X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
     for (int i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
-        return INVALID_CHANNEL;
+        throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
     if (length < correlators_[sids].get_buffer_size())
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
     correlators_[sids].snapshot_variance(buffer);
-    return SUCCESS;
 }
 
 int X6_1000::get_buffer_size(vector<Channel> & channels) {
@@ -783,22 +763,21 @@ void X6_1000::LogHandler(string handlerName) {
     FILE_LOG(logINFO) << "Alert:" << handlerName;
 }
 
-X6_1000::ErrorCodes X6_1000::set_digitizer_mode(const DIGITIZER_MODE & mode) {
+void X6_1000::set_digitizer_mode(const DigitizerMode & mode) {
     FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
-    return write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
+    write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
 }
 
-DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
-    return DIGITIZER_MODE(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
+DigitizerMode X6_1000::get_digitizer_mode() const {
+    return DigitizerMode(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
 }
 
-X6_1000::ErrorCodes X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
+void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
     Innovative::WishboneBusSpace WB_X6 = Innovative::WishboneBusSpace(logicMemory, baseAddr);
     Innovative::Register reg = Register(WB_X6, offset);
     reg.Value(data);
-    return SUCCESS;
 }
 
 
@@ -809,8 +788,8 @@ uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) con
     return reg.Value();
 }
 
-X6_1000::ErrorCodes X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t data) {
-    return write_wishbone_register(BASE_DSP[instance], offset, data);
+void X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t data) {
+    write_wishbone_register(BASE_DSP[instance], offset, data);
 }
 
 uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
