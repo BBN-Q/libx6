@@ -34,7 +34,7 @@ int main ()
   cout << "Attempting to initialize libaps" << endl;
 
   int rc;
-  rc = connect_by_ID(0);
+  rc = connect(0);
 
   cout << "connect(0) returned " << rc << endl;
 

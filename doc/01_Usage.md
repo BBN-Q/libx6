@@ -145,7 +145,7 @@ x6.acquire();
 
 Most methods take the device ID as the first argument.
 
-`connect_by_ID(int ID)`
+`connect(int ID)`
 
 Connect to X6 with the given device ID. For a single X6 card, ID = 0.
 
@@ -216,4 +216,3 @@ Like `transfer_waveform` but returns the variance of the corresponding
 stream(s). For non-physical streams, the variance has three components: real,
 imaginary, and the real-imaginary product. `buffer` is filled in triples, e.g.:
 `[d1_r, d1_i, d1_p, d2_r, d2_i, d2_p, ...]`.
-

@@ -78,7 +78,7 @@ classdef X6 < hgsetget
                 id = str2double(id);
             end
             obj.deviceID = id;
-            x6_call(obj, 'connect_by_ID');
+            x6_call(obj, 'connect');
             % temporary fix for stream enable register
             obj.write_register(X6.DSP_WB_OFFSET(1), 15, 0);
             obj.write_register(X6.DSP_WB_OFFSET(2), 15, 0);
