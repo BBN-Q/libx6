@@ -11,7 +11,8 @@ enum X6_STATUS {
   X6_INVALID_CHANNEL = -6,
   X6_LOGFILE_ERROR = -7,
   X6_INVALID_FRAMESIZE = -8,
-  X6_RAW_STREAM_TOO_LONG = -9
+  X6_RAW_STREAM_TOO_LONG = -9,
+  X6_MODULE_ERROR = -10
 };
 
 #ifdef __cplusplus
@@ -28,7 +29,8 @@ static std::map<X6_STATUS, std::string> errorsMsgs = {
 {X6_INVALID_CHANNEL, "API call attempted on invalid channel tuple."},
 {X6_LOGFILE_ERROR, "Failed to open log file."},
 {X6_INVALID_FRAMESIZE, "Invalid frame size, frame size must be a mulitple of 4."},
-{X6_RAW_STREAM_TOO_LONG, "Maximum raw stream size is 4096 points.  Disable raw streams to take long records."}
+{X6_RAW_STREAM_TOO_LONG, "Maximum raw stream size is 4096 points.  Disable raw streams to take long records."},
+{X6_MODULE_ERROR, "Failed to open X6 card using Malibu."}
 };
 
 #endif

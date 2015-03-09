@@ -66,7 +66,6 @@ void X6_1000::open(int deviceID) {
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
 
-
     // Insure BM size is a multiple of four MB
     const int RxBmSize = std::max(BusmasterSize/4, 1) * 4;
     const int TxBmSize = std::max(BusmasterSize/4, 1) * 4;
@@ -74,9 +73,15 @@ void X6_1000::open(int deviceID) {
     module_.OutgoingBusMasterSize(TxBmSize * Meg);
     module_.Target(deviceID);
 
-    module_.Open();
-    FILE_LOG(logINFO) << "Opened Device " << deviceID;
-    FILE_LOG(logINFO) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
+    try {
+        module_.Open();
+        FILE_LOG(logINFO) << "Opened Device " << deviceID;
+        FILE_LOG(logINFO) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
+    }
+    catch(...) {
+        FILE_LOG(logINFO) << "Module Device Open Failure!";
+        throw X6_MODULE_ERROR;
+    }
 
     module_.Reset();
     FILE_LOG(logINFO) << "Module Device Opened Successfully...";
