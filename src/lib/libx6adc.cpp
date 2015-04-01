@@ -98,7 +98,7 @@ X6_STATUS get_num_devices(unsigned* numDevices) {
 	return X6_OK;
 }
 
-X6_STATUS connect(int deviceID) {
+X6_STATUS connect_x6(int deviceID) {
 	if (deviceID >= numDevices_) return X6_NO_DEVICE_FOUND;
 	if (X6s_.find(deviceID) == X6s_.end()){
 		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000()); //turn-into make_unique when we can go to gcc 4.9
@@ -106,7 +106,7 @@ X6_STATUS connect(int deviceID) {
 	return x6_call(deviceID, &X6_1000::open, deviceID);
 }
 
-X6_STATUS disconnect(int deviceID) {
+X6_STATUS disconnect_x6(int deviceID) {
 	X6_STATUS status = x6_call(deviceID, &X6_1000::close);
 
 	if (status == X6_OK){

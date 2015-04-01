@@ -145,11 +145,11 @@ x6.acquire();
 
 Most methods take the device ID as the first argument.
 
-`connect(int ID)`
+`connect_x6(int ID)`
 
 Connect to X6 with the given device ID. For a single X6 card, ID = 0.
 
-`disconnect(int ID)`
+`disconnect_x6(int ID)`
 
 Disconnect from the X6 card.
 

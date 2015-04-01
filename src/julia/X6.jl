@@ -16,7 +16,7 @@ immutable Channel
 end
 
 function connect!(dev::X6, id)
-	ret = ccall((:connect, X6_LIBRARY), Int32, (Int32,), id)
+	ret = ccall((:connect_x6, X6_LIBRARY), Int32, (Int32,), id)
 	if ret == 0
 		dev.id = id
 	else
@@ -25,7 +25,7 @@ function connect!(dev::X6, id)
 end
 
 function disconnect!(dev::X6)
-	ret = ccall((:disconnect, X6_LIBRARY), Int32, (Int32,), dev.id)
+	ret = ccall((:disconnect_x6, X6_LIBRARY), Int32, (Int32,), dev.id)
 	dev.id = -1
 end
 

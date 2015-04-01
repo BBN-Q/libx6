@@ -31,8 +31,8 @@ typedef enum TriggerSource TriggerSource;
 EXPORT const char* get_error_msg(X6_STATUS);
 
 
-EXPORT X6_STATUS connect(int);
-EXPORT X6_STATUS disconnect(int);
+EXPORT X6_STATUS connect_x6(int);
+EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
 EXPORT X6_STATUS read_firmware_version(int, unsigned*);
 

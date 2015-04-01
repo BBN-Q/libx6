@@ -34,9 +34,9 @@ int main ()
   cout << "Attempting to initialize libaps" << endl;
 
   int rc;
-  rc = connect(0);
+  rc = connect_x6(0);
 
-  cout << "connect(0) returned " << rc << endl;
+  cout << "connect_x6(0) returned " << rc << endl;
 
   uint32_t firmwareVersion;
   read_firmware_version(0, &firmwareVersion);
@@ -135,7 +135,7 @@ int main ()
 
   stop(0);
 
-  rc = disconnect(0);
+  rc = disconnect_x6(0);
 
   cout << "disconnect(0) returned " << rc << endl;
 
