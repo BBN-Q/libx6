@@ -1,5 +1,6 @@
-
 #include "headings.h"
+
+#include "X6_enums.h"
 
 #include <X6_1000M_Mb.h>
 #include <VitaPacketStream_Mb.h>
@@ -13,8 +14,6 @@
 
 using std::vector;
 using std::string;
-
-
 
 /**
  * X6_1000 Class: Provides interface to Innovative Illustrations X6_1000 card
@@ -30,43 +29,9 @@ class Channel;
 
 enum channel_t { PHYSICAL, DEMOD, RESULT };
 
-class X6_1000 
+class X6_1000
 {
 public:
-
-	enum ErrorCodes {
-    	SUCCESS = 0,
-    	INVALID_DEVICEID = -1,
-    	DEVICE_NOT_CONNECTED = -2,
-    	MODULE_ERROR = -3,
-    	NOT_IMPLEMENTED = -4,
-    	FILE_ERROR = -5,
-    	TIMEOUT = -6,
-    	INVALID_FREQUENCY = -0x10,
-    	INVALID_CHANNEL = -0x11,
-    	INVALID_INTERVAL = -0x12,
-    	INVALID_FRAMESIZE = -0x13
-	};
-
-	enum ClockSource {
-		EXTERNAL_CLOCK = 0,   /**< External Input */
-		INTERNAL_CLOCK        /**< Internal Generation */
-	};
-
-	enum ReferenceSource {
-		EXTERNAL_REFERENCE = 0,   /**< External Input */
-		INTERNAL_REFERENCE        /**< Internal Generation */
-	};
-
-	enum ExtSource {
-		FRONT_PANEL = 0, /**< Front panel input */
-		P16              /**< P16 input */
-	};
-
-	enum TriggerSource {
-		SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
-		EXTERNAL_TRIGGER         /**< External trigger */
-	};
 
 	X6_1000();
 	~X6_1000();
@@ -81,7 +46,7 @@ public:
 	 *  \param frequency Frequency in Hz
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
+	void set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
 
 	ReferenceSource get_reference();
 
@@ -91,45 +56,43 @@ public:
 	 *  \param extSrc FRONT_PANEL || P16
 	 *  \returns SUCCESS || INVALID_FREQUENCY
 	 */
-	ErrorCodes set_clock(ClockSource src = INTERNAL_CLOCK, 
-		                 float frequency = 1e9, 
+	void set_clock(ClockSource src = INTERNAL_CLOCK,
+		                 float frequency = 1e9,
 		                 ExtSource extSrc = FRONT_PANEL);
 
-	/** Set up clock and trigger routes
-	 * \returns SUCCESS
-	 */
-	ErrorCodes set_routes();
+	/** Set up clock and trigger routes */
+	void set_routes();
 
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	ErrorCodes set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
+	void set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
 	TriggerSource get_trigger_source() const;
 
-	ErrorCodes set_trigger_delay(float delay = 0.0);
+	void set_trigger_delay(float delay = 0.0);
 
 	/** Set Decimation Factor (current for both Tx and Rx)
 	 * \params enabled set to true to enable
 	 * \params factor Decimaton factor
 	 * \returns SUCCESS
 	 */
-	ErrorCodes set_decimation(bool enabled = false, int factor = 1);
+	void set_decimation(bool enabled = false, int factor = 1);
 	int get_decimation();
 
-	ErrorCodes set_frame(int recordLength);
-	ErrorCodes set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
+	void set_frame(int recordLength);
+	void set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
 
-	ErrorCodes enable_stream(unsigned, unsigned, unsigned);
-	ErrorCodes disable_stream(unsigned, unsigned, unsigned);
+	void enable_stream(unsigned, unsigned, unsigned);
+	void disable_stream(unsigned, unsigned, unsigned);
 
 	bool get_channel_enable(int channel);
 
-	ErrorCodes set_digitizer_mode(const DIGITIZER_MODE &);
-	DIGITIZER_MODE get_digitizer_mode() const;
+	void set_digitizer_mode(const DigitizerMode &);
+	DigitizerMode get_digitizer_mode() const;
 
-	ErrorCodes set_nco_frequency(int, int, double);
-	ErrorCodes set_threshold(int, int, double);
-	ErrorCodes write_kernel(int, int, double *, size_t);
+	void set_nco_frequency(int, int, double);
+	void set_threshold(int, int, double);
+	void write_kernel(int, int, double *, size_t);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
@@ -138,33 +101,33 @@ public:
 
 	unsigned int get_num_channels();
 
-	ErrorCodes open(int deviceID);
-	ErrorCodes init();
-	ErrorCodes close();
+	void open(int deviceID);
+	void init();
+	void close();
 
-	ErrorCodes acquire();
-	ErrorCodes wait_for_acquisition(unsigned);
-	ErrorCodes stop();
-	bool       get_is_running();
-	bool       get_has_new_data();
+	void acquire();
+	void wait_for_acquisition(unsigned);
+	void stop();
+	bool get_is_running();
+	bool get_has_new_data();
 
-	ErrorCodes transfer_waveform(Channel, double *, size_t);
-	ErrorCodes transfer_variance(Channel, double *, size_t);
-	ErrorCodes transfer_correlation(vector<Channel> &, double *, size_t);
-	ErrorCodes transfer_correlation_variance(vector<Channel> &, double *, size_t);
+	void transfer_waveform(Channel, double *, size_t);
+	void transfer_variance(Channel, double *, size_t);
+	void transfer_correlation(vector<Channel> &, double *, size_t);
+	void transfer_correlation_variance(vector<Channel> &, double *, size_t);
 	int get_buffer_size(vector<Channel> &);
 	int get_variance_buffer_size(vector<Channel> &);
 
-	ErrorCodes write_wishbone_register(uint32_t, uint32_t, uint32_t);
+	void write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
 
-	ErrorCodes write_dsp_register(unsigned, uint32_t, uint32_t);
+	void write_dsp_register(unsigned, uint32_t, uint32_t);
 	uint32_t read_dsp_register(unsigned, uint32_t) const;
 
 	const int BusmasterSize = 4; /**< Rx & Tx BusMaster size in MB */
 	const int MHz = 1e6;         /**< Constant for converting MHz */
 	const int Meg = 1024 * 1024;
- 
+
 private:
 	// disable copying because some the innovative stuff it holds on to is non-copyable
 	X6_1000(const X6_1000&) = delete;
@@ -201,7 +164,7 @@ private:
 	unsigned roundRobins_;
 	unsigned recordsTaken_;
 
-	ErrorCodes set_active_channels();
+	void set_active_channels();
 	void set_dsp_stream_ids();
 	void set_defaults();
 	void log_card_info();
@@ -210,11 +173,11 @@ private:
 	void initialize_accumulators();
 	void initialize_correlators();
 
-	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event, 
+	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event,
     				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
 
 	// Malibu Event handlers
-	
+
 	void HandleDisableTrigger(OpenWire::NotifyEvent & Event);
 	void HandleExternalTrigger(OpenWire::NotifyEvent & Event);
 	void HandleSoftwareTrigger(OpenWire::NotifyEvent & Event);
@@ -326,7 +289,7 @@ private:
 	vector<double>::iterator idx_;
 	// buffer for (A*B)^2
 	vector<double> data2_;
-	vector<double>::iterator idx2_;	
+	vector<double>::iterator idx2_;
 };
 
 vector<vector<int>> combinations(int, int);

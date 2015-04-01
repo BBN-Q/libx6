@@ -16,7 +16,7 @@ immutable Channel
 end
 
 function connect!(dev::X6, id)
-	ret = ccall((:connect_by_ID, X6_LIBRARY), Int32, (Int32,), id)
+	ret = ccall((:connect_x6, X6_LIBRARY), Int32, (Int32,), id)
 	if ret == 0
 		dev.id = id
 	else
@@ -25,7 +25,7 @@ function connect!(dev::X6, id)
 end
 
 function disconnect!(dev::X6)
-	ret = ccall((:disconnect, X6_LIBRARY), Int32, (Int32,), dev.id)
+	ret = ccall((:disconnect_x6, X6_LIBRARY), Int32, (Int32,), dev.id)
 	dev.id = -1
 end
 
@@ -52,11 +52,11 @@ end
 
 function get_trigger_source(dev::X6)
 	ccall((:get_trigger_source, X6_LIBRARY), Int32, (Int32,), dev.id)
-end	
+end
 
 function set_trigger_source(dev::X6, source::Int)
 	ccall((:set_trigger_source, X6_LIBRARY), Int32, (Int32, Int32), dev.id, source)
-end	
+end
 
 function get_reference(dev::X6)
 	strMap = {0 => "internal", 1=>"external"}
@@ -85,11 +85,11 @@ end
 function write_register(dev::X6, addr, offset, value)
 	#Write an address in the wishbone register space
 	ccall((:write_register, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32), dev.id, addr, offset, value)
-end	
+end
 
 function set_averager_settings(dev::X6, recordLength::Int, numSegments::Int, waveforms::Int, roundRobins::Int)
-	ccall((:set_averager_settings, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32, Int32),	
-											dev.id, recordLength, numSegments, waveforms, roundRobins) 
+	ccall((:set_averager_settings, X6_LIBRARY), Int32, (Int32, Int32, Int32, Int32, Int32),
+											dev.id, recordLength, numSegments, waveforms, roundRobins)
 end
 
 function acquire(dev::X6)
