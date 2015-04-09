@@ -1,29 +1,23 @@
-class X6Test < matlab.unitest.TestCase
+classdef TestX6 < matlab.unittest.TestCase
 
     properties
         x6
     end
 
-    methods(TestMethodSetup)
-        function create_x6(obj)
-            x6 = X6();
-        end
-
-        function connect_x6(obj)
-            connect(obj.x6, 0)
+    methods(TestClassSetup)
+        function setup_x6(testCase)
+            testCase.x6 = X6();
+            connect(testCase.x6, 0);
         end
 
     end
 
-    methods(TestMethodTeardown)
+    methods(TestClassTeardown)
 
-        function disconnect_x6(obj)
-            disconnect(obj.x6)
-        end
-
-        function unload_lib(obj)
-            obj.x6 = []
-            unloadlibrary('libx6adc')
+        function takedown_x6(testCase)
+            disconnect(testCase.x6);
+            testCase.x6 = [];
+            unloadlibrary('libx6adc');
         end
 
     end
@@ -31,7 +25,7 @@ class X6Test < matlab.unitest.TestCase
     methods(Test)
 
     function test_temperature(testCase)
-        T = obj.x6.getLogicTemperature();
+        T = testCase.x6.getLogicTemperature();
         testCase.verifyTrue((T > 20) && (T < 80))
     end
 
