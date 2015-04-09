@@ -435,7 +435,7 @@ classdef X6 < hgsetget
             % write a waveform into transmitter memory
             for ct = 1:2048
                 x6.write_register(hex2dec('2200'), 9, ct-1);
-                x6.write_register(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
+                x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
             end
 
             % write waveform length
