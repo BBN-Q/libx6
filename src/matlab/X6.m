@@ -442,7 +442,6 @@ classdef X6 < hgsetget
             x6.write_register(hex2dec('2200'), 8, 1024);
 
             %DAC trigger window
-            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Acquiring\n');
             x6.acquire();
 
@@ -452,7 +451,6 @@ classdef X6 < hgsetget
             fprintf('Stopping\n');
             x6.stop();
 
-            fprintf('DAC trigger window: 0x%08x\n', x6.read_register(hex2dec('0800'), 129))
             fprintf('Transferring waveforms\n');
             wfs = cell(numDemodChan+1,1);
             for ct = 0:numDemodChan
