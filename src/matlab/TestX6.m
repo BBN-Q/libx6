@@ -50,10 +50,10 @@ classdef TestX6 < matlab.unittest.TestCase
             testCase.verifyTrue(bitget(checkVal, bit));
         end
 
-        function test_stream_enable(testCase)
+        function test_stream_disable(testCase)
             %Disable a stream and then peak at the register to make sure bit is cleared
             stream = struct('a', randint, 'b', randint 'c', randint);
-            enable_stream(testCase.x6, stream);
+            disable_stream(testCase.x6, stream);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
             bit = stream.b + 15*stream.c;
@@ -62,14 +62,14 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_recordLength(testCase)
             %Test record length over max throws error
-            testCase.assertSomething(set_averager_settings(x6, 4097, 16, 1, 1));
+            testCase.verifyError(@() set_averager_settings(x6, 4097, 16, 1, 1), 'X6:Fail');
 
             %Test record length register is set in both DSP modules
-            val = round(4096*rand());
-            set_averager_settings(x6, val, 1, 1, 1);
-            checkVal = read_register(x6, testCase.DSP_WB_OFFSET(1));
+            val = randi(4000);
+            set_averager_settings(testCase.x6, val, 1, 1, 1);
+            checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(1), 63);
             testCase.verifyEqual(val, checkVal);
-            checkVal = read_register(x6, testCase.DSP_WB_OFFSET(2));
+            checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(2), 63);
             testCase.verifyEqual(val, checkVal);
         end
 
