@@ -332,8 +332,6 @@ void X6_1000::set_active_channels() {
     }
 
     module_.Output().ChannelEnabled(0, true);
-
-    return status;
 }
 
 void X6_1000::set_dsp_stream_ids() {
@@ -466,8 +464,6 @@ void X6_1000::acquire() {
     stream_.Start();
 
     FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
-    
-    return SUCCESS;
 }
 
 void X6_1000::wait_for_acquisition(unsigned timeOut){
