@@ -28,7 +28,7 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_temperature(testCase)
             %Check temperature is between 20C and 80C
             T = testCase.x6.getLogicTemperature();
-            testCase.verifyTrue((T > 20) && (T < 80))
+            verifyTrue(testCase, (T > 20) && (T < 80))
         end
 
         function test_wishbone_readwrite(testCase)
@@ -37,7 +37,7 @@ classdef TestX6 < matlab.unittest.TestCase
             val = randi(2^32, 'uint32');
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56, val);
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56);
-            testCase.assertEqual(val, checkVal);
+            assertEqual(testCase, val, checkVal);
         end
 
         function test_stream_enable(testCase)
@@ -47,9 +47,9 @@ classdef TestX6 < matlab.unittest.TestCase
 
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
             bit = stream.b + 15*stream.c;
-            testCase.verifyTrue(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
+            verifyTrue(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
             %Check enabledStreams got set
-            testCase.verifyEqual(testCase, testCase.x6.enabledStreams{end}, [stream.a, stream.b, stream.c]);
+            verifyEqual(testCase, testCase.x6.enabledStreams{end}, [stream.a, stream.b, stream.c]);
         end
 
         function test_stream_disable(testCase)
@@ -64,20 +64,20 @@ classdef TestX6 < matlab.unittest.TestCase
             testCase.verifyFalse(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
             %Also check that enabledStreams is empty
-            testCase.verifyTrue(isempty(testCase.x6.enabledStreams));
+            verifyTrue(testCase, isempty(testCase.x6.enabledStreams));
         end
 
         function test_recordLength(testCase)
             %Test record length over max throws error
-            testCase.verifyError(@() set_averager_settings(x6, 4097, 16, 1, 1), 'X6:Fail');
+            verifyError(testCase, @() set_averager_settings(x6, 4097, 16, 1, 1), 'X6:Fail');
 
             %Test record length register is set in both DSP modules
             val = randi(4000);
             set_averager_settings(testCase.x6, val, 1, 1, 1);
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(1), 63);
-            testCase.verifyEqual(val, checkVal);
+            verifyEqual(testCase, val, checkVal);
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(2), 63);
-            testCase.verifyEqual(val, checkVal);
+            verifyEqual(testCase, val, checkVal);
         end
 
         function test_nco_freq(testCase)
@@ -87,7 +87,7 @@ classdef TestX6 < matlab.unittest.TestCase
             b = 0; %just a single demod channel for now
             set_nco_frequency(testCase.x6, a, b);
             checkVal = get_nco_frequency(testCase.x6, a, b);
-            testCase.verfiyEqual(freq, checkVal);
+            verfiyEqual(testCase, freq, checkVal);
         end
     end
 
