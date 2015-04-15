@@ -48,6 +48,8 @@ classdef TestX6 < matlab.unittest.TestCase
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
             bit = stream.b + 15*stream.c;
             testCase.verifyTrue(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
+            %Check enabledStreams got set
+            testCase.verifyEqual(testCase, testCase.x6.enabledStreams{end}, [stream.a, stream.b, stream.c]);
         end
 
         function test_stream_disable(testCase)
