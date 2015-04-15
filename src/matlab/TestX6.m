@@ -77,16 +77,16 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_recordLenth_granularity(testCase)
             %Record length should be multiple of 4
-            verifyError(testCase, @() set_averager_settings(x6, 123, 16, 1, 1), 'X6:Fail');
+            verifyError(testCase, @() set_averager_settings(testCase.x6, 123, 16, 1, 1), 'X6:Fail');
         end
 
         function test_recordLength_register(testCase)
             %Test record length register is set in both DSP modules
-            val = 4*randi(1024);
+            val = uint32(16*randi(256));
             set_averager_settings(testCase.x6, val, 1, 1, 1);
-            checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(1), 63);
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
             verifyEqual(testCase, val, checkVal);
-            checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(2), 63);
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 63);
             verifyEqual(testCase, val, checkVal);
         end
 
