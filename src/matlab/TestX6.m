@@ -34,7 +34,7 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_wishbone_readwrite(testCase)
             %Check we can read/write to the wishbone bus
             %Use one of the DSP registers
-            val = randint(uint32);
+            val = randi(2^32, 'uint32');
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63, val);
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
             testCase.assertEqual(val, checkVal);
@@ -42,7 +42,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_stream_enable(testCase)
             %Enable a stream and then peak at the register to make sure bit is set
-            stream = struct('a', randint, 'b', randint 'c', randint);
+            stream = struct('a', randi(2), 'b', randi(4), 'c', randi(2));
             enable_stream(testCase.x6, stream);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
@@ -52,7 +52,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_stream_disable(testCase)
             %Disable a stream and then peak at the register to make sure bit is cleared
-            stream = struct('a', randint, 'b', randint 'c', randint);
+            stream = struct('a', randi(2), 'b', randi(4), 'c', randi(2));
             disable_stream(testCase.x6, stream);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
@@ -81,6 +81,7 @@ classdef TestX6 < matlab.unittest.TestCase
             set_nco_frequency(testCase.x6, a, b);
             checkVal = get_nco_frequency(testCase.x6, a, b);
             testCase.verfiyEqual(freq, checkVal);
+        end
     end
 
 end
