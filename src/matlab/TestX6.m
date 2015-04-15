@@ -64,7 +64,7 @@ classdef TestX6 < matlab.unittest.TestCase
             testCase.verifyFalse(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
             %Also check that enabledStreams doesn't have stream any more
-            verifyTrue(testCase, isempty(find(cellfun(@(x) isequal(x, [stream.a, stream.b, stream.c]), testCase.x6.enabledStreams)));
+            verifyTrue(testCase, isempty(find(cellfun(@(x) isequal(x, [stream.a, stream.b, stream.c]), testCase.x6.enabledStreams), 1) ) );
         end
 
         function test_recordLength(testCase)
