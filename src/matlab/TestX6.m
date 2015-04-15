@@ -93,11 +93,14 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_nco_freq(testCase)
             %Test that the NCO frequency is set correctly
             freq = randi(125e6);
+            %Don't expect more than 18 bits precision on a quarter sampling rate
+            prec = 1e9 / 4 / 2^18;
+            freq = prec*round(freq/prec);
             a = randi(2);
             b = 0; %just a single demod channel for now
-            set_nco_frequency(testCase.x6, a, b);
+            set_nco_frequency(testCase.x6, a, b, freq);
             checkVal = get_nco_frequency(testCase.x6, a, b);
-            verfiyEqual(testCase, freq, checkVal);
+            verifyEqual(testCase, freq, checkVal);
         end
     end
 
