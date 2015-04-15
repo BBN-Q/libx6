@@ -285,11 +285,11 @@ X6_STATUS set_logging_level(int logLevel) {
 	return X6_OK;
 }
 
-X6_STATUS read_register(int deviceID, int wbAddr, int offset, uint32_t* regValue){
+X6_STATUS read_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t* regValue){
 	return x6_getter(deviceID, &X6_1000::read_wishbone_register, regValue, wbAddr, offset);
 }
 
-X6_STATUS write_register(int deviceID, int wbAddr, int offset, int data){
+X6_STATUS write_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t data){
 	return x6_call(deviceID, &X6_1000::write_wishbone_register, wbAddr, offset, data);
 }
 

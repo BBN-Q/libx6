@@ -42,8 +42,10 @@ EXPORT X6_STATUS get_reference(int, ReferenceSource*);
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
 
-EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_nco_frequency(int, int, int, double);
+EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
+
+EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS write_kernel(int, int, int, double*, unsigned);
 
@@ -70,8 +72,8 @@ EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* debug methods */
-EXPORT X6_STATUS read_register(int, int, int, unsigned*);
-EXPORT X6_STATUS write_register(int, int, int, int);
+EXPORT X6_STATUS read_register(int, unsigned, unsigned, unsigned*);
+EXPORT X6_STATUS write_register(int, unsigned, unsigned, unsigned);
 
 // II X6-1000M Test Interface
 EXPORT X6_STATUS get_logic_temperature(int, int, float*);

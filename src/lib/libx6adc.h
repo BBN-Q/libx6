@@ -75,8 +75,8 @@ EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* debug methods */
-EXPORT X6_STATUS read_register(int, int, int, uint32_t*);
-EXPORT X6_STATUS write_register(int, int, int, int);
+EXPORT X6_STATUS read_register(int, uint32_t, uint32_t, uint32_t*);
+EXPORT X6_STATUS write_register(int, uint32_t, uint32_t, uint32_t);
 
 // II X6-1000M Test Interface
 EXPORT X6_STATUS get_logic_temperature(int, int, float*);
