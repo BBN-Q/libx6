@@ -796,6 +796,7 @@ void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
     Innovative::WishboneBusSpace WB_X6 = Innovative::WishboneBusSpace(logicMemory, baseAddr);
+    //Register.Value is defined as an ii32 in HardwareRegister_Mb.cpp and ii32 is typedefed as unsigend in DataTypes_Mb.h
     Innovative::Register reg = Register(WB_X6, offset);
     reg.Value(data);
 }
@@ -804,6 +805,7 @@ void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32
 uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) const {
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
     Innovative::WishboneBusSpace WB_X6 = Innovative::WishboneBusSpace(logicMemory, baseAddr);
+    //Register.Value is defined as an ii32 in HardwareRegister_Mb.cpp and ii32 is typedefed as unsigend in DataTypes_Mb.h
     Innovative::Register reg = Register(WB_X6, offset);
     return reg.Value();
 }
