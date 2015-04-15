@@ -270,6 +270,10 @@ classdef X6 < hgsetget
             x6_call(obj, 'set_nco_frequency', a, b, freq);
         end
 
+        function val = get_nco_frequency(obj, a, b, freq)
+            val = x6_getter(obj, 'get_nco_frequency', a, b);
+        end
+
         function write_kernel(obj, a, b, kernel)
             packedkernel = zeros(2*length(kernel), 1);
             for ct = 1:length(kernel)
