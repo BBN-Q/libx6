@@ -67,12 +67,22 @@ classdef TestX6 < matlab.unittest.TestCase
             verifyTrue(testCase, isempty(find(cellfun(@(x) isequal(x, [stream.a, stream.b, stream.c]), testCase.x6.enabledStreams)));
         end
 
-        function test_recordLength(testCase)
+        function test_recordLength_length(testCase)
             %Test record length over max throws error
-            verifyError(testCase, @() set_averager_settings(x6, 4097, 16, 1, 1), 'X6:Fail');
+            set_averager_settings(testCase.x6, 4160, 16, 1, 1);
+            %Doesn't throw until we try and acquire with an active raw stream
+            enable_stream(testCase.x6, 1, 0, 0);
+            verifyError(testCase, @() testCase.x6.acquire(), 'X6:Fail');
+        end
 
+        function test_recordLenth_granularity(testCase)
+            %Record length should be multiple of 4
+            verifyError(testCase, @() set_averager_settings(x6, 123, 16, 1, 1), 'X6:Fail');
+        end
+
+        function test_recordLength_register(testCase)
             %Test record length register is set in both DSP modules
-            val = randi(4000);
+            val = 4*randi(1024);
             set_averager_settings(testCase.x6, val, 1, 1, 1);
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(1), 63);
             verifyEqual(testCase, val, checkVal);
