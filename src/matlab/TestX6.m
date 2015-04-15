@@ -35,24 +35,24 @@ classdef TestX6 < matlab.unittest.TestCase
             %Check we can read/write to the wishbone bus
             %Use one of the DSP registers
             val = randi(2^32, 'uint32');
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63, val);
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56, val);
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56);
             testCase.assertEqual(val, checkVal);
         end
 
         function test_stream_enable(testCase)
             %Enable a stream and then peak at the register to make sure bit is set
-            stream = struct('a', randi(2), 'b', randi(4), 'c', randi(2));
+            stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
             enable_stream(testCase.x6, stream);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
-            bit = stream.b + 15*str;eam.c;
+            bit = stream.b + 15*stream.c;
             testCase.verifyTrue(bitget(checkVal, bit));
         end
 
         function test_stream_disable(testCase)
             %Disable a stream and then peak at the register to make sure bit is cleared
-            stream = struct('a', randi(2), 'b', randi(4), 'c', randi(2));
+            stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
             disable_stream(testCase.x6, stream);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
