@@ -43,21 +43,21 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_stream_enable(testCase)
             %Enable a stream and then peak at the register to make sure bit is set
             stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
-            enable_stream(testCase.x6, stream);
+            enable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
             bit = stream.b + 15*stream.c;
-            testCase.verifyTrue(bitget(checkVal, bit));
+            testCase.verifyTrue(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
         end
 
         function test_stream_disable(testCase)
             %Disable a stream and then peak at the register to make sure bit is cleared
             stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
-            disable_stream(testCase.x6, stream);
+            disable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
             checkVal = read_register(testCase.x6, testCase.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
             bit = stream.b + 15*stream.c;
-            testCase.verifyFalse(bitget(checkVal, bit));
+            testCase.verifyFalse(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
         end
 
         function test_recordLength(testCase)
