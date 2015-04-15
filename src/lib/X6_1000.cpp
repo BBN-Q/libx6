@@ -303,6 +303,12 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
     write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
 }
 
+double X6_1000::get_nco_frequency(int a, int b) {
+    uint32_t phaseInc = read_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1));
+    //Undo the math in set_nco_frequency
+    return phaseInc / (1 << 18) * get_pll_frequency() / 4;
+}
+
 void X6_1000::set_threshold(int a, int b, double threshold) {
     // results are sfix32_14, so scale threshold by 2^14.
     int32_t scaled_threshold = threshold * (1 << 14);

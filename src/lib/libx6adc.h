@@ -44,8 +44,10 @@ EXPORT X6_STATUS get_reference(int, ReferenceSource*);
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
 
-EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_nco_frequency(int, int, int, double);
+EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
+
+EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS write_kernel(int, int, int, double*, unsigned);
 

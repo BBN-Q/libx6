@@ -91,6 +91,7 @@ public:
 	DigitizerMode get_digitizer_mode() const;
 
 	void set_nco_frequency(int, int, double);
+	double get_nco_frequency(int, int);
 	void set_threshold(int, int, double);
 	void write_kernel(int, int, double *, size_t);
 
