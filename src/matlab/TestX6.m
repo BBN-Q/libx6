@@ -45,7 +45,7 @@ classdef TestX6 < matlab.unittest.TestCase
             stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
             enable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0f'));
             bit = stream.b + 15*stream.c;
             verifyTrue(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
             %Check enabledStreams got set
@@ -59,7 +59,7 @@ classdef TestX6 < matlab.unittest.TestCase
             enable_stream(testCase.x6, stream.a, stream.b, stream.c);
             disable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0x0f'));
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0f'));
             bit = stream.b + 15*stream.c;
             testCase.verifyFalse(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
