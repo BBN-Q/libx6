@@ -61,7 +61,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0f'));
             bit = stream.b + 15*stream.c;
-            testCase.verifyFalse(logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
+            verifyFalse(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
             %Also check that enabledStreams doesn't have stream any more
             verifyTrue(testCase, isempty(find(cellfun(@(x) isequal(x, [stream.a, stream.b, stream.c]), testCase.x6.enabledStreams), 1) ) );
