@@ -270,7 +270,7 @@ classdef X6 < hgsetget
             x6_call(obj, 'set_nco_frequency', a, b, freq);
         end
 
-        function val = get_nco_frequency(obj, a, b, freq)
+        function val = get_nco_frequency(obj, a, b)
             val = x6_getter(obj, 'get_nco_frequency', a, b);
         end
 
