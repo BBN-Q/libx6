@@ -744,6 +744,45 @@ bool X6_1000::check_done() {
     return true;
 }
 
+void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
+
+    //Waveform length should be multiple of four and less than
+    if ((wf.size() % 4) != 0){
+        throw X6_INVALID_WF_LEN;
+    }
+
+    auto range_check = [](double val){
+        const double maxVal = 1 - 1/(1 << 15);
+        const double minVal = -1.0;
+        if ((val > maxVal) || (val < minVal)){
+            throw X6_WF_OUT_OF_RANGE;
+        }
+    };
+
+    //Loop through pairs, convert to 16bit integer, stack into a uint32_t
+    for (size_t ct = 0; ct < wf.size()/2; ct+=2) {
+        range_check(wf[ct]);
+        int32_t fixedValA = wf[ct]*(1<<15);
+        int32_t fixedValB = wf[ct]*(1<<15);
+        uint32_t stackedVal = (fixedValB << 16) | fixedValA; // signed to unsigned is defined modulo 2^n in the standard
+        write_wishbone_register(BASE_PG[pg], 9, ct/2); // address
+        write_wishbone_register(BASE_PG[pg], 10, stackedVal); //data
+    }
+}
+
+double X6_1000::read_pulse_waveform(unsigned pg, uint16_t addr){
+    write_wishbone_register(BASE_PG[pg], 9, addr/2); // address
+    uint32_t stackedVal = read_wishbone_register(BASE_PG[pg], 10);
+    //First upper or lower word
+    //Do some sketchy pointer stuff because unsigned to signed is implementation defined
+    int16_t* fixedVal = reinterpret_cast<int16_t*>(stackedVal);
+    if ((addr%2)==0) {
+        fixedVal += 1;
+    }
+    //Convert back to -1 to 1 float
+    return static_cast<double>(*fixedVal)/(1<<15);
+}
+
 void X6_1000::HandleTimer(OpenWire::NotifyEvent & /*Event*/) {
     // FILE_LOG(logDEBUG) << "X6_1000::HandleTimer";
     trigger_.AtTimerTick();

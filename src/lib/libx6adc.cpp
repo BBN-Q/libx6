@@ -248,6 +248,16 @@ X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, un
 	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, channels);
 }
 
+/* Pulse generator methods */
+EXPORT X6_STATUS write_pulse_waveform(int deviceID, unsigned pg, double* wf, unsigned numPoints){
+	vector<double> wfVec(wf, wf+numPoints);
+	return x6_call(deviceID, &X6_1000::write_pulse_waveform, pg, wfVec);
+}
+
+EXPORT X6_STATUS read_pulse_waveform(int deviceID, unsigned pg, unsigned addr, double* val){
+	return x6_getter(deviceID, &X6_1000::read_pulse_waveform, val, pg, addr);
+}
+
 //Expects a null-terminated character array
 X6_STATUS set_log(char* fileNameArr) {
 	string fileName(fileNameArr);

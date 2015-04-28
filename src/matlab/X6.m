@@ -287,6 +287,14 @@ classdef X6 < hgsetget
             x6_call(obj, 'set_threshold', a, b, threshold);
         end
 
+        function write_pulse_waveform(obj, pg, waveform)
+            x6_call(obj, 'write_pulse_waveform', pg, waveform, length(waveform));
+        end
+
+        function read_pulse_waveform(obj, pg, addr)
+            x6_getter(obj, 'read_pulse_waveform', pg, addr);
+        end
+
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
             fields = fieldnames(settings);
@@ -439,7 +447,7 @@ classdef X6 < hgsetget
             % write a waveform into transmitter memory
             for ct = 1:2048
                 x6.write_register(hex2dec('2200'), 9, ct-1);
-                x6.write_register(hex2dec('2200'), 10, bitshift(int32(2*ct), 16) + bitand(int32(2*ct+1), hex2dec('FFFF')));
+                x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
             end
 
             % write waveform length
