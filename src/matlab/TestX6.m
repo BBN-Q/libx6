@@ -132,17 +132,15 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_pg_waveform_readwrite(testCase)
             %Write a random waveform of the full length
             wf = -1.0 + (2-1/2^15)*rand(16384,1);
-            %Have 16 bits of precision on the DAC
-            prec = 1/2^15;
-            wf = prec*round(wf/prec);
             pg = randi([0,1]);
             write_pulse_waveform(testCase.x6, pg, wf);
 
-            %Now test each entry
-            addresses = randperm(16384);
-            for ct = 1:16384
+            %Now test first/last and a random selection in between (takes 1.5min to test all values)
+            addresses = [1; 16384; randi(16384, 100, 1)];
+            for ct = 1:length(addresses)
+                %Have 16 bits of precision on the DAC
                 testVal = read_pulse_waveform(testCase.x6, pg, addresses(ct));
-                verifyEqual(testCase, wf(ct), testVal);
+                verifyEqual(testCase, testVal, wf(addresses(ct)), 'AbsTol', 1/2^15);
             end
         end
 
