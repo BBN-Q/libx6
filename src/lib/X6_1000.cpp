@@ -765,6 +765,7 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
     for (size_t ct = 0; ct < wf.size(); ct+=2) {
         range_check(wf[ct]);
         int32_t fixedValA = wf[ct]*(1<<15);
+        range_check(wf[ct+1]);
         int32_t fixedValB = wf[ct+1]*(1<<15);
         uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
         FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
