@@ -781,6 +781,9 @@ double X6_1000::read_pulse_waveform(unsigned pg, uint16_t addr){
     uint32_t stackedVal = read_wishbone_register(BASE_PG[pg], 10);
 
     //If the address is even or odd take the upper/lower 16bits
+    //The conversion from unsigned to signed is not guaranteed to keep the bit pattern
+    //However for gcc using two's complement it does
+    //See http://stackoverflow.com/a/4219558 and http://stackoverflow.com/q/13150449
     int16_t fixedVal = ((addr % 2) == 0) ? (stackedVal & 0x0000ffff) : (stackedVal >> 16);
 
     //Convert back to -1 to 1 float
