@@ -746,8 +746,8 @@ bool X6_1000::check_done() {
 
 void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
 
-    //Waveform length should be multiple of four and less than
-    if ((wf.size() % 4) != 0){
+    //Waveform length should be multiple of four and less than 16384
+    if (((wf.size() % 4) != 0) || (wf.size() > 16384)){
         throw X6_INVALID_WF_LEN;
     }
 
