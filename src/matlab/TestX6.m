@@ -102,6 +102,47 @@ classdef TestX6 < matlab.unittest.TestCase
             checkVal = get_nco_frequency(testCase.x6, a, b);
             verifyEqual(testCase, freq, checkVal);
         end
+
+        function test_pg_waveform_length(testCase)
+            %Test maximum waveform length is 16384
+            wf = -1.0 + (2-1/2^15)*rand(16388,1);
+            %Maximum length should pass
+            write_pulse_waveform(testCase.x6, randi([0 1]), wf(1:16384));
+            %Over maximum length should throw
+            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+        end
+
+        function test_pg_waveform_granularity(testCase)
+            wf = -1.0 + (2-1/2^15)*rand(16382,1);
+            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+        end
+
+        function test_pg_waveform_range(testCase)
+            %Test overrange
+            wf = -1.0 + (2-1/2^15)*rand(128,1);
+            wf(randi(128)) = 1.0;
+            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+
+            %Test underrange
+            wf = -1.0 + (2-1/2^15)*rand(128,1);
+            wf(randi(128)) = -(1.0+1/2^15);
+            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+        end
+
+        function test_pg_waveform_readwrite(testCase)
+            %Write a random waveform of the full length
+            wf = -1.0 + (2-1/2^15)*rand(16384,1);
+            pg = randi([0,1]);
+            write_pulse_waveform(testCase.x6, pg, wf);
+
+            %Now test each entry
+            addresses = randperm(16384)
+            for ct = 1:16384
+                testVal = read_pulse_waveform(testCase.x6, pg, wf);
+                verifyEqual(testCase, wf(ct), testVal);
+            end
+        end
+
     end
 
 end
