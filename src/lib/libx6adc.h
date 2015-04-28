@@ -72,6 +72,10 @@ EXPORT X6_STATUS get_trigger_source(int, TriggerSource*);
 EXPORT X6_STATUS set_sampleRate(int, double);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
+/* Pulse generator methods */
+EXPORT X6_STATUS write_pulse_waveform(int, unsigned, double*, unsigned);
+EXPORT X6_STATUS read_pulse_waveform(int, unsigned, unsigned, double*);
+
 /* debug methods */
 EXPORT X6_STATUS read_register(int, int, int, uint32_t*);
 EXPORT X6_STATUS write_register(int, int, int, int);

@@ -118,6 +118,10 @@ public:
 	int get_buffer_size(vector<Channel> &);
 	int get_variance_buffer_size(vector<Channel> &);
 
+	/* Pulse generator methods */
+	void write_pulse_waveform(unsigned, vector<double>&);
+	double read_pulse_waveform(unsigned, uint16_t);
+
 	void write_wishbone_register(uint32_t, uint32_t, uint32_t);
 	uint32_t read_wishbone_register(uint32_t, uint32_t) const;
 
