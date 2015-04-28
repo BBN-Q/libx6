@@ -777,16 +777,14 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
 
 double X6_1000::read_pulse_waveform(unsigned pg, uint16_t addr){
     FILE_LOG(logDEBUG1) << "Reading PG " << pg << " waveform at address " << addr;
-    write_wishbone_register(BASE_PG[pg], 9, addr/2); // address
+    write_wishbone_register(BASE_PG[pg], 9, addr/2); // address is in 32bit words
     uint32_t stackedVal = read_wishbone_register(BASE_PG[pg], 10);
-    //First upper or lower word
-    //Do some sketchy pointer stuff because unsigned to signed is implementation defined
-    int16_t* fixedVal = reinterpret_cast<int16_t*>(stackedVal);
-    if ((addr%2)==0) {
-        fixedVal += 1;
-    }
+
+    //If the address is even or odd take the upper/lower 16bits
+    int16_t fixedVal = ((addr % 2) == 0) ? (stackedVal & 0x0000ffff) : (stackedVal >> 16);
+
     //Convert back to -1 to 1 float
-    return static_cast<double>(*fixedVal)/(1<<15);
+    return static_cast<double>(fixedVal)/(1<<15);
 }
 
 void X6_1000::HandleTimer(OpenWire::NotifyEvent & /*Event*/) {
