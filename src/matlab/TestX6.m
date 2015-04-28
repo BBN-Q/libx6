@@ -84,23 +84,21 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test record length register is set in both DSP modules
             val = uint32(16*randi(256));
             set_averager_settings(testCase.x6, val, 1, 1, 1);
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
-            verifyEqual(testCase, val, checkVal);
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 63);
-            verifyEqual(testCase, val, checkVal);
+            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
+            verifyEqual(testCase, testVal, val);
+            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 63);
+            verifyEqual(testCase, testVal, val);
         end
 
         function test_nco_freq(testCase)
             %Test that the NCO frequency is set correctly
             freq = randi(125e6);
-            %Don't expect more than 18 bits precision on a quarter sampling rate
-            prec = 1e9 / 4 / 2^18;
-            freq = prec*round(freq/prec);
             a = randi(2);
             b = 0; %just a single demod channel for now
             set_nco_frequency(testCase.x6, a, b, freq);
-            checkVal = get_nco_frequency(testCase.x6, a, b);
-            verifyEqual(testCase, freq, checkVal);
+            testVal = get_nco_frequency(testCase.x6, a, b);
+            %Don't expect more than 18 bits precision on a quarter sampling rate
+            verifyEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^18);
         end
 
         function test_pg_waveform_length(testCase)
