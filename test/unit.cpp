@@ -8,12 +8,6 @@
 
 using namespace std;
 
-// N-wide hex output with 0x
-template <unsigned int N>
-std::ostream& hexn(std::ostream& out) {
-  return out << "0x" << std::hex << std::setw(N) << std::setfill('0');
-}
-
 template <class T>
 bool vec_equal(vector<T> a, vector<T> b) {
   return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin());

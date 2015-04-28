@@ -8,12 +8,6 @@
 
 using namespace std;
 
-// N-wide hex output with 0x
-template <unsigned int N>
-std::ostream& hexn(std::ostream& out) {
-  return out << "0x" << std::hex << std::setw(N) << std::setfill('0');
-}
-
 int main ()
 {
   cout << "BBN X6-1000 Test Executable" << endl;
