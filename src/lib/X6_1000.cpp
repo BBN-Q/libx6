@@ -753,7 +753,7 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
     }
 
     auto range_check = [](double val){
-        const double maxVal = 1 - 1/(1 << 15);
+        const double maxVal = 1 - 1.0/(1 << 15);
         const double minVal = -1.0;
         if ((val > maxVal) || (val < minVal)){
             FILE_LOG(logERROR) << "waveform value out of range: " << val;
