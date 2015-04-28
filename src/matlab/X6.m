@@ -291,8 +291,8 @@ classdef X6 < hgsetget
             x6_call(obj, 'write_pulse_waveform', pg, waveform, length(waveform));
         end
 
-        function read_pulse_waveform(obj, pg, addr)
-            x6_getter(obj, 'read_pulse_waveform', pg, addr);
+        function val = read_pulse_waveform(obj, pg, addr)
+            val = x6_getter(obj, 'read_pulse_waveform', pg, addr);
         end
 
         %Instrument meta-setter that sets all parameters
