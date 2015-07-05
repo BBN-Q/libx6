@@ -93,7 +93,7 @@ public:
 	void set_nco_frequency(int, int, double);
 	double get_nco_frequency(int, int);
 	void set_threshold(int, int, double);
-	void write_kernel(int, int, double *, size_t);
+	void write_kernel(int, int, int, double *, size_t);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
@@ -170,7 +170,6 @@ private:
 	unsigned recordsTaken_;
 
 	void set_active_channels();
-	void set_dsp_stream_ids();
 	void set_defaults();
 	void log_card_info();
 	bool check_done();

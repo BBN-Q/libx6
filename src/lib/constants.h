@@ -28,15 +28,15 @@ static const int WB_OFFSET_VERSION  = 0x01; // UPDATE ME
 static const int WB_ADDR_DIGITIZER_MODE = 0x11; //update me
 static const int WB_OFFSET_DIGITIZER_MODE = 0x01; //update me
 
-static const int WB_FRAME_SIZE_OFFSET    = 0x00;
-static const int WB_STREAM_ENABLE_OFFSET = 0x0f;
-static const int WB_PHASE_INC_OFFSET     = 0x10;
-static const int WB_KERNEL_LENGTH_OFFSET = 0x18;
-static const int WB_STREAM_ID_OFFSET     = 0x20;
-static const int WB_KERNEL_ADDR_OFFSET   = 0x30;
-static const int WB_KERNEL_DATA_OFFSET   = 0x31;
-static const int WB_THRESHOLD_OFFSET     = 0x38;
-static const int WB_RECORD_LENGTH_OFFSET = 0x3f;
+static const int WB_QDSP_TEST                   = 0x01;
+static const int WB_QDSP_RECORD_LENGTH          = 0x02;
+static const int WB_QDSP_STREAM_ENABLE          = 0x03;
+static const int WB_QDSP_RAW_KERNEL_LENGTH      = 0x10;
+static const int WB_QDSP_DEMOD_KERNEL_LENGTH    = 0x14;
+static const int WB_QDSP_RAW_KERNEL_ADDR_DATA   = 0x20;
+static const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA = 0x20;
+static const int WB_QDSP_THRESHOLD              = 0x40;
+static const int WB_QDSP_PHASE_INC              = 0x44;
 
 //pulse generator offsets
 static const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};
@@ -46,7 +46,7 @@ static const int FIRMWARE_VERSION =  0x1;
 
 //Readout filter parameters
 static const int VIRTUAL_CH_RATIO = 4; // Number of virtual channels per physical channel
-static const int DECIMATION_FACTOR = 16;
+static const int DECIMATION_FACTOR = 32;
 
 // Correlations
 static const int MAX_N_BODY_CORRELATIONS = 3;

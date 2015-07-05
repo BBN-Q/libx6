@@ -274,13 +274,13 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_nco_frequency', a, b);
         end
 
-        function write_kernel(obj, a, b, kernel)
+        function write_kernel(obj, a, b, c, kernel)
             packedkernel = zeros(2*length(kernel), 1);
             for ct = 1:length(kernel)
                 packedkernel(2*ct - 1) = real(kernel(ct));
                 packedkernel(2*ct) = imag(kernel(ct));
             end
-            x6_call(obj, 'write_kernel', a, b, packedkernel, length(packedkernel));
+            x6_call(obj, 'write_kernel', a, b, c, packedkernel, length(packedkernel));
         end
 
         function set_threshold(obj, a, b, threshold)

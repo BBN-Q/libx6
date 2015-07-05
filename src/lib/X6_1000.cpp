@@ -237,15 +237,9 @@ void X6_1000::set_frame(int recordLength) {
     module_.Output().Pulse().Reset();
     module_.Output().Pulse().Enabled(false);
 
-    // set frame sizes (2 samples per word), virtual channels are complex so 2*
-    int samplesPerWord = module_.Input().Info().SamplesPerWord();
-
+    //Set the QDSP register
     for (int inst = 0; inst <= 1; ++inst) {
-        write_dsp_register(inst, WB_FRAME_SIZE_OFFSET, recordLength/samplesPerWord + 8);
-        write_dsp_register(inst, WB_RECORD_LENGTH_OFFSET, recordLength_);
-        for (int vchan = 1; vchan <= 4; ++vchan) {
-            write_dsp_register(inst, WB_FRAME_SIZE_OFFSET+vchan, 2*recordLength/DECIMATION_FACTOR/samplesPerWord + 8);
-        }
+        write_dsp_register(inst, WB_QDSP_RECORD_LENGTH, recordLength_);
     }
 }
 
@@ -261,10 +255,11 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
 
     // set the appropriate bit in stream_enable register
-    int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
-    reg |= 1 << (b + 15*(c & 0x1));
-    FILE_LOG(logDEBUG4) << "Setting stream_enable register to " << myhex << reg;
-    write_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET, reg);
+    int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
+    int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
+    reg |= 1 << bit;
+    FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     Channel chan = Channel(a, b, c);
     FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
@@ -273,10 +268,11 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 
 void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     // clear the appropriate bit in stream_enable register
-    int reg = read_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET);
-    reg &= ~(1 << (b + 7*(c & 0x1)));
-    FILE_LOG(logDEBUG4) << "Setting stream_enable register to " << myhex << reg;
-    write_dsp_register(a-1, WB_STREAM_ENABLE_OFFSET, reg);
+    int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
+    int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
+    reg &= ~(1 << bit);
+    FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     //Find the channel
     uint16_t streamID = Channel(a,b,c).streamID;
@@ -298,33 +294,44 @@ bool X6_1000::get_channel_enable(int channel) {
 void X6_1000::set_nco_frequency(int a, int b, double freq) {
     // NCO runs at quarter rate
     double nfreq = 4 * freq/get_pll_frequency();
-    int32_t phase_increment = rint(nfreq * (1 << 18));
+    int32_t phase_increment = rint(nfreq * (1 << 24)); //24 bit precision on DDS
     FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " NCO frequency to: " << freq/1e6 << " MHz (" << phase_increment << ")";
-    write_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1), phase_increment);
+    write_dsp_register(a-1, WB_QDSP_PHASE_INC + (b-1), phase_increment);
 }
 
 double X6_1000::get_nco_frequency(int a, int b) {
-    uint32_t phaseInc = read_dsp_register(a-1, WB_PHASE_INC_OFFSET + (b-1));
+    uint32_t phaseInc = read_dsp_register(a-1, WB_QDSP_PHASE_INC + (b-1));
     //Undo the math in set_nco_frequency
-    return static_cast<double>(phaseInc) / (1 << 18) * get_pll_frequency() / 4;
+    return static_cast<double>(phaseInc) / (1 << 24) * get_pll_frequency() / 4;
 }
 
-void X6_1000::set_threshold(int a, int b, double threshold) {
+void X6_1000::set_threshold(int a, int c, double threshold) {
+    //TODO check scaling
     // results are sfix32_14, so scale threshold by 2^14.
     int32_t scaled_threshold = threshold * (1 << 14);
-    FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " threshold to: " << threshold << " (" << scaled_threshold << ")";
-    write_dsp_register(a-1, WB_THRESHOLD_OFFSET + (b-1), scaled_threshold);
+    FILE_LOG(logDEBUG3) << "Setting channel " << a << ".0." << c << " threshold to: " << threshold << " (" << scaled_threshold << ")";
+    write_dsp_register(a-1, WB_QDSP_THRESHOLD + (c-1), scaled_threshold);
 }
 
-void X6_1000::write_kernel(int a, int b, double *kernel, size_t bufsize) {
+void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) {
+    //TODO throw error if kernel too long
     FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << " kernel of length to: " << bufsize/2;
-    write_dsp_register(a-1, WB_KERNEL_LENGTH_OFFSET + (b-1), bufsize/2);
+
+    //Depending on raw or demod integrator we are enumerated by c or b
+    int KI = (b==0) ? c : b;
+    uint32_t wbLength = (b==0) ?  WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH;
+    uint32_t wbAddrData = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
+
+    //Write the length register
+    write_dsp_register(a-1, wbLength + (KI-1), bufsize/2);
+
+    //Kernel memory as address/data pairs
     for (int i = 0; i < bufsize/2; i += 2) {
         int32_t scaled_re = kernel[i] * ((1 << 15) - 1);
         int32_t scaled_im = kernel[i+1] * ((1 << 15) - 1);
-        uint32_t packedval = (scaled_re << 16) | (scaled_im & 0xffff);
-        write_dsp_register(a-1, WB_KERNEL_ADDR_OFFSET + 2*(b-1), i);
-        write_dsp_register(a-1, WB_KERNEL_DATA_OFFSET + 2*(b-1), packedval);
+        uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
+        write_dsp_register(a-1, wbAddrData + 2*(KI-1), i);
+        write_dsp_register(a-1, wbAddrData + 2*(KI-1) + 1, packedval);
     }
 }
 
@@ -340,15 +347,6 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelEnabled(0, true);
 }
 
-void X6_1000::set_dsp_stream_ids() {
-    for (int cnt = 0; cnt < VIRTUAL_CH_RATIO + 1; cnt++) {
-        for (int physChan = 0; physChan < get_num_channels(); physChan++) {
-            write_dsp_register(physChan, WB_STREAM_ID_OFFSET + cnt, 0x20000 + ((physChan+1) << 8) + (cnt << 4));
-        }
-    }
-
-}
-
 void X6_1000::set_defaults() {
     set_routes();
     set_reference();
@@ -356,7 +354,6 @@ void X6_1000::set_defaults() {
     set_trigger_source();
     set_decimation();
     set_active_channels();
-    set_dsp_stream_ids();
 
     // disable test mode
     module_.Input().TestModeEnabled( false, 0);
