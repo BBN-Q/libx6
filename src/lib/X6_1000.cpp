@@ -429,19 +429,19 @@ void X6_1000::acquire() {
     //Now set the buffers sizes to fire when a full record length is in
     int samplesPerWord = module_.Input().Info().SamplesPerWord();
     FILE_LOG(logDEBUG) << "samplesPerWord = " << samplesPerWord;
-    // calcate packet size for physical and virtual channels
-    int packetSize = recordLength_/samplesPerWord/get_decimation();
+    // calculate packet size for physical and virtual channels
+    int packetSize = recordLength_/samplesPerWord/get_decimation()/RAW_DECIMATION_FACTOR;
     FILE_LOG(logDEBUG) << "Physical channel packetSize = " << packetSize;
     VMPs_[0].Resize(packetSize);
     VMPs_[0].Clear();
 
     //Vitual channels are complex so they get a factor of two.
-    packetSize = 2*recordLength_/samplesPerWord/get_decimation()/DECIMATION_FACTOR;
+    packetSize = 2*recordLength_/samplesPerWord/get_decimation()/DEMOD_DECIMATION_FACTOR;
     FILE_LOG(logDEBUG) << "Virtual channel packetSize = " << packetSize;
     VMPs_[1].Resize(packetSize);
     VMPs_[1].Clear();
 
-    //Result channels are real/imag 32bit integers
+    //Result channels are complex 32bit integers
     packetSize = 2;
     FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
     VMPs_[2].Resize(packetSize);
@@ -891,10 +891,10 @@ void Accumulator::reset() {
 size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
     switch (chan.type) {
         case PHYSICAL:
-            return recordLength;
+            return recordLength / RAW_DECIMATION_FACTOR;
             break;
         case DEMOD:
-            return 2 * recordLength / DECIMATION_FACTOR;
+            return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
             break;
         case RESULT:
             return 2;

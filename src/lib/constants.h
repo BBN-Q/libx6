@@ -46,7 +46,8 @@ const int FIRMWARE_VERSION =  0x1;
 
 //Readout filter parameters
 const int VIRTUAL_CH_RATIO = 4; // Number of virtual channels per physical channel
-const int DECIMATION_FACTOR = 32;
+const int RAW_DECIMATION_FACTOR = 4;
+const int DEMOD_DECIMATION_FACTOR = 32;
 
 // Correlations
 const int MAX_N_BODY_CORRELATIONS = 3;
