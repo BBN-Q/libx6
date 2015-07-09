@@ -666,10 +666,11 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   FILE_LOG(logDEBUG3) << "[HandleDataAvailable] Velo packet of size " << buffer.SizeInInts() << " contains...";
   while (ct < buffer.SizeInInts()){
       VitaHeaderDatagram vh_dg(pos+ct);
-      double timeStamp = vh_dg.TSI() + 5e-9*vh_dg.TSF();
+      double timeStamp = vh_dg.TS_Seconds() + 5e-9*vh_dg.TS_FSeconds();
       FILE_LOG(logDEBUG3) << "\t stream ID = " << myhex << vh_dg.StreamId() <<
-              " with size " << vh_dg.PacketSize() << ". Packet count = " << std::dec << vh_dg.PacketCount() <<
-              "at timestamp " << timeStamp;
+              " with size " << vh_dg.PacketSize() <<
+              "; packet count = " << std::dec << vh_dg.PacketCount() <<
+              " at timestamp " << timeStamp;
       ct += vh_dg.PacketSize();
   }
 
