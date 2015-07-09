@@ -34,9 +34,9 @@ const int WB_QDSP_STREAM_ENABLE          = 0x03;
 const int WB_QDSP_RAW_KERNEL_LENGTH      = 0x10;
 const int WB_QDSP_DEMOD_KERNEL_LENGTH    = 0x14;
 const int WB_QDSP_RAW_KERNEL_ADDR_DATA   = 0x20;
-const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA = 0x20;
-const int WB_QDSP_THRESHOLD              = 0x40;
-const int WB_QDSP_PHASE_INC              = 0x44;
+const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA = 0x28;
+const int WB_QDSP_THRESHOLD              = 0x30;
+const int WB_QDSP_PHASE_INC              = 0x34;
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};

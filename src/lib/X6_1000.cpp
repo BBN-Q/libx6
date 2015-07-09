@@ -319,19 +319,19 @@ void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) 
 
     //Depending on raw or demod integrator we are enumerated by c or b
     int KI = (b==0) ? c : b;
-    uint32_t wbLength = (b==0) ?  WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH;
-    uint32_t wbAddrData = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
+    uint32_t wbLengthReg = (b==0) ?  WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH;
+    uint32_t wbAddrDataReg = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
 
     //Write the length register
-    write_dsp_register(a-1, wbLength + (KI-1), bufsize/2);
+    write_dsp_register(a-1, wbLengthReg + (KI-1), bufsize/2);
 
     //Kernel memory as address/data pairs
     for (int i = 0; i < bufsize/2; i += 2) {
         int32_t scaled_re = kernel[i] * ((1 << 15) - 1);
         int32_t scaled_im = kernel[i+1] * ((1 << 15) - 1);
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
-        write_dsp_register(a-1, wbAddrData + 2*(KI-1), i);
-        write_dsp_register(a-1, wbAddrData + 2*(KI-1) + 1, packedval);
+        write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), i);
+        write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1, packedval);
     }
 }
 
