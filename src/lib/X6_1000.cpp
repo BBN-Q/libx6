@@ -641,6 +641,7 @@ void X6_1000::HandleAfterStreamStart(OpenWire::NotifyEvent & /*Event*/) {
     FILE_LOG(logINFO) << "Analog I/O started";
     timer_.Enabled(true);
 }
+
 void
  X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
     FILE_LOG(logINFO) << "Analog I/O stopped";
@@ -653,32 +654,38 @@ void
 }
 
 void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event) {
-    if (!isRunning_) return;
+  if (!isRunning_) return;
 
-    // create a buffer to receive the data
-    VeloBuffer buffer;
-    Event.Sender->Recv(buffer);
+  // create a buffer to receive the data
+  VeloBuffer buffer;
+  Event.Sender->Recv(buffer);
 
+  AlignedVeloPacketExQ::Range InVelo(buffer);
+  size_t ct = 0;
+  unsigned int * pos = InVelo.begin();
+  FILE_LOG(logDEBUG3) << "[HandleDataAvailable] Velo packet of size " << buffer.SizeInInts() << " contains...";
+  while (ct < buffer.SizeInInts()){
+      VitaHeaderDatagram vh_dg(pos+ct);
+      double timeStamp = vh_dg.TSI() + 5e-9*vh_dg.TSF();
+      FILE_LOG(logDEBUG3) << "\t stream ID = " << myhex << vh_dg.StreamId() <<
+              " with size " << vh_dg.PacketSize() << ". Packet count = " << std::dec << vh_dg.PacketCount() <<
+              "at timestamp " << timeStamp;
+      ct += vh_dg.PacketSize();
+  }
 
-    AlignedVeloPacketExQ::Range InVelo(buffer);
-    unsigned int * pos = InVelo.begin();
-    VitaHeaderDatagram vh_dg(pos);
-    FILE_LOG(logDEBUG3) << "[HandleDataAvailable] buffer.size() = " << buffer.SizeInInts() << "; buffer stream ID = " << myhex << vh_dg.StreamId();
+  // broadcast to all VMPs
+  for (auto & vmp : VMPs_) {
+      vmp.Append(buffer);
+      vmp.Parse();
+  }
 
-    // broadcast to all VMPs
-    for (auto & vmp : VMPs_) {
-        vmp.Append(buffer);
-        vmp.Parse();
-    }
-
-    if (check_done()) {
-        FILE_LOG(logINFO) << "check_done() returned true. Stopping...";
-        stop();
-    }
+  if (check_done()) {
+      FILE_LOG(logINFO) << "check_done() returned true. Stopping...";
+      stop();
+  }
 }
 
 void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t chanType) {
-    FILE_LOG(logDEBUG4) << "X6_1000::VMPDataAvailable";
     if (!isRunning_) {
         return;
     }
@@ -725,7 +732,6 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             }
             break;
     }
-
 }
 
 bool X6_1000::check_done() {
