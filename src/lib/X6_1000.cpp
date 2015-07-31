@@ -912,7 +912,7 @@ size_t Accumulator::calc_record_length(const Channel & chan, const size_t & reco
 int Accumulator::fixed_to_float(const Channel & chan) {
     switch (chan.type) {
         case PHYSICAL:
-            return 1 << 11; // signed 12-bit integers from ADC
+            return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
             break;
         case DEMOD:
         case RESULT:
