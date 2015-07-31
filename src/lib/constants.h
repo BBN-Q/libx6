@@ -14,7 +14,7 @@ const int MAX_NUM_DEVICES = 5;
 const int X6_READTIMEOUT = 1000;
 const int X6_WRITETIMEOUT = 500;
 
-const int MAX_LENGTH_RAW_STREAM = 4096;
+const int MAX_LENGTH_RAW_STREAM = 16384; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
 
 //Command byte bits
 const int LSB_MASK = 0xFF;
