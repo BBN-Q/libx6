@@ -109,6 +109,61 @@ classdef TestX6 < matlab.unittest.TestCase
             verifyEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^24);
         end
 
+        function test_raw_streams(testCase)
+            %Check the test pattern on the raw streams
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+            %Clear the stream enable register (fix when not defaulted to
+            %ffff
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 3, 0);
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 3, 0);
+            enable_stream(testCase.x6, 1, 0, 0);
+            enable_stream(testCase.x6, 2, 0, 0);
+
+            set_averager_settings(testCase.x6, 5120, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            pause(0.5);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            verifyEqual(testCase, success, 0);
+
+            stop(testCase.x6);
+
+            %Now check
+            wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
+
+            for ct = 1:64
+                baseNCO = 1.0000020265579224e6; %from 24bit precision
+                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
+                expected = [zeros(24, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(231, 1)];
+                %catch alignment marker
+                if ct == 1
+                    expected(4:7) = 1 - 1/2048;
+                end
+                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
+            end
+
+            wfs = transfer_stream(testCase.x6, struct('a', 2, 'b', 0, 'c', 0));
+
+            for ct = 1:64
+                baseNCO = 1.0000020265579224e6; %from 24bit precision
+                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
+                expected = [zeros(24, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(231, 1)];
+                %catch alignment marker
+                if ct == 1
+                    expected(4:7) = 1 - 1/2048;
+                end
+                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
+            end
+
+        end
+
         function test_pg_waveform_length(testCase)
             %Test maximum waveform length is 16384
             wf = -1.0 + (2-1/2^15)*rand(16388,1);
