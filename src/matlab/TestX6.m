@@ -33,11 +33,11 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_wishbone_readwrite(testCase)
             %Check we can read/write to the wishbone bus
-            %Use one of the DSP registers
+            %Use one of the QDSP registers
             val = randi(2^32, 'uint32');
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56, val);
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 56);
-            assertEqual(testCase, val, checkVal);
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 2, val);
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 2);
+            assertEqual(testCase, checkVal, val);
         end
 
         function test_stream_enable(testCase)
@@ -45,8 +45,12 @@ classdef TestX6 < matlab.unittest.TestCase
             stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
             enable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
-            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0f'));
-            bit = stream.b + 15*stream.c;
+            checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), 3);
+            if stream.b == 0
+                bit = stream.c;
+            else
+                bit = 15+ stream.b + 4*stream.c;
+            end
             verifyTrue(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
             %Check enabledStreams got set
             verifyEqual(testCase, testCase.x6.enabledStreams{end}, [stream.a, stream.b, stream.c]);
@@ -60,7 +64,11 @@ classdef TestX6 < matlab.unittest.TestCase
             disable_stream(testCase.x6, stream.a, stream.b, stream.c);
 
             checkVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(stream.a), hex2dec('0f'));
-            bit = stream.b + 15*stream.c;
+            if stream.b == 0
+                bit = stream.c;
+            else
+                bit = 15+ stream.b + 4*stream.c;
+            end
             verifyFalse(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
             %Also check that enabledStreams doesn't have stream any more
@@ -69,7 +77,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_recordLength_length(testCase)
             %Test record length over max throws error
-            set_averager_settings(testCase.x6, 4160, 16, 1, 1);
+            set_averager_settings(testCase.x6, 16448, 16, 1, 1);
             %Doesn't throw until we try and acquire with an active raw stream
             enable_stream(testCase.x6, 1, 0, 0);
             verifyError(testCase, @() testCase.x6.acquire(), 'X6:Fail');
@@ -84,9 +92,9 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test record length register is set in both DSP modules
             val = uint32(16*randi(256));
             set_averager_settings(testCase.x6, val, 1, 1, 1);
-            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 63);
+            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 2);
             verifyEqual(testCase, testVal, val);
-            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 63);
+            testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 2);
             verifyEqual(testCase, testVal, val);
         end
 
@@ -94,11 +102,11 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test that the NCO frequency is set correctly
             freq = randi(125e6);
             a = randi(2);
-            b = 0; %just a single demod channel for now
+            b = randi(2);
             set_nco_frequency(testCase.x6, a, b, freq);
             testVal = get_nco_frequency(testCase.x6, a, b);
-            %Don't expect more than 18 bits precision on a quarter sampling rate
-            verifyEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^18);
+            %Don't expect more than 24 bits precision on a quarter sampling rate
+            verifyEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^24);
         end
 
         function test_pg_waveform_length(testCase)
