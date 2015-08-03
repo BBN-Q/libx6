@@ -141,7 +141,7 @@ classdef TestX6 < matlab.unittest.TestCase
             for ct = 1:64
                 baseNCO = 1.0000020265579224e6; %from 24bit precision
                 pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                expected = [zeros(24, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(231, 1)];
+                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
                 %catch alignment marker
                 if ct == 1
                     expected(4:7) = 1 - 1/2048;
@@ -154,7 +154,7 @@ classdef TestX6 < matlab.unittest.TestCase
             for ct = 1:64
                 baseNCO = 1.0000020265579224e6; %from 24bit precision
                 pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                expected = [zeros(24, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(231, 1)];
+                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
                 %catch alignment marker
                 if ct == 1
                     expected(4:7) = 1 - 1/2048;
