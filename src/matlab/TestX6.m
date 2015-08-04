@@ -136,32 +136,24 @@ classdef TestX6 < matlab.unittest.TestCase
             stop(testCase.x6);
 
             %Now check
-            wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
+            function check_raw_vals(chan)
+                wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
 
-            for ct = 1:64
-                baseNCO = 1.0000020265579224e6; %from 24bit precision
-                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                %catch alignment marker
-                if ct == 1
-                    expected(4:7) = 1 - 1/2048;
+                for ct = 1:64
+                    baseNCO = 1.0000020265579224e6; %from 24bit precision
+                    pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
+                    expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
+                    %catch alignment marker
+                    if ct == 1
+                        expected(4:7) = 1 - 1/2048;
+                    end
+                    verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
                 end
-                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
+
             end
 
-            wfs = transfer_stream(testCase.x6, struct('a', 2, 'b', 0, 'c', 0));
-
-            for ct = 1:64
-                baseNCO = 1.0000020265579224e6; %from 24bit precision
-                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                %catch alignment marker
-                if ct == 1
-                    expected(4:7) = 1 - 1/2048;
-                end
-                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
-            end
-
+            check_raw_vals(1);
+            check_raw_vals(2);
         end
 
         function test_pg_waveform_length(testCase)
