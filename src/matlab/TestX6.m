@@ -113,10 +113,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Check the test pattern on the raw streams
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
-            %Clear the stream enable register (fix when not defaulted to
-            %ffff
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 3, 0);
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 3, 0);
+
+            %Enable the two raw streams
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 2, 0, 0);
 
@@ -161,10 +159,7 @@ classdef TestX6 < matlab.unittest.TestCase
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
 
-            %Clear the stream enable register (fix when not defaulted to
-            %ffff
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 3, 0);
-            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 3, 0);
+            %Enable the raw (to feed into expected calculation) and one demod stream
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 1, 1, 0);
 
