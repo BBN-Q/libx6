@@ -14,6 +14,7 @@
 
 using std::vector;
 using std::string;
+using std::complex;
 
 /**
  * X6_1000 Class: Provides interface to Innovative Illustrations X6_1000 card
@@ -94,6 +95,7 @@ public:
 	double get_nco_frequency(int, int);
 	void set_threshold(int, int, double);
 	void write_kernel(int, int, int, double *, size_t);
+	complex<double> read_kernel(unsigned, unsigned, unsigned, unsigned);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board

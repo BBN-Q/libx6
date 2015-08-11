@@ -335,6 +335,25 @@ void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) 
     }
 }
 
+complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigned addr) {
+  //Read kernel memory at the specified address
+
+  //Depending on raw or demod integrator we are enumerated by c or b
+  int KI = (b==0) ? c : b;
+  uint32_t wbLengthReg = (b==0) ?  WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH;
+  uint32_t wbAddrDataReg = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
+
+  //Write the address register
+  write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), addr);
+
+  //Read the data
+  uint32_t packedVal = read_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1);
+
+  //Scale and convert back to complex
+  return complex<double>(static_cast<double>(packedVal & 0xffff) / ((1 << 15) - 1),
+                        static_cast<double>(packedVal >> 16) / ((1 << 15) - 1) );
+}
+
 void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();

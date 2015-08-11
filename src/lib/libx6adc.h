@@ -13,6 +13,8 @@
 #endif
 
 #include <stdio.h>
+#include <complex.h>
+#undef I //used in Malibu code
 
 #include "X6_errno.h"
 #include "X6_enums.h"
@@ -50,6 +52,7 @@ EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
 EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS write_kernel(int, int, int, int, double*, unsigned);
+EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double _Complex*);
 
 EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
