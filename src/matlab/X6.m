@@ -1,4 +1,4 @@
-``% MATLAB wrapper for the X6 driver.
+% MATLAB wrapper for the X6 driver.
 %
 % Usage notes: The channelizer creates multiple data streams per physical
 % input channel. These are indexed by a 3-parameter label (a,b,c), where a
@@ -287,7 +287,7 @@ classdef X6 < hgsetget
             %The C library takes a pointer to double complex but we're faking a double*
             ptr = libpointer('doublePtr', zeros(2));
             x6_call(obj, 'read_kernel', a, b, c, addr-1, ptr);
-            val = ptr.Value[1] + 1i*ptr.Value[2];
+            val = ptr.Value(1) + 1i*ptr.Value(2);
         end
 
         function set_threshold(obj, a, b, threshold)
