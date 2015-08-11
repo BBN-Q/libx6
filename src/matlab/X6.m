@@ -275,16 +275,13 @@ classdef X6 < hgsetget
         end
 
         function write_kernel(obj, a, b, c, kernel)
-            packedkernel = zeros(2*length(kernel), 1);
-            for ct = 1:length(kernel)
-                packedkernel(2*ct - 1) = real(kernel(ct));
-                packedkernel(2*ct) = imag(kernel(ct));
-            end
-            x6_call(obj, 'write_kernel', a, b, c, packedkernel, length(packedkernel));
+            %The C library takes a double complex* but we're faking a double* so pack the data manually
+            packedKernel = [real(kernel(:))'; imag(kernel(:))'];
+            x6_call(obj, 'write_kernel', a, b, c, packedKernel(:), numel(packedKernel));
         end
 
         function val = read_kernel(obj, a, b, c, addr)
-            %The C library takes a pointer to double complex but we're faking a double*
+            %The C library takes a double complex* but we're faking a double*
             ptr = libpointer('doublePtr', zeros(2));
             x6_call(obj, 'read_kernel', a, b, c, addr-1, ptr);
             val = ptr.Value(1) + 1i*ptr.Value(2);
