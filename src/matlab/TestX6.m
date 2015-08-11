@@ -192,6 +192,20 @@ classdef TestX6 < matlab.unittest.TestCase
             end
         end
 
+        function test_raw_kernel_memory(testCase)
+            %Check we can write/read to the raw kernel memory
+            kernel = (1.0 + 2*rand(4096,1)) + 1i*(-1.0 + 2*rand(4096,1));
+            write_kernel(testCase.x6, 1, 0, 1, kernel);
+
+            %Now test first/last and a random selection in between
+            addresses = [1; 4096; randi(4096, 100, 1)];
+            for ct = 1:length(addresses)
+                %Have 16 bits of precision in real/imag
+                testVal = read_kernel(testCase.x6, 1, 0, 1, addresses(ct));
+                verifyEqual(testCase, testVal, kernel(addresses(ct)), 'AbsTol', 2/2^15);
+            end
+        end
+
         function test_pg_waveform_length(testCase)
             %Test maximum waveform length is 16384
             wf = -1.0 + (2-1/2^15)*rand(16388,1);
