@@ -193,13 +193,6 @@ X6_STATUS read_kernel(int deviceID, unsigned a, unsigned b, unsigned c, unsigned
 	return status;
 }
 
-X6_STATUS read_kernel_matlab(int deviceID, unsigned a, unsigned b, unsigned c, unsigned addr, double* val) {
-	//Wrapper because Matlab doesn't support C99 complex
-	std::complex<double>* tmpVal = reinterpret_cast<std::complex<double>*>(val);
-	X6_STATUS status = x6_getter(deviceID, &X6_1000::read_kernel, tmpVal, a, b, c, addr);
-	return status;
-}
-
 X6_STATUS acquire(int deviceID) {
 	return x6_call(deviceID, &X6_1000::acquire);
 }
