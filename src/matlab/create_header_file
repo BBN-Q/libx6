@@ -13,5 +13,5 @@ sed -i '
 s/^#include "X6/#include "..\/lib\/X6/g
 s/uint32_t/unsigned/g
 /^#include <complex.h>/d
-s/_Complex//g
+/_Complex/d
 /^X6_STATUS update_log/d' libx6adc.matlab.h
