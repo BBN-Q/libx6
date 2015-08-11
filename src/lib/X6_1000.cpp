@@ -315,6 +315,7 @@ void X6_1000::set_threshold(int a, int c, double threshold) {
 
 void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) {
     //TODO throw error if kernel too long
+    //TODO throw error if a,b,c are not a kernel channel
     FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel of length to: " << bufsize/2;
 
     //Depending on raw or demod integrator we are enumerated by c or b
@@ -326,7 +327,7 @@ void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) 
     write_dsp_register(a-1, wbLengthReg + (KI-1), bufsize/2);
 
     //Kernel memory as address/data pairs
-    for (int ct = 0; ct < bufsize/2; ct += 2) {
+    for (int ct = 0; ct < bufsize; ct += 2) {
         int32_t scaled_re = kernel[ct] * ((1 << 15) - 1);
         int32_t scaled_im = kernel[ct+1] * ((1 << 15) - 1);
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
@@ -350,8 +351,13 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
   uint32_t packedVal = read_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1);
 
   //Scale and convert back to complex
-  return complex<double>(static_cast<double>(packedVal & 0xffff) / ((1 << 15) - 1),
-                        static_cast<double>(packedVal >> 16) / ((1 << 15) - 1) );
+  //The conversion from unsigned to signed is not guaranteed to keep the bit pattern
+  //However for gcc using two's complement it does
+  //See http://stacko;verflow.com/a/4219558 and http://stackoverflow.com/q/13150449
+  int16_t fixedReal = packedVal & 0xffff;
+  int16_t fixedImag = packedVal >> 16;
+  return complex<double>(static_cast<double>(fixedReal) / ((1 << 15) - 1),
+                        static_cast<double>(fixedImag) / ((1 << 15) - 1) );
 }
 
 void X6_1000::set_active_channels() {
