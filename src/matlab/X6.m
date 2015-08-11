@@ -286,7 +286,7 @@ classdef X6 < hgsetget
         function val = read_kernel(obj, a, b, c, addr)
             %The C library takes a pointer to double complex but we're faking a double*
             ptr = libpointer('doublePtr', zeros(2));
-            x6_call(obj, 'read_kernel', a, b, c, addr, ptr);
+            x6_call(obj, 'read_kernel', a, b, c, addr-1, ptr);
             val = ptr.Value[1] + 1i*ptr.Value[2];
         end
 
