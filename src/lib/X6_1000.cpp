@@ -313,10 +313,10 @@ void X6_1000::set_threshold(int a, int c, double threshold) {
     write_dsp_register(a-1, WB_QDSP_THRESHOLD + (c-1), scaled_threshold);
 }
 
-void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) {
+void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {
     //TODO throw error if kernel too long
-    //TODO throw error if a,b,c are not a kernel channel
-    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel of length to: " << bufsize/2;
+    //TODO throw error if a,b,c are not a kernel integration channel
+    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel of length to: " << kernel.size();
 
     //Depending on raw or demod integrator we are enumerated by c or b
     int KI = (b==0) ? c : b;
@@ -324,14 +324,14 @@ void X6_1000::write_kernel(int a, int b, int c, double *kernel, size_t bufsize) 
     uint32_t wbAddrDataReg = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
 
     //Write the length register
-    write_dsp_register(a-1, wbLengthReg + (KI-1), bufsize/2);
+    write_dsp_register(a-1, wbLengthReg + (KI-1), kernel.size());
 
     //Kernel memory as address/data pairs
-    for (int ct = 0; ct < bufsize; ct += 2) {
-        int32_t scaled_re = kernel[ct] * ((1 << 15) - 1);
-        int32_t scaled_im = kernel[ct+1] * ((1 << 15) - 1);
+    for (int ct = 0; ct < kernel.size(); ct++) {
+        int32_t scaled_re = std::real(kernel[ct]) * ((1 << 15) - 1);
+        int32_t scaled_im = std::imag(kernel[ct]) * ((1 << 15) - 1);
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
-        write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), ct/2);
+        write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), ct);
         write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1, packedval);
     }
 }

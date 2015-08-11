@@ -277,7 +277,7 @@ classdef X6 < hgsetget
         function write_kernel(obj, a, b, c, kernel)
             %The C library takes a double complex* but we're faking a double* so pack the data manually
             packedKernel = [real(kernel(:))'; imag(kernel(:))'];
-            x6_call(obj, 'write_kernel', a, b, c, packedKernel(:), numel(packedKernel));
+            x6_call(obj, 'write_kernel', a, b, c, packedKernel(:), numel(packedKernel)/2);
         end
 
         function val = read_kernel(obj, a, b, c, addr)

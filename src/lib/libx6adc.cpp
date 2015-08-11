@@ -182,8 +182,9 @@ X6_STATUS set_threshold(int deviceID, int a, int b, double threshold) {
 	return x6_call(deviceID, &X6_1000::set_threshold, a, b, threshold);
 }
 
-X6_STATUS write_kernel(int deviceID, int a, int b, int c, double* kernel, unsigned length) {
-	return x6_call(deviceID, &X6_1000::write_kernel, a, b, c, kernel, length);
+X6_STATUS write_kernel(int deviceID, int a, int b, int c, double _Complex* kernel, unsigned length) {
+	vector<complex<double>> vec(kernel, kernel + length);
+	return x6_call(deviceID, &X6_1000::write_kernel, a, b, c, vec);
 }
 
 X6_STATUS read_kernel(int deviceID, unsigned a, unsigned b, unsigned c, unsigned addr, double _Complex* val) {
