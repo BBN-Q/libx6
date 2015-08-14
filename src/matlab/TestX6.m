@@ -279,6 +279,15 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^10);
         end
 
+        function test_threshold(testCase)
+            %Test setting and getting the threshold register
+            threshold = -1 + 2*rand();
+            a = randi(2);
+            c = randi(2);
+            set_threshold(testCase.x6, a, c, threshold);
+            assertEqual(testCase, get_threshold(testCase.x6, a, c), threshold, 'AbsTol', 2/2^15);
+        end
+
         function test_pg_waveform_length(testCase)
             %Test maximum waveform length is 16384
             wf = -1.0 + (2-1/2^15)*rand(16388,1);

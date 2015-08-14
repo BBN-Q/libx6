@@ -94,6 +94,7 @@ public:
 	void set_nco_frequency(int, int, double);
 	double get_nco_frequency(int, int);
 	void set_threshold(int, int, double);
+	double get_threshold(int, int);
 	void write_kernel(int, int, int, const vector<complex<double>> &);
 	complex<double> read_kernel(unsigned, unsigned, unsigned, unsigned);
 

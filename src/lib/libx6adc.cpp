@@ -178,8 +178,12 @@ X6_STATUS get_nco_frequency(int deviceID, int a, int b, double* freq) {
 	return x6_getter(deviceID, &X6_1000::get_nco_frequency, freq, a, b);
 }
 
-X6_STATUS set_threshold(int deviceID, int a, int b, double threshold) {
-	return x6_call(deviceID, &X6_1000::set_threshold, a, b, threshold);
+X6_STATUS set_threshold(int deviceID, int a, int c, double threshold) {
+	return x6_call(deviceID, &X6_1000::set_threshold, a, c, threshold);
+}
+
+X6_STATUS get_threshold(int deviceID, int a, int c, double* threshold) {
+	return x6_getter(deviceID, &X6_1000::get_threshold, threshold, a, c);
 }
 
 X6_STATUS write_kernel(int deviceID, int a, int b, int c, double _Complex* kernel, unsigned length) {

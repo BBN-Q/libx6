@@ -287,8 +287,12 @@ classdef X6 < hgsetget
             val = ptr.Value(1) + 1i*ptr.Value(2);
         end
 
-        function set_threshold(obj, a, b, threshold)
-            x6_call(obj, 'set_threshold', a, b, threshold);
+        function set_threshold(obj, a, c, threshold)
+            x6_call(obj, 'set_threshold', a, c, threshold);
+        end
+
+        function val = get_threshold(obj, a, c)
+            val = x6_getter(obj, 'get_threshold', a, c);
         end
 
         function write_pulse_waveform(obj, pg, waveform)

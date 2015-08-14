@@ -306,11 +306,16 @@ double X6_1000::get_nco_frequency(int a, int b) {
 }
 
 void X6_1000::set_threshold(int a, int c, double threshold) {
-    //TODO check scaling
-    // results are sfix32_14, so scale threshold by 2^14.
-    int32_t scaled_threshold = threshold * (1 << 14);
+    // Results are sfix32_15, so scale threshold by 2^15.
+    int32_t scaled_threshold = threshold * (1 << 15);
     FILE_LOG(logDEBUG3) << "Setting channel " << a << ".0." << c << " threshold to: " << threshold << " (" << scaled_threshold << ")";
     write_dsp_register(a-1, WB_QDSP_THRESHOLD + (c-1), scaled_threshold);
+}
+
+double X6_1000::get_threshold(int a, int c) {
+    int32_t fixedThreshold = read_dsp_register(a-1, WB_QDSP_THRESHOLD + (c-1));
+    //Undo the scaling above
+    return static_cast<double>(fixedThreshold) / (1 << 15);
 }
 
 void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {
@@ -667,8 +672,7 @@ void X6_1000::HandleAfterStreamStart(OpenWire::NotifyEvent & /*Event*/) {
     timer_.Enabled(true);
 }
 
-void
- X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
+void X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
     FILE_LOG(logINFO) << "Analog I/O stopped";
     // Disable external triggering initially
     module_.Input().SoftwareTrigger(false);
