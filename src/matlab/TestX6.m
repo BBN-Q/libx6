@@ -129,9 +129,8 @@ classdef TestX6 < matlab.unittest.TestCase
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(2), 1, 65536 + 25000);
 
             success = wait_for_acquisition(testCase.x6, 1);
-            verifyEqual(testCase, success, 0);
-
             stop(testCase.x6);
+            verifyEqual(testCase, success, 0);
 
             %Now check
             function check_raw_vals(chan)
@@ -204,6 +203,70 @@ classdef TestX6 < matlab.unittest.TestCase
                 testVal = read_kernel(testCase.x6, 1, 0, 1, addresses(ct));
                 verifyEqual(testCase, testVal, kernel(addresses(ct)), 'AbsTol', 2/2^15);
             end
+        end
+
+        function test_raw_integrator(testCase)
+            %Test the integrated raw stream
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+
+            %Enable the raw (to feed into expected calculation) and one kernel integrator stream
+            enable_stream(testCase.x6, 1, 0, 0);
+            enable_stream(testCase.x6, 1, 0, 1);
+
+            %Write a random kernel
+            kernel = (-1.0 + 2*rand(1280,1)) + 1i*(-1.0 + 2*rand(1280,1));
+            write_kernel(testCase.x6, 1, 0, 1, kernel);
+
+            set_averager_settings(testCase.x6, 5120, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            pause(0.5);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            stop(testCase.x6);
+            verifyEqual(testCase, success, 0);
+
+            rawWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
+            KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
+            expected = sum(bsxfun(@times, kernel, rawWFs(1:length(kernel),:)), 1).';
+            assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
+        end
+
+        function test_demod_integrator(testCase)
+            %Test the integrated demod stream
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+
+            %Enable the raw (to feed into expected calculation) and one kernel integrator stream
+            enable_stream(testCase.x6, 1, 1, 0);
+            enable_stream(testCase.x6, 1, 1, 1);
+
+            %Write a random kernel
+            kernel = (-1.0 + 2*rand(160,1)) + 1i*(-1.0 + 2*rand(160,1));
+            write_kernel(testCase.x6, 1, 1, 1, kernel);
+
+            set_averager_settings(testCase.x6, 5120, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            pause(0.5);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            stop(testCase.x6);
+            verifyEqual(testCase, success, 0);
+
+            demodWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 0));
+            KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 1));
+            expected = sum(bsxfun(@times, kernel, demodWFs(1:length(kernel),:)), 1).';
+            assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^10);
         end
 
         function test_pg_waveform_length(testCase)
