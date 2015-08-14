@@ -28,7 +28,7 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_temperature(testCase)
             %Check temperature is between 20C and 80C
             T = testCase.x6.getLogicTemperature();
-            verifyTrue(testCase, (T > 20) && (T < 80))
+            assertTrue(testCase, (T > 20) && (T < 80))
         end
 
         function test_wishbone_readwrite(testCase)
@@ -80,12 +80,12 @@ classdef TestX6 < matlab.unittest.TestCase
             set_averager_settings(testCase.x6, 16448, 16, 1, 1);
             %Doesn't throw until we try and acquire with an active raw stream
             enable_stream(testCase.x6, 1, 0, 0);
-            verifyError(testCase, @() testCase.x6.acquire(), 'X6:Fail');
+            assertError(testCase, @() testCase.x6.acquire(), 'X6:Fail');
         end
 
         function test_recordLenth_granularity(testCase)
             %Record length should be multiple of 4
-            verifyError(testCase, @() set_averager_settings(testCase.x6, 123, 16, 1, 1), 'X6:Fail');
+            assertError(testCase, @() set_averager_settings(testCase.x6, 123, 16, 1, 1), 'X6:Fail');
         end
 
         function test_recordLength_register(testCase)
@@ -106,7 +106,7 @@ classdef TestX6 < matlab.unittest.TestCase
             set_nco_frequency(testCase.x6, a, b, freq);
             testVal = get_nco_frequency(testCase.x6, a, b);
             %Don't expect more than 24 bits precision on a quarter sampling rate
-            verifyEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^24);
+            assertEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^24);
         end
 
         function test_raw_streams(testCase)
@@ -130,7 +130,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             success = wait_for_acquisition(testCase.x6, 1);
             stop(testCase.x6);
-            verifyEqual(testCase, success, 0);
+            assertEqual(testCase, success, 0);
 
             %Now check
             function check_raw_vals(chan)
@@ -175,7 +175,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             success = wait_for_acquisition(testCase.x6, 1);
             stop(testCase.x6);
-            verifyEqual(testCase, success, 0);
+            assertEqual(testCase, success, 0);
 
             b1 = [0.0008522172,0.0003782314,-4.1098e-5,-0.0007865892,-0.0015758075,-0.0019626337,-0.0015259535,-0.0001191829,0.0019387868,0.003855921,0.0046109846,0.0034010297,0.0001229449,-0.004344112,-0.0082562201,-0.0095817866,-0.0068841954,-0.0001758237,0.0086706693,0.0162467395,0.0187102645,0.0133748979,0.0002089665,-0.0174035879,-0.0330903156,-0.039167587,-0.0291477354,-0.0002341847,0.0450762459,0.0989974616,0.150208834,0.1869125901,0.2002428237,0.1869125901,0.150208834,0.0989974616,0.0450762459,-0.0002341847,-0.0291477354,-0.039167587,-0.0330903156,-0.0174035879,0.0002089665,0.0133748979,0.0187102645,0.0162467395,0.0086706693,-0.0001758237,-0.0068841954,-0.0095817866,-0.0082562201,-0.004344112,0.0001229449,0.0034010297,0.0046109846,0.003855921,0.0019387868,-0.0001191829,-0.0015259535,-0.0019626337,-0.0015758075,-0.0007865892,-4.1098e-5,0.0003782314,0.0008522172];
             b2 =  [0.0001649556,-6.64166e-5,-0.0003334019,-0.0005526026,-0.0004150039,0.0002333881,0.0011328542,0.0016101256,0.0009777185,-0.0008408614,-0.0029254551,-0.0036710748,-0.0018352389,0.0022643119,0.006348953,0.007218227,0.0029284839,-0.0052129535,-0.0124661206,-0.0130465772,-0.0041165731,0.0110908225,0.0235758874,0.0231285403,0.005196213,-0.0239635977,-0.0476848278,-0.0459136476,-0.0059535755,0.0687696723,0.1572919896,0.2288082628,0.2562262832,0.2288082628,0.1572919896,0.0687696723,-0.0059535755,-0.0459136476,-0.0476848278,-0.0239635977,0.005196213,0.0231285403,0.0235758874,0.0110908225,-0.0041165731,-0.0130465772,-0.0124661206,-0.0052129535,0.0029284839,0.007218227,0.006348953,0.0022643119,-0.0018352389,-0.0036710748,-0.0029254551,-0.0008408614,0.0009777185,0.0016101256,0.0011328542,0.0002333881,-0.0004150039,-0.0005526026,-0.0003334019,-6.64166e-5,0.0001649556];
@@ -227,7 +227,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             success = wait_for_acquisition(testCase.x6, 1);
             stop(testCase.x6);
-            verifyEqual(testCase, success, 0);
+            assertEqual(testCase, success, 0);
 
             rawWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
             KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
@@ -271,7 +271,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             success = wait_for_acquisition(testCase.x6, 1);
             stop(testCase.x6);
-            verifyEqual(testCase, success, 0);
+            assertEqual(testCase, success, 0);
 
             demodWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 0));
             KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 1));
@@ -285,12 +285,12 @@ classdef TestX6 < matlab.unittest.TestCase
             %Maximum length should pass
             write_pulse_waveform(testCase.x6, randi([0 1]), wf(1:16384));
             %Over maximum length should throw
-            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+            assertError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
         end
 
         function test_pg_waveform_granularity(testCase)
             wf = -1.0 + (2-1/2^15)*rand(16382,1);
-            verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
+            assertError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
         end
 
         function test_pg_waveform_range(testCase)
