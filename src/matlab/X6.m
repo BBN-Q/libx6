@@ -205,7 +205,7 @@ classdef X6 < hgsetget
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 
-            if channels(1).b == 0 % physical channel
+            if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
