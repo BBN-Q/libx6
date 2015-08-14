@@ -109,6 +109,37 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, testVal, freq, 'AbsTol', 1e9 / 4 / 2^24);
         end
 
+        function test_DataReady(testCase)
+            %Test that the DataReady event is fired
+            eventFired = false;
+            function catchDataReady(~,~)
+                eventFired = true;
+            end
+            el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
+
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+
+            %Enable the two raw streams
+            enable_stream(testCase.x6, 1, 0, 0);
+
+            set_averager_settings(testCase.x6, 5120, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            pause(0.5);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            stop(testCase.x6);
+            delete(el);
+
+            verifyEqual(testCase, success, 0);
+            assertTrue(testCase, eventFired, 'DataReady event failed to fire.');
+        end
+
         function test_raw_streams(testCase)
             %Check the test pattern on the raw streams
             disconnect(testCase.x6);
