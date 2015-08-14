@@ -940,8 +940,15 @@ int Accumulator::fixed_to_float(const Channel & chan) {
             return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
             break;
         case DEMOD:
+            return 1 << 14;
+            break;
         case RESULT:
-            return 1 << 14; // sfix16_14 from DDC or sfix32_14 from DecisionEngine
+            if (chan.channelID[1]) {
+                return 1 << 19;
+            }
+            else {
+                return 1 << 15;
+            }
             break;
     }
 }
