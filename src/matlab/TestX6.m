@@ -198,11 +198,9 @@ classdef TestX6 < matlab.unittest.TestCase
 
             %Now test first/last and a random selection in between
             addresses = [1; 4096; randi(4096, 100, 1)];
-            for ct = 1:length(addresses)
-                %Have 16 bits of precision in real/imag
-                testVal = read_kernel(testCase.x6, 1, 0, 1, addresses(ct));
-                verifyEqual(testCase, testVal, kernel(addresses(ct)), 'AbsTol', 2/2^15);
-            end
+            testVals = arrayfun(@(addr) read_kernel(testCase.x6, 1, 0, 1, addr), addresses);
+            %Have 16 bits of precision in real/imag
+            assertEqual(testCase, testVals, kernel(addresses), 'AbsTol', 2/2^15);
         end
 
         function test_raw_integrator(testCase)
@@ -235,6 +233,18 @@ classdef TestX6 < matlab.unittest.TestCase
             KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
             expected = sum(bsxfun(@times, kernel, rawWFs(1:length(kernel),:)), 1).';
             assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
+        end
+
+        function test_demod_kernel_memory(testCase)
+            %Check we can write/read to the demod kernel memory
+            kernel = (-1.0 + 2*rand(512,1)) + 1i*(-1.0 + 2*rand(512,1));
+            write_kernel(testCase.x6, 1, 1, 1, kernel);
+
+            %Now test first/last and a random selection in between
+            addresses = [1; 512; randi(512, 100, 1)];
+            testVals = arrayfun(@(addr) read_kernel(testCase.x6, 1, 1, 1, addr), addresses);
+            %Have 16 bits of precision in real/imag
+            assertEqual(testCase, testVals, kernel(addresses), 'AbsTol', 2/2^15);
         end
 
         function test_demod_integrator(testCase)
