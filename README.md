@@ -19,13 +19,13 @@ releases with a pre-compiled shared library.
 Web](http://www.innovative-dsp.com/support/installfromwebAutomatic.htm) tool
 from II to download and install the X6-1000M - PCIe XMC Module Development Kit.
 As of September 2015 we have built against Malibu 1.8.5.
-* C++11 compliant compiler.  We have used the [MSYS2]((http://msys2.github.io/)
-environment with gcc 4.9.2 with good success.  This will emit some hopefully
-benign link warnings as it has been compiled with different options to the
-compiler used by II in the Malibu 1.8.5 release (TDM-GCC-4.8.1).  If you are
-concerned, we have also used [mingw-w64](http://mingw-w64.org/doku.php) and
-mingw-builds installer to use the ``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack
-which is compliant with the compiler II used.
+* C++11 compliant compiler.  If using the gcc compiler stack, II has used a
+specific compiler in the Malibu libraries that libx6 links against - as of
+Malibu 1.8.5 this is TDM GCC 4.8.1. We have used
+[mingw-w64](http://mingw-w64.org/) and the mingw-builds installer to use the
+``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack which is compliant with the compiler
+II used.  It is easiest to use this with the MSYS2 environment for cmake and
+make.
 
 ### Instructions
 
@@ -37,9 +37,11 @@ which is compliant with the compiler II used.
   ```bash
   pacman -S make
   pacman -S mingw64/mingw-w64-x86_64-cmake
-  pacman -S mingw64/mingw-w64-x86_64-gcc
-  pacman -S mingw64/mingw-w64-x86_64-gdb
-  pacman -S mingw64/mingw-w64-x86_64-hdf5
+  ```
+3. Put the mingw-w64 gcc 4.8.1 compiler on the path
+
+  ```bash
+  export PATH=/c/Program\ Files/mingw-w64/x86_64-4.8.1-posix-seh-rt_v3_rev2/mingw64/bin:$PATH
   ```
 
 #### Building
