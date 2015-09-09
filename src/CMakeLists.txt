@@ -16,7 +16,7 @@ SET ( CMAKE_BUILD_TYPE Debug )
 if(WIN32)
 	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
 else()
-	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.7/Malibu)
+	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.8/Malibu)
 endif()
 
 #and our own library headers
@@ -26,7 +26,7 @@ INCLUDE_DIRECTORIES("./lib/")
 if(WIN32)
 	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
 else()
-	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}//usr/Innovative/Malibu-1.7/Lib)
+	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}//usr/Innovative/Malibu-1.8/Lib)
 endif()
 
 LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc)
@@ -42,17 +42,11 @@ else()
 endif()
 
 if(UNIX)
-	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-11.5/lib)
+	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-11.8/lib)
 endif()
 
 #Some compile flags
-ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-DGCC")
-ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11")
-
-#on windows we statically link in the GCC runtime to avoid dependcies
-if(WIN32)
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-libgcc -static-libstdc++ -static -lpthread")
-endif()
+ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
 
 SET ( DLL_SRC
 	./lib/libx6adc.cpp
@@ -83,6 +77,8 @@ TARGET_LINK_LIBRARIES(x6adc
 	Hardware_Mb
 	Pci_Mb
 	Ficl_Mb
+	Poco_Foundation_Mb
+	Poco_Net_Mb
 	-Wl,--end-group
 
 	wdapi # WinDriver library in Innovative\lib\gcc
