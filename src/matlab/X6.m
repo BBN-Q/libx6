@@ -345,20 +345,34 @@ classdef X6 < hgsetget
             else
                 obj.disable_stream(a, b, 0);
             end
-            if settings.enableResultStream
+            if settings.enableDemodResultStream
                 obj.enable_stream(a, b, 1);
             else
                 obj.disable_stream(a, b, 1);
             end
+            if settings.enableRawResultStream
+                obj.enable_stream(a, 0, b)
+            else
+                obj.disable_stream(a, 0, b)
+            end
             obj.set_nco_frequency(a, b, settings.IFfreq);
-            if ~isempty(settings.kernel)
+            if ~isempty(settings.demodKernel)
                 %Try to decode base64 encoded kernels
-                if (ischar(settings.kernel))
-                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.kernel)), 'uint8');
+                if (ischar(settings.demodKernel))
+                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernel)), 'uint8');
                    tmp = typecast(tmp, 'double');
-                   settings.kernel = tmp(1:2:end) + 1j*tmp(2:2:end);
+                   settings.demodKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
                 end
-                obj.write_kernel(a, b, settings.kernel);
+                obj.write_kernel(a, b, 1, settings.demodKernel);
+            end
+            if ~isempty(settings.rawKernel)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.rawKernel))
+                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernel)), 'uint8');
+                   tmp = typecast(tmp, 'double');
+                   settings.rawKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
+                end
+                obj.write_kernel(a, 0, b, settings.rawKernel);
             end
             obj.set_threshold(a, b, settings.threshold);
         end
