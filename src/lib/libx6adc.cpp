@@ -99,7 +99,7 @@ X6_STATUS get_num_devices(unsigned* numDevices) {
 }
 
 X6_STATUS connect_x6(int deviceID) {
-	if (deviceID >= numDevices_) return X6_NO_DEVICE_FOUND;
+	if (deviceID >= static_cast<int>(numDevices_)) return X6_NO_DEVICE_FOUND;
 	if (X6s_.find(deviceID) == X6s_.end()){
 		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000()); //turn-into make_unique when we can go to gcc 4.9
 	}
@@ -222,7 +222,7 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
 	vector<Channel> channels(numChannels);
-	for (int i = 0; i < numChannels; i++) {
+	for (unsigned i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
@@ -234,7 +234,7 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 
 X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	vector<Channel> channels(numChannels);
-	for (int i = 0; i < numChannels; i++) {
+	for (unsigned i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
@@ -246,7 +246,7 @@ X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned 
 
 X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
 	vector<Channel> channels(numChannels);
-	for (int i = 0; i < numChannels; i++) {
+	for (unsigned i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, channels);
@@ -254,7 +254,7 @@ X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned nu
 
 X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
 	vector<Channel> channels(numChannels);
-	for (int i = 0; i < numChannels; i++) {
+	for (unsigned i = 0; i < numChannels; i++) {
 		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, channels);

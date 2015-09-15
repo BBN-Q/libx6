@@ -285,7 +285,7 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     }
 }
 
-bool X6_1000::get_channel_enable(int channel) {
+bool X6_1000::get_channel_enable(unsigned channel) {
     // TODO get active channel status from board
     if (channel >= get_num_channels()) return false;
     return true;
@@ -332,7 +332,7 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
     write_dsp_register(a-1, wbLengthReg + (KI-1), kernel.size());
 
     //Kernel memory as address/data pairs
-    for (int ct = 0; ct < kernel.size(); ct++) {
+    for (size_t ct = 0; ct < kernel.size(); ct++) {
         int32_t scaled_re = std::real(kernel[ct]) * ((1 << 15) - 1);
         int32_t scaled_im = std::imag(kernel[ct]) * ((1 << 15) - 1);
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
@@ -346,7 +346,6 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
 
   //Depending on raw or demod integrator we are enumerated by c or b
   int KI = (b==0) ? c : b;
-  uint32_t wbLengthReg = (b==0) ?  WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH;
   uint32_t wbAddrDataReg = (b==0) ?  WB_QDSP_RAW_KERNEL_ADDR_DATA : WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
 
   //Write the address register
@@ -369,7 +368,7 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
-    for (int cnt = 0; cnt < get_num_channels(); cnt++) {
+    for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
         FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
         module_.Input().ChannelEnabled(cnt, 1);
     }
@@ -542,7 +541,9 @@ void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length)
         throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    if (length < accumulators_[sid].get_buffer_size() ) {
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    }
     accumulators_[sid].snapshot(buffer);
 }
 
@@ -554,43 +555,47 @@ void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length)
         throw X6_INVALID_CHANNEL;
     }
     //Don't copy more than we have
-    if (length < accumulators_[sid].get_buffer_size() ) FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    if (length < accumulators_[sid].get_buffer_size() ) {
+        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    }
     accumulators_[sid].snapshot_variance(buffer);
 }
 
 void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
-    for (int i = 0; i < channels.size(); i++)
+    for (size_t i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
-    if (length < correlators_[sids].get_buffer_size())
+    if (length < correlators_[sids].get_buffer_size()) {
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    }
     correlators_[sids].snapshot(buffer);
 }
 
 void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
     // check that we have the correlator
     vector<uint16_t> sids(channels.size());
-    for (int i = 0; i < channels.size(); i++)
+    for (size_t i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
     }
     // Don't copy more than we have
-    if (length < correlators_[sids].get_buffer_size())
+    if (length < correlators_[sids].get_buffer_size()) {
         FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    }
     correlators_[sids].snapshot_variance(buffer);
 }
 
 int X6_1000::get_buffer_size(vector<Channel> & channels) {
     vector<uint16_t> sids(channels.size());
-    for (int i = 0; i < channels.size(); i++)
+    for (size_t i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (channels.size() == 1) {
         return accumulators_[sids[0]].get_buffer_size();
@@ -601,7 +606,7 @@ int X6_1000::get_buffer_size(vector<Channel> & channels) {
 
 int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
     vector<uint16_t> sids(channels.size());
-    for (int i = 0; i < channels.size(); i++)
+    for (size_t i = 0; i < channels.size(); i++)
         sids[i] = channels[i].streamID;
     if (channels.size() == 1) {
         return accumulators_[sids[0]].get_variance_buffer_size();
@@ -765,7 +770,6 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 }
 
 bool X6_1000::check_done() {
-    int records;
     for (auto & kv : accumulators_) {
         FILE_LOG(logDEBUG2) << "Channel " << myhex << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
@@ -898,10 +902,10 @@ uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
 }
 
 Accumulator::Accumulator() :
-    wfmCt_{0}, recordLength_{0}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {};
+    recordsTaken{0}, wfmCt_{0}, numSegments_{0}, numWaveforms_{0}, recordLength_{0} {};
 
 Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) :
-                         channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+                         recordsTaken{0}, channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
     recordLength_ = calc_record_length(chan, recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
@@ -935,6 +939,8 @@ size_t Accumulator::calc_record_length(const Channel & chan, const size_t & reco
         case RESULT:
             return 2;
             break;
+        default:
+            return 0;
     }
 }
 
@@ -954,6 +960,8 @@ int Accumulator::fixed_to_float(const Channel & chan) {
                 return 1 << 15;
             }
             break;
+        default:
+            return 0;
     }
 }
 
@@ -1048,10 +1056,10 @@ void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
 }
 
 Correlator::Correlator() :
-    wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0}, recordsTaken{0} {};
+    recordsTaken{0}, wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {};
 
 Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) :
-                         wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms}, recordsTaken{0} {
+                        recordsTaken{0}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
     recordLength_ = 2; // assume a RESULT channel
     buffers_.resize(channels.size());
     data_.assign(recordLength_*numSegments, 0);
@@ -1060,14 +1068,14 @@ Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegme
     idx2_ = data2_.begin();
     // set up mapping of SIDs to an index into buffers_
     fixed_to_float_ = 1;
-    for (int i = 0; i < channels.size(); i++) {
+    for (size_t i = 0; i < channels.size(); i++) {
         bufferSID_[channels[i].streamID] = i;
         fixed_to_float_ *= 1 << 14; // assumes a RESULT channel, grows with the number of terms in the correlation
     }
 };
 
 void Correlator::reset() {
-    for (int i = 0; i < buffers_.size(); i++)
+    for (size_t i = 0; i < buffers_.size(); i++)
         buffers_[i].clear();
     data_.assign(recordLength_*numSegments_, 0);
     idx_ = data_.begin();
@@ -1080,7 +1088,7 @@ void Correlator::reset() {
 template <class T>
 void Correlator::accumulate(const int & sid, const AccessDatagram<T> & buffer) {
     // copy the data
-    for (int i = 0; i < buffer.size(); i++)
+    for (size_t i = 0; i < buffer.size(); i++)
         buffers_[bufferSID_[sid]].push_back(buffer[i]);
     correlate();
 }
@@ -1096,9 +1104,9 @@ void Correlator::correlate() {
 
     // correlate
     // data is real/imag interleaved, so process a pair of points at a time from each channel
-    for (int i = 0; i < minsize; i += 2) {
+    for (size_t i = 0; i < minsize; i += 2) {
         std::complex<double> c = 1;
-        for (int j = 0; j < buffers_.size(); j++) {
+        for (size_t j = 0; j < buffers_.size(); j++) {
             c *= std::complex<double>(buffers_[j][i], buffers_[j][i+1]);
         }
         c /= fixed_to_float_;
@@ -1118,7 +1126,7 @@ void Correlator::correlate() {
             }
         }
     }
-    for (int j = 0; j < buffers_.size(); j++)
+    for (size_t j = 0; j < buffers_.size(); j++)
         buffers_[j].erase(buffers_[j].begin(), buffers_[j].begin()+minsize);
 
     recordsTaken += minsize/2;

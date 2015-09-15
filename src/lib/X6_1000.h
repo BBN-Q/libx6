@@ -86,7 +86,7 @@ public:
 	void enable_stream(unsigned, unsigned, unsigned);
 	void disable_stream(unsigned, unsigned, unsigned);
 
-	bool get_channel_enable(int channel);
+	bool get_channel_enable(unsigned channel);
 
 	void set_digitizer_mode(const DigitizerMode &);
 	DigitizerMode get_digitizer_mode() const;
@@ -282,9 +282,9 @@ public:
 
 private:
 	size_t wfmCt_;
+	size_t recordLength_;
 	size_t numSegments_;
 	size_t numWaveforms_;
-	size_t recordLength_;
 	int64_t fixed_to_float_;
 
 	// buffers for raw data from the channels

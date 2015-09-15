@@ -108,9 +108,9 @@ int main ()
   assert(vec_equal(combos[2], {0,2,3}));
   assert(vec_equal(combos[3], {1,2,3}));
   cout << "combinations:" << endl;
-  for (int i = 0; i < combos.size(); i++) {
+  for (size_t i = 0; i < combos.size(); i++) {
     cout << "combos[" << i << "]: {";
-    for (int j = 0; j < combos[i].size(); j++) {
+    for (size_t j = 0; j < combos[i].size(); j++) {
       cout << combos[i][j] << ", ";
     }
     cout << "}" << endl;
