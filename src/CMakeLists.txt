@@ -81,8 +81,6 @@ TARGET_LINK_LIBRARIES(x6adc
 	Poco_Net_Mb
 	-Wl,--end-group
 
-	iphlpapi # II's PocoFoundation needs GetAdaptersAddress
-
 	wdapi # WinDriver library in Innovative\lib\gcc
 	${IPP_LIB} # in Intel IPP directory listed above
 
@@ -90,3 +88,9 @@ TARGET_LINK_LIBRARIES(x6adc
 	#Framework_Win
 	#Vpx_Mb  ##
 )
+
+if(WIN32)
+	TARGET_LINK_LIBRARIES(x6adc
+		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
+	)
+endif(WIN32)
