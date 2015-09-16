@@ -136,6 +136,8 @@ public:
 	const int MHz = 1e6;         /**< Constant for converting MHz */
 	const int Meg = 1024 * 1024;
 
+    void silly();
+
 private:
 	// disable copying because some the innovative stuff it holds on to is non-copyable
 	X6_1000(const X6_1000&) = delete;
@@ -217,6 +219,7 @@ private:
     void HandleTriggerAlert(Innovative::AlertSignalEvent & event);
 
     void LogHandler(string handlerName);
+
 };
 
 class Channel{

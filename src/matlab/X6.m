@@ -421,112 +421,68 @@ classdef X6 < hgsetget
 
             fprintf('BBN X6-1000 Test Executable\n')
 
-            x6 = X6();
+%             x6 = X6();
+% 
+%             x6.set_debug_level(4);
+% 
+%             x6.connect(0);
+% 
+%             fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
+% 
+%             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
+% %             fprintf('Setting clock reference to external\n');
+% %             x6.reference = 'EXTERNAL_REFERENCE';
+% 
+%             fprintf('Enabling streams\n');
+%             numDemodChan = 1;
+%             numMatchFilters = 2; % 4
+%             for phys = 1:2
+%                 x6.enable_stream(phys, 0, 0); % the raw stream
+%                 x6.enable_stream(phys, 1, 0); % the demod stream
+%                 for demod = 1:numMatchFilters
+%                     x6.enable_stream(phys, demod, 1);
+%                 end
+%             end
+% 
+%             fprintf('Setting NCO phase increments\n');
+%             x6.set_nco_frequency(1, 1, 10e6);
+%             x6.set_nco_frequency(2, 1, 20e6);
+% 
+%             fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
+%             x6.set_averager_settings(2048, 64, 1, 1);
+% 
+%             % write a waveform into transmitter memory
+%             for ct = 1:2048
+%                 x6.write_register(hex2dec('2200'), 9, ct-1);
+%                 x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
+%             end
+% 
+%             % write waveform length
+%             x6.write_register(hex2dec('2200'), 8, 1024);
+% 
+%             %DAC trigger window
+%             fprintf('Acquiring\n');
+%             x6.acquire();
+%             
+%             pause(0.5);
+%             dec2hex(x6.read_register(hex2dec('800'), hex2dec('98')), 8)
+% 
+%             x6.write_register(hex2dec('2200'), 0, 1);
+%             
+%             success = x6.wait_for_acquisition(2);
+%             fprintf('Wait for acquisition returned %d\n', success);
+% 
+%             fprintf('Stopping\n');
+%             x6.stop();
+% 
+%    
+% 
+%             x6.disconnect();
 
-            x6.set_debug_level(6);
+            X6.load_library();
+            X6.set_debug_level(4);
+            calllib('libx6adc', 'silly');
 
-            x6.connect(0);
-
-            fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
-
-            fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
-            fprintf('Setting clock reference to external\n');
-            x6.reference = 'EXTERNAL_REFERENCE';
-
-            fprintf('Enabling streams\n');
-            numDemodChan = 1;
-            numMatchFilters = 2; % 4
-            for phys = 1:2
-                x6.enable_stream(phys, 0, 0); % the raw stream
-                x6.enable_stream(phys, 1, 0); % the demod stream
-                for demod = 1:numMatchFilters
-                    x6.enable_stream(phys, demod, 1);
-                end
-            end
-
-            fprintf('Setting NCO phase increments\n');
-            x6.set_nco_frequency(1, 1, 10e6);
-            x6.set_nco_frequency(2, 1, 20e6);
-
-            fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(100,1));
-            x6.write_kernel(1, 2, ones(100,1));
-            x6.write_kernel(1, 3, ones(100,1));
-            x6.write_kernel(1, 4, ones(100,1));
-            x6.write_kernel(2, 1, ones(100,1));
-            x6.write_kernel(2, 2, ones(100,1));
-            x6.write_kernel(2, 3, ones(100,1));
-
-            fprintf('Writing decision engine thresholds\n');
-            x6.set_threshold(1, 1, 0.5);
-            x6.set_threshold(1, 2, 0.5);
-            x6.set_threshold(2, 1, 0.5);
-            x6.set_threshold(2, 2, 0.5);
-
-            fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
-            x6.set_averager_settings(2048, 16, 1, 1);
-
-            % write a waveform into transmitter memory
-            for ct = 1:2048
-                x6.write_register(hex2dec('2200'), 9, ct-1);
-                x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
-            end
-
-            % write waveform length
-            x6.write_register(hex2dec('2200'), 8, 1024);
-
-            %DAC trigger window
-            fprintf('Acquiring\n');
-            x6.acquire();
-
-            success = x6.wait_for_acquisition(1);
-            fprintf('Wait for acquisition returned %d\n', success);
-
-            fprintf('Stopping\n');
-            x6.stop();
-
-            fprintf('Transferring waveforms\n');
-            wfs = cell(numDemodChan+1,1);
-            for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(struct('a', 1, 'b', ct, 'c', 0));
-            end
-            figure();
-            subplot(numDemodChan+1,1,1);
-            plot(wfs{1}(:));
-            title('Raw Channel 1');
-
-            for ct = 1:numDemodChan
-                subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}(:)), 'b');
-                hold on
-                plot(imag(wfs{ct+1}(:)), 'r');
-                title(sprintf('Virtual Channel %d',ct));
-            end
-
-
-            for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(struct('a', 2, 'b', ct, 'c', 0));
-            end
-            figure();
-            subplot(numDemodChan+1,1,1);
-            plot(wfs{1}(:));
-            title('Raw Channel 2');
-
-            for ct = 1:numDemodChan
-                subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}(:)), 'b');
-                hold on
-                plot(imag(wfs{ct+1}(:)), 'r');
-                title(sprintf('Virtual Channel %d',ct));
-            end
-
-            fprintf('Result vectors:\n');
-            fprintf('Ch 1.1:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 1, 'c', 1))));
-            fprintf('Ch 1.2:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 2, 'c', 1))));
-            fprintf('Ch 2.1:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 1, 'c', 1))));
-            fprintf('Ch 2.2:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 2, 'c', 1))));
-
-            x6.disconnect();
             unloadlibrary('libx6adc')
         end
 
