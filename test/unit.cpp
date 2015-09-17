@@ -1,8 +1,12 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <assert.h>
 
-#include "X6_1000.h"
+#include "QDSPStream.h"
+#include "Accumulator.h"
+#include "Correlator.h"
+
 #include <Buffer_Mb.h>
 #include <BufferDatagrams_Mb.h>
 
@@ -13,7 +17,6 @@ bool vec_equal(vector<T> a, vector<T> b) {
   return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin());
 }
 
-
 int main ()
 {
   cout << "BBN X6-1000 Library Unit Tests" << endl;
@@ -22,9 +25,9 @@ int main ()
   Innovative::Buffer buf( Innovative::Holding<int>(2) );
   Innovative::IntegerDG ibuf(buf);
 
-  Channel ch(1,1,1);
-  Accumulator accumlator(ch, 1024, 2, 1);
-  int scale = 1 << 14;
+  QDSPStream stream(1,1,1);
+  Accumulator accumlator(stream, 1024, 2, 1);
+  const int scale = 1 << 19; //see Accumulator::fixed_to_float
 
   ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1
   accumlator.accumulate(ibuf);
@@ -117,18 +120,18 @@ int main ()
   }
 
   // Correlators
-  Channel ch1(1,1,1), ch2(1,2,1);
-  int sid1 = ch1.streamID;
-  int sid2 = ch2.streamID;
-  Correlator correlator({ch1, ch2}, 2, 1);
+  QDSPStream stream1(1,1,1), stream2(1,2,1);
+  int sid1 = stream1.streamID;
+  int sid2 = stream2.streamID;
+  Correlator correlator({stream1, stream2}, 2, 1);
 
-  ibuf[0] = 0 * scale; ibuf[1] = 7 * scale; // segment 1, ch1
+  ibuf[0] = 0 * scale; ibuf[1] = 7 * scale; // segment 1, stream1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 1 * scale; ibuf[1] = 6 * scale; // segment 1, ch2
+  ibuf[0] = 1 * scale; ibuf[1] = 6 * scale; // segment 1, stream2
   correlator.accumulate(sid2, ibuf);
-  ibuf[0] = 2 * scale; ibuf[1] = 5 * scale; // segment 2, ch1
+  ibuf[0] = 2 * scale; ibuf[1] = 5 * scale; // segment 2, stream1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 3 * scale; ibuf[1] = 4 * scale; // segment 2, ch2
+  ibuf[0] = 3 * scale; ibuf[1] = 4 * scale; // segment 2, stream2
   correlator.accumulate(sid2, ibuf);
 
   correlator.snapshot(obuf);
@@ -150,13 +153,13 @@ int main ()
   assert(obufvar[4] == 0);
   assert(obufvar[5] == 0);
 
-  ibuf[0] = 4 * scale; ibuf[1] = 3 * scale; // segment 1, ch1
+  ibuf[0] = 4 * scale; ibuf[1] = 3 * scale; // segment 1, stream1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 5 * scale; ibuf[1] = 2 * scale; // segment 1, ch2
+  ibuf[0] = 5 * scale; ibuf[1] = 2 * scale; // segment 1, stream2
   correlator.accumulate(sid2, ibuf);
-  ibuf[0] = 6 * scale; ibuf[1] = 1 * scale; // segment 2, ch1
+  ibuf[0] = 6 * scale; ibuf[1] = 1 * scale; // segment 2, stream1
   correlator.accumulate(sid1, ibuf);
-  ibuf[0] = 7 * scale; ibuf[1] = 0 * scale; // segment 2, ch2
+  ibuf[0] = 7 * scale; ibuf[1] = 0 * scale; // segment 2, stream2
   correlator.accumulate(sid2, ibuf);
 
   correlator.snapshot_variance(obufvar);
@@ -174,15 +177,15 @@ int main ()
   assert(obufvar[4] == 128);
   assert(obufvar[5] == -448);
 
-  Channel ch3(2,1,1);
-  int sid3 = ch3.streamID;
-  Correlator correlator2({ch1, ch2, ch3}, 1, 1);
+  QDSPStream stream3(2,1,1);
+  int sid3 = stream3.streamID;
+  Correlator correlator2({stream1, stream2, stream3}, 1, 1);
 
-  ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, ch1
+  ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1, stream1
   correlator2.accumulate(sid1, ibuf);
-  ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, ch2
+  ibuf[0] = 1 * scale; ibuf[1] = 20 * scale; // segment 1, stream2
   correlator2.accumulate(sid2, ibuf);
-  ibuf[0] = 2 * scale; ibuf[1] = 30 * scale; // segment 1, ch2
+  ibuf[0] = 2 * scale; ibuf[1] = 30 * scale; // segment 1, stream2
   correlator2.accumulate(sid3, ibuf);
 
   correlator2.snapshot(obuf);

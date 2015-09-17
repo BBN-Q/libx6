@@ -50,6 +50,9 @@ ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
 
 SET ( DLL_SRC
 	./lib/libx6adc.cpp
+	./lib/QDSPStream.cpp
+	./lib/Accumulator.cpp
+	./lib/Correlator.cpp
 	./lib/X6_1000.cpp
 )
 
@@ -62,9 +65,30 @@ TARGET_LINK_LIBRARIES(x6test x6adc)
 
 ADD_EXECUTABLE(unit
 	../test/unit.cpp
-	./lib/X6_1000.cpp
+	./lib/QDSPStream.cpp
+	./lib/Accumulator.cpp
+	./lib/Correlator.cpp
 )
-TARGET_LINK_LIBRARIES(unit x6adc)
+
+TARGET_LINK_LIBRARIES(unit
+	-Wl,--start-group
+	Os_Mb
+	Application_Mb
+	Analysis_Mb
+	Framework_Con
+	Framework_Mb
+	Utility_Mb
+	Hardware_Mb
+	Pci_Mb
+	Ficl_Mb
+	Poco_Foundation_Mb
+	Poco_Net_Mb
+	-Wl,--end-group
+
+	wdapi # WinDriver library in Innovative\lib\gcc
+
+	pthread
+)
 
 TARGET_LINK_LIBRARIES(x6adc
 	-Wl,--start-group

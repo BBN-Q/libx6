@@ -261,9 +261,9 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << myhex << reg;
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
-    Channel chan = Channel(a, b, c);
-    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
-    activeChannels_[chan.streamID] = chan;
+    QDSPStream stream = QDSPStream(a, b, c);
+    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << stream.streamID;
+    activeQDSPStreams_[stream.streamID] = stream;
 }
 
 void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
@@ -275,9 +275,9 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     //Find the channel
-    uint16_t streamID = Channel(a,b,c).streamID;
-    if (activeChannels_.count(streamID)) {
-        activeChannels_.erase(streamID);
+    uint16_t streamID = QDSPStream(a,b,c).streamID;
+    if (activeQDSPStreams_.count(streamID)) {
+        activeQDSPStreams_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
     }
     else {
@@ -408,10 +408,10 @@ void X6_1000::log_card_info() {
 void X6_1000::acquire() {
     //Some error checking frame sizes
     //Because of some FIFO's and clocking  we can't have more than 4096 samples
-    Channel rawStream1 = Channel(1, 0, 0);
-    Channel rawStream2 = Channel(2, 0, 0);
+    QDSPStream rawStream1 = QDSPStream(1, 0, 0);
+    QDSPStream rawStream2 = QDSPStream(2, 0, 0);
 
-    if (activeChannels_.count(rawStream1.streamID) || activeChannels_.count(rawStream2.streamID)){
+    if (activeQDSPStreams_.count(rawStream1.streamID) || activeQDSPStreams_.count(rawStream2.streamID)){
         if (recordLength_ > MAX_LENGTH_RAW_STREAM) {
             throw X6_RAW_STREAM_TOO_LONG;
         }
@@ -439,7 +439,7 @@ void X6_1000::acquire() {
     virtChans_.clear();
     resultChans_.clear();
 
-    for (auto kv : activeChannels_){
+    for (auto kv : activeQDSPStreams_){
         switch (kv.second.type) {
             case PHYSICAL:
                 physChans_.push_back(kv.first);
@@ -544,10 +544,10 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
-    //Check we have the channel
-    uint16_t sid = channel.streamID;
-    if(activeChannels_.find(sid) == activeChannels_.end()){
+void X6_1000::transfer_waveform(QDSPStream stream, double * buffer, size_t length) {
+    //Check we have the stream
+    uint16_t sid = stream.streamID;
+    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -558,10 +558,10 @@ void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length)
     accumulators_[sid].snapshot(buffer);
 }
 
-void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
-    //Check we have the channel
-    uint16_t sid = channel.streamID;
-    if(activeChannels_.find(sid) == activeChannels_.end()){
+void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t length) {
+    //Check we have the stream
+    uint16_t sid = stream.streamID;
+    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -572,11 +572,11 @@ void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length)
     accumulators_[sid].snapshot_variance(buffer);
 }
 
-void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation(vector<QDSPStream> & streams, double *buffer, size_t length) {
     // check that we have the correlator
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
@@ -588,11 +588,11 @@ void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, s
     correlators_[sids].snapshot(buffer);
 }
 
-void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation_variance(vector<QDSPStream> & streams, double *buffer, size_t length) {
     // check that we have the correlator
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
@@ -604,22 +604,22 @@ void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *
     correlators_[sids].snapshot_variance(buffer);
 }
 
-int X6_1000::get_buffer_size(vector<Channel> & channels) {
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
-    if (channels.size() == 1) {
+int X6_1000::get_buffer_size(vector<QDSPStream> & streams) {
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
+    if (streams.size() == 1) {
         return accumulators_[sids[0]].get_buffer_size();
     } else {
         return correlators_[sids].get_buffer_size();
     }
 }
 
-int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
-    if (channels.size() == 1) {
+int X6_1000::get_variance_buffer_size(vector<QDSPStream> & streams) {
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
+    if (streams.size() == 1) {
         return accumulators_[sids[0]].get_variance_buffer_size();
     } else {
         return correlators_[sids].get_variance_buffer_size();
@@ -627,26 +627,26 @@ int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
 }
 
 void X6_1000::initialize_accumulators() {
-    for (auto kv : activeChannels_) {
+    for (auto kv : activeQDSPStreams_) {
         accumulators_[kv.first] = Accumulator(kv.second, recordLength_, numSegments_, waveforms_);
     }
 }
 
 void X6_1000::initialize_correlators() {
     vector<uint16_t> streamIDs = {};
-    vector<Channel> channels = {};
+    vector<QDSPStream> streams = {};
 
     // create all n-body correlators
     for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
         streamIDs.resize(n);
-        channels.resize(n);
+        streams.resize(n);
 
         for (auto c : combinations(resultChans_.size(), n)) {
             for (int i = 0; i < n; i++) {
                 streamIDs[i] = resultChans_[c[i]];
-                channels[i] = activeChannels_[streamIDs[i]];
+                streams[i] = activeQDSPStreams_[streamIDs[i]];
             }
-            correlators_[streamIDs] = Correlator(channels, numSegments_, waveforms_);
+            correlators_[streamIDs] = Correlator(streams, numSegments_, waveforms_);
         }
     }
 }
@@ -726,7 +726,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   }
 }
 
-void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t chanType) {
+void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T streamType) {
     if (!isRunning_) {
         return;
     }
@@ -735,7 +735,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     PacketBufferHeader header(Event.Data);
     uint16_t sid;
 
-    switch (chanType) {
+    switch (streamType) {
         case PHYSICAL:
             sid = physChans_[header.PeripheralId()];
             break;
@@ -750,7 +750,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     // interpret the data as 16 or 32-bit integers depending on the channel type
     ShortDG sbufferDG(Event.Data);
     IntegerDG ibufferDG(Event.Data);
-    switch (chanType) {
+    switch (streamType) {
         case PHYSICAL:
         case DEMOD:
             FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
@@ -895,309 +895,4 @@ void X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t da
 
 uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
     return read_wishbone_register(BASE_DSP[instance], offset);
-}
-
-Accumulator::Accumulator() :
-    recordsTaken{0}, wfmCt_{0}, numSegments_{0}, numWaveforms_{0}, recordLength_{0} {};
-
-Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) :
-                         recordsTaken{0}, channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
-    recordLength_ = calc_record_length(chan, recordLength);
-    data_.assign(recordLength_*numSegments, 0);
-    idx_ = data_.begin();
-    if (chan.type == PHYSICAL) {
-        data2_.assign(recordLength_*numSegments_, 0);
-    } else {
-        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
-        data2_.assign(recordLength_*numSegments*3/2, 0);
-    }
-    idx2_ = data2_.begin();
-    fixed_to_float_ = fixed_to_float(chan);
-};
-
-void Accumulator::reset() {
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    std::fill(data2_.begin(), data2_.end(), 0);
-    idx2_ = data_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
-}
-
-size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
-    switch (chan.type) {
-        case PHYSICAL:
-            return recordLength / RAW_DECIMATION_FACTOR;
-            break;
-        case DEMOD:
-            return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
-            break;
-        case RESULT:
-            return 2;
-            break;
-        default:
-            return 0;
-    }
-}
-
-int Accumulator::fixed_to_float(const Channel & chan) {
-    switch (chan.type) {
-        case PHYSICAL:
-            return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
-            break;
-        case DEMOD:
-            return 1 << 14;
-            break;
-        case RESULT:
-            if (chan.channelID[1]) {
-                return 1 << 19;
-            }
-            else {
-                return 1 << 15;
-            }
-            break;
-        default:
-            return 0;
-    }
-}
-
-size_t Accumulator::get_buffer_size() {
-    return data_.size();
-}
-
-size_t Accumulator::get_variance_buffer_size() {
-    return data2_.size();
-}
-
-void Accumulator::snapshot(double * buf) {
-    /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
-    for(size_t ct=0; ct < data_.size(); ct++){
-        buf[ct] = static_cast<double>(data_[ct]) / scale;
-    }
-}
-
-void Accumulator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-    double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
-
-    if (N < 2) {
-        for(size_t ct=0; ct < data2_.size(); ct++){
-            buf[ct] = 0.0;
-        }
-    } else if (channel_.type == PHYSICAL) {
-        for (size_t ct = 0; ct < data2_.size(); ct++) {
-            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
-        }
-    } else {
-        // construct complex vector of data
-        std::complex<int64_t>* cvec = reinterpret_cast<std::complex<int64_t> *>(data_.data());
-        // calculate 3 components of variance
-        for(size_t ct=0; ct < data_.size()/2; ct++) {
-            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
-            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
-            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
-        }
-    }
-}
-
-template <class T>
-void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
-    //TODO: worry about performance, cache-friendly etc.
-    FILE_LOG(logDEBUG4) << "Accumulating data...";
-    FILE_LOG(logDEBUG4) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
-    FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
-    FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
-
-    // The assumption is that this will be called with a full record size
-    // Accumulate the buffer into data_
-    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
-    // record the square of the buffer as well
-    if (channel_.type == PHYSICAL) {
-        // data is real, just square and sum it.
-        std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
-            return a + b*b;
-        });
-    } else {
-        // data is complex: real/imaginary are interleaved every other point
-        // form a complex vector from the input buffer
-        vector<std::complex<int64_t>> cvec(recordLength_/2);
-        for (int i = 0; i < recordLength_/2; i++) {
-            cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
-        }
-        // calculate 3-component correlations into a triple of successive points
-        for (int i = 0; i < cvec.size(); i++) {
-            idx2_[3*i] += cvec[i].real() * cvec[i].real();
-            idx2_[3*i+1] += cvec[i].imag() * cvec[i].imag();
-            idx2_[3*i+2] += cvec[i].real() * cvec[i].imag();
-        }
-    }
-    recordsTaken++;
-
-    //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
-    if (++wfmCt_ == numWaveforms_) {
-        wfmCt_ = 0;
-        std::advance(idx_, recordLength_);
-        if (channel_.type == PHYSICAL)
-            std::advance(idx2_, recordLength_);
-        else
-            std::advance(idx2_, recordLength_ * 3/2);
-    }
-
-    //Final check if we're at the end
-    if (idx_ == data_.end()) {
-        idx_ = data_.begin();
-        idx2_ = data2_.begin();
-    }
-}
-
-Correlator::Correlator() :
-    recordsTaken{0}, wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {};
-
-Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) :
-                        recordsTaken{0}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
-    recordLength_ = 2; // assume a RESULT channel
-    buffers_.resize(channels.size());
-    data_.assign(recordLength_*numSegments, 0);
-    idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments*3/2, 0);
-    idx2_ = data2_.begin();
-    // set up mapping of SIDs to an index into buffers_
-    fixed_to_float_ = 1;
-    for (size_t i = 0; i < channels.size(); i++) {
-        bufferSID_[channels[i].streamID] = i;
-        fixed_to_float_ *= 1 << 14; // assumes a RESULT channel, grows with the number of terms in the correlation
-    }
-};
-
-void Correlator::reset() {
-    for (size_t i = 0; i < buffers_.size(); i++)
-        buffers_[i].clear();
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments_*3/2, 0);
-    idx2_ = data2_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
-}
-
-template <class T>
-void Correlator::accumulate(const int & sid, const AccessDatagram<T> & buffer) {
-    // copy the data
-    for (size_t i = 0; i < buffer.size(); i++)
-        buffers_[bufferSID_[sid]].push_back(buffer[i]);
-    correlate();
-}
-
-void Correlator::correlate() {
-    vector<size_t> bufsizes(buffers_.size());
-    std::transform(buffers_.begin(), buffers_.end(), bufsizes.begin(), [](vector<int> b) {
-        return b.size();
-    });
-    size_t minsize = *std::min_element(bufsizes.begin(), bufsizes.end());
-    if (minsize == 0)
-        return;
-
-    // correlate
-    // data is real/imag interleaved, so process a pair of points at a time from each channel
-    for (size_t i = 0; i < minsize; i += 2) {
-        std::complex<double> c = 1;
-        for (size_t j = 0; j < buffers_.size(); j++) {
-            c *= std::complex<double>(buffers_[j][i], buffers_[j][i+1]);
-        }
-        c /= fixed_to_float_;
-        idx_[0] += c.real();
-        idx_[1] += c.imag();
-        idx2_[0] += c.real()*c.real();
-        idx2_[1] += c.imag()*c.imag();
-        idx2_[2] += c.real()*c.imag();
-
-        if (++wfmCt_ == numWaveforms_) {
-            wfmCt_ = 0;
-            std::advance(idx_, 2);
-            std::advance(idx2_, 3);
-            if (idx_ == data_.end()) {
-                idx_ = data_.begin();
-                idx2_ = data2_.begin();
-            }
-        }
-    }
-    for (size_t j = 0; j < buffers_.size(); j++)
-        buffers_[j].erase(buffers_[j].begin(), buffers_[j].begin()+minsize);
-
-    recordsTaken += minsize/2;
-}
-
-size_t Correlator::get_buffer_size() {
-    return data_.size();
-}
-
-size_t Correlator::get_variance_buffer_size() {
-    return data2_.size();
-}
-
-void Correlator::snapshot(double * buf) {
-    /* Copies current data into a *preallocated* buffer*/
-    double N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-    for(size_t ct=0; ct < data_.size(); ct++){
-        buf[ct] = data_[ct] / N;
-    }
-}
-
-void Correlator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-
-    if (N < 2) {
-        for(size_t ct=0; ct < data2_.size(); ct++){
-            buf[ct] = 0.0;
-        }
-    } else {
-        // construct complex vector of data
-        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
-        // calculate 3 components of variance
-        for(size_t ct=0; ct < data_.size()/2; ct++) {
-            buf[3*ct] = (data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / (N-1);
-            buf[3*ct+1] = (data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / (N-1);
-            buf[3*ct+2] = (data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / (N-1);
-        }
-    }
-}
-
-Channel::Channel() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
-
-Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
-    streamID = (a << 8) + (b << 4) + c;
-    if ((b == 0) && (c == 0)) {
-        type = PHYSICAL;
-    } else if (c != 0) {
-        type = RESULT;
-    } else {
-        type = DEMOD;
-    }
-};
-
-vector<vector<int>> combinations(int n, int r) {
-    /*
-     * Returns all combinations of r choices from the list of integers 0,1,...,n-1.
-     * Based upon code in the Julia standard library.
-     */
-    vector<vector<int>> c;
-    vector<int> s(r);
-    int i;
-    if (n < r) return c;
-    for (i = 0; i < r; i++)
-        s[i] = i;
-    c.push_back(s);
-    while (s[0] < n - r) {
-        for (i = r-1; i >= 0; i--) {
-            s[i] += 1;
-            if (s[i] > n - r + i)
-                continue;
-            for (int j = i+1; j < r; j++)
-                s[j] = s[j-1] + 1;
-            break;
-        }
-        c.push_back(s);
-    }
-    return c;
 }

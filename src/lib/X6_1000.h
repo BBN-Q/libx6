@@ -1,7 +1,23 @@
+// X6_1000.h
+//
+// Provides interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
+
+#ifndef X6_1000_H_
+#define X6_1000_H_
+
 #include "headings.h"
 
 #include "X6_enums.h"
 
+#include "QDSPStream.h"
+#include "Accumulator.h"
+#include "Correlator.h"
+
+// II Malibu headers
 #include <X6_1000M_Mb.h>
 #include <VitaPacketStream_Mb.h>
 #include <SoftwareTimer_Mb.h>
@@ -9,26 +25,9 @@
 #include <HardwareRegister_Mb.h>
 #include <BufferDatagrams_Mb.h> // for ShortDG
 
-#ifndef X6_1000_H_
-#define X6_1000_H_
-
 using std::vector;
 using std::string;
 using std::complex;
-
-/**
- * X6_1000 Class: Provides interface to Innovative Illustrations X6_1000 card
- *
- * The expectation is that this class will support a custom FPGA image for digitzer usage.
- *
- * This interface utilizes the II [Malibu library](www.innovative-dsp.com/products.php?product=Malibu)
- */
-
-class Accumulator;
-class Correlator;
-class Channel;
-
-enum channel_t { PHYSICAL, DEMOD, RESULT };
 
 class X6_1000
 {
@@ -112,12 +111,12 @@ public:
 	bool get_is_running();
 	bool get_has_new_data();
 
-	void transfer_waveform(Channel, double *, size_t);
-	void transfer_variance(Channel, double *, size_t);
-	void transfer_correlation(vector<Channel> &, double *, size_t);
-	void transfer_correlation_variance(vector<Channel> &, double *, size_t);
-	int get_buffer_size(vector<Channel> &);
-	int get_variance_buffer_size(vector<Channel> &);
+	void transfer_waveform(QDSPStream, double *, size_t);
+	void transfer_variance(QDSPStream, double *, size_t);
+	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
+	void transfer_correlation_variance(vector<QDSPStream> &, double *, size_t);
+	int get_buffer_size(vector<QDSPStream> &);
+	int get_variance_buffer_size(vector<QDSPStream> &);
 
 	/* Pulse generator methods */
 	void write_pulse_waveform(unsigned, vector<double>&);
@@ -149,7 +148,7 @@ private:
 
 	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 
-	map<uint16_t, Channel> activeChannels_;
+	map<uint16_t, QDSPStream> activeQDSPStreams_;
 	//vector to go from VMP ordering to SID's
 	vector<int> physChans_;
 	vector<int> virtChans_;
@@ -191,7 +190,7 @@ private:
 	void HandleAfterStreamStop(OpenWire::NotifyEvent & Event);
 
 	void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
-	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t);
+	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T);
 	void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
 		VMPDataAvailable(Event, PHYSICAL);
 	};
@@ -216,88 +215,5 @@ private:
     void LogHandler(string handlerName);
 
 };
-
-class Channel{
-public:
-	Channel();
-	Channel(unsigned, unsigned, unsigned);
-
-	unsigned channelID[3];
-	uint16_t streamID;
-	channel_t type;
-};
-
-class Accumulator{
-friend X6_1000;
-
-public:
-	/* Helper class to accumulate/average data */
-	Accumulator();
-	Accumulator(const Channel &, const size_t &, const size_t &, const size_t &);
-	template <class T>
-	void accumulate(const Innovative::AccessDatagram<T> &);
-
-	void reset();
-	void snapshot(double *);
-	void snapshot_variance(double *);
-	size_t get_buffer_size();
-	size_t get_variance_buffer_size();
-	size_t calc_record_length(const Channel &, const size_t &);
-	int fixed_to_float(const Channel &);
-
-	size_t recordsTaken;
-
-private:
-	Channel channel_;
-	size_t wfmCt_;
-	size_t numSegments_;
-	size_t numWaveforms_;
-	size_t recordLength_;
-	int fixed_to_float_;
-
-	vector<int64_t> data_;
-	vector<int64_t>::iterator idx_;
-	// second data object to store the square of the data
-	vector<int64_t> data2_;
-	vector<int64_t>::iterator idx2_;
-};
-
-class Correlator {
-public:
-	Correlator();
-	Correlator(const vector<Channel> &, const size_t &, const size_t &);
-	template <class T>
-	void accumulate(const int &, const Innovative::AccessDatagram<T> &);
-	void correlate();
-
-	void reset();
-	void snapshot(double *);
-	void snapshot_variance(double *);
-	size_t get_buffer_size();
-	size_t get_variance_buffer_size();
-
-	size_t recordsTaken;
-
-private:
-	size_t wfmCt_;
-	size_t recordLength_;
-	size_t numSegments_;
-	size_t numWaveforms_;
-	int64_t fixed_to_float_;
-
-	// buffers for raw data from the channels
-	vector<vector<int>> buffers_;
-	map<uint16_t, int> bufferSID_;
-
-	// buffer for the correlated values A*B(*C*D*...)
-	vector<double> data_;
-	vector<double>::iterator idx_;
-	// buffer for (A*B)^2
-	vector<double> data2_;
-	vector<double>::iterator idx2_;
-};
-
-vector<vector<int>> combinations(int, int);
-
 
 #endif

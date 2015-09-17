@@ -213,9 +213,9 @@ X6_STATUS stop(int deviceID) {
 X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> channels(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		channels[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
 		return x6_call(deviceID, &X6_1000::transfer_waveform, channels[0], buffer, bufferLength);
@@ -225,31 +225,31 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 }
 
 X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
-		return x6_call(deviceID, &X6_1000::transfer_variance, channels[0], buffer, bufferLength);
+		return x6_call(deviceID, &X6_1000::transfer_variance, streams[0], buffer, bufferLength);
 	} else {
-		return x6_call(deviceID, &X6_1000::transfer_correlation_variance, channels, buffer, bufferLength);
+		return x6_call(deviceID, &X6_1000::transfer_correlation_variance, streams, buffer, bufferLength);
 	}
 }
 
 X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, channels);
+	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, streams);
 }
 
 X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, channels);
+	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, streams);
 }
 
 /* Pulse generator methods */
