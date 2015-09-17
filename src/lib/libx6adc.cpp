@@ -322,11 +322,6 @@ X6_STATUS get_logic_temperature(int deviceID, int method, float* temp) {
 		return x6_getter(deviceID, &X6_1000::get_logic_temperature_by_reg, temp);
 }
 
-void silly() {
-	static X6_1000 x6;
-	x6.silly();
-}
-
 #ifdef __cplusplus
 }
 #endif
