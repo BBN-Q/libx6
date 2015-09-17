@@ -105,7 +105,7 @@ void X6_1000::close() {
 int X6_1000::read_firmware_version() {
     int version = module_.Info().FpgaLogicVersion();
     int subrevision = module_.Info().FpgaLogicSubrevision();
-    FILE_LOG(logINFO) << "Logic version: " << myhex << version << ", " << myhex << subrevision;
+    FILE_LOG(logINFO) << "Logic version: " << hexn<2> << version << ", " << hexn<2> << subrevision;
     return version;
 }
 
@@ -258,11 +258,11 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
     int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
     reg |= 1 << bit;
-    FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     QDSPStream stream = QDSPStream(a, b, c);
-    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << stream.streamID;
+    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << hexn<4> << stream.streamID;
     activeQDSPStreams_[stream.streamID] = stream;
 }
 
@@ -271,7 +271,7 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
     int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
     reg &= ~(1 << bit);
-    FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     //Find the channel
@@ -423,13 +423,13 @@ void X6_1000::acquire() {
     set_clock();
 
     // should only need to call this once, but for now we call it every time
-    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << myhex << read_wishbone_register(0x0800, 0x98);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << hexn<8> << read_wishbone_register(0x0800, 0x98);
 
     FILE_LOG(logDEBUG) << "Preconfiguring stream...";
 
     stream_.Preconfigure();
 
-    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << myhex << read_wishbone_register(0x0800, 0x98);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << hexn<8> << read_wishbone_register(0x0800, 0x98);
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();
@@ -443,15 +443,15 @@ void X6_1000::acquire() {
         switch (kv.second.type) {
             case PHYSICAL:
                 physChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC physical stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC physical stream ID: " << hexn<4> << kv.first;
                 break;
             case DEMOD:
                 virtChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << hexn<4> << kv.first;
                 break;
             case RESULT:
                 resultChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC result stream ID: " << hexn<4> << kv.first;
         }
     }
     initialize_accumulators();
@@ -497,16 +497,12 @@ void X6_1000::acquire() {
 
     trigger_.AtStreamStart();
 
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
-
     // flag must be set before calling stream start
     isRunning_ = true;
 
     //  Start Streaming
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
-
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
 }
 
 void X6_1000::wait_for_acquisition(unsigned timeOut){
@@ -707,7 +703,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   while (ct < buffer.SizeInInts()){
       VitaHeaderDatagram vh_dg(pos+ct);
       double timeStamp = vh_dg.TS_Seconds() + 5e-9*vh_dg.TS_FSeconds();
-      FILE_LOG(logDEBUG3) << "\t stream ID = " << myhex << vh_dg.StreamId() <<
+      FILE_LOG(logDEBUG3) << "\t stream ID = " << hexn<4> << vh_dg.StreamId() <<
               " with size " << vh_dg.PacketSize() <<
               "; packet count = " << std::dec << vh_dg.PacketCount() <<
               " at timestamp " << timeStamp;
@@ -753,14 +749,14 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     switch (streamType) {
         case PHYSICAL:
         case DEMOD:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(sbufferDG);
             }
             break;
         case RESULT:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
@@ -777,7 +773,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 
 bool X6_1000::check_done() {
     for (auto & kv : accumulators_) {
-        FILE_LOG(logDEBUG2) << "Channel " << myhex << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
+        FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
     for (auto & kv : accumulators_) {
             if (kv.second.recordsTaken < numRecords_) {

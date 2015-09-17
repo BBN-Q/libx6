@@ -46,14 +46,6 @@ using std::runtime_error;
 //Load all the constants
 #include "constants.h"
 
-//Helper function for hex formating with the 0x out front
-inline std::ios_base& myhex(std::ios_base& __base)
-{
-  __base.setf(std::ios_base::hex, std::ios_base::basefield);
-  __base.setf(std::ios::showbase);
-  return __base;
-}
-
 // N-wide hex output with 0x
 template <unsigned int N>
 inline std::ostream& hexn(std::ostream& out) {
