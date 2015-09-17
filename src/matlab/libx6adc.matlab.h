@@ -25,7 +25,6 @@ extern "C" {
 typedef enum X6_STATUS X6_STATUS;
 typedef enum ReferenceSource ReferenceSource;
 typedef struct ChannelTuple ChannelTuple;
-typedef enum DigitizerMode DigitizerMode;
 typedef enum TriggerSource TriggerSource;
 
 EXPORT const char* get_error_msg(X6_STATUS);
@@ -66,8 +65,6 @@ EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
-EXPORT X6_STATUS set_digitizer_mode(int, DigitizerMode);
-EXPORT X6_STATUS get_digitizer_mode(int, DigitizerMode*);
 EXPORT X6_STATUS set_trigger_source(int, TriggerSource);
 EXPORT X6_STATUS get_trigger_source(int, TriggerSource*);
 EXPORT X6_STATUS set_sampleRate(int, double);

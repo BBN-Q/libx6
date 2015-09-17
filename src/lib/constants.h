@@ -25,8 +25,6 @@ const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 //Registers we read from
 const int WB_ADDR_VERSION  = 0x10; // UPDATE ME
 const int WB_OFFSET_VERSION  = 0x01; // UPDATE ME
-const int WB_ADDR_DIGITIZER_MODE = 0x11; //update me
-const int WB_OFFSET_DIGITIZER_MODE = 0x01; //update me
 
 const int WB_QDSP_TEST                   = 0x01;
 const int WB_QDSP_RECORD_LENGTH          = 0x02;

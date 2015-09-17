@@ -123,14 +123,6 @@ X6_STATUS read_firmware_version(int deviceID, uint32_t* version) {
 	return x6_getter(deviceID, &X6_1000::read_firmware_version, version);
 }
 
-X6_STATUS set_digitizer_mode(int deviceID, DigitizerMode mode) {
-	return x6_call(deviceID, &X6_1000::set_digitizer_mode, mode);
-}
-
-X6_STATUS get_digitizer_mode(int deviceID, DigitizerMode* digitizerMode) {
-	return x6_getter(deviceID, &X6_1000::get_digitizer_mode, digitizerMode);
-}
-
 X6_STATUS set_sampleRate(int deviceID, double freq){
 	//assume for now we'll use the internal clock
 	//varadic pack must be last so pass default arguments here too

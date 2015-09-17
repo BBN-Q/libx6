@@ -1,8 +1,6 @@
 #ifndef X6_enums_H_
 #define X6_enums_H_
 
-enum DigitizerMode {DIGITIZE=0, AVERGAGE, FILTER, FILTER_AND_AVERAGE} ;
-
 enum ClockSource {
     EXTERNAL_CLOCK = 0,   /**< External Input */
     INTERNAL_CLOCK        /**< Internal Generation */

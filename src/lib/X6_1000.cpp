@@ -872,15 +872,6 @@ void X6_1000::LogHandler(string handlerName) {
     FILE_LOG(logINFO) << "Alert:" << handlerName;
 }
 
-void X6_1000::set_digitizer_mode(const DigitizerMode & mode) {
-    FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
-    write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
-}
-
-DigitizerMode X6_1000::get_digitizer_mode() const {
-    return DigitizerMode(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
-}
-
 void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
@@ -889,7 +880,6 @@ void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32
     Innovative::Register reg = Register(WB_X6, offset);
     reg.Value(data);
 }
-
 
 uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) const {
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
