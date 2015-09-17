@@ -23,41 +23,28 @@ unsigned int X6_1000::get_num_channels() {
     return module_.Input().Channels();
 }
 
-void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event,
-    void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event)) {
-
-    event.SetEvent(this, CallBackFunction );
-    event.Unsynchronize();
-}
-
 void X6_1000::open(int deviceID) {
     /* Connects to the II module with the given device ID returns MODULE_ERROR
      * if the device cannot be found
      */
 
     if (isOpen_) return;
+
     deviceID_ = deviceID;
 
-    // Timer event handlers
-    setHandler(timer_.OnElapsed, &X6_1000::HandleTimer);
-
-    // Trigger event handlers
+    //  Configure Trigger Manager Event Handlers
     trigger_.OnDisableTrigger.SetEvent(this, &X6_1000::HandleDisableTrigger);
     trigger_.OnExternalTrigger.SetEvent(this, &X6_1000::HandleExternalTrigger);
     trigger_.OnSoftwareTrigger.SetEvent(this, &X6_1000::HandleSoftwareTrigger);
-
-    // Module event handlers
-    setHandler(module_.OnBeforeStreamStart, &X6_1000::HandleBeforeStreamStart);
-    setHandler(module_.OnAfterStreamStart, &X6_1000::HandleAfterStreamStart);
-    setHandler(module_.OnAfterStreamStop, &X6_1000::HandleAfterStreamStop);
-
-    // General alerts
-    module_.Alerts().OnSoftwareAlert.SetEvent(      this, &X6_1000::HandleSoftwareAlert);
-    module_.Alerts().OnWarningTemperature.SetEvent( this, &X6_1000::HandleWarningTempAlert);
-    module_.Alerts().OnTrigger.SetEvent(            this, &X6_1000::HandleTriggerAlert);
-    // Input alerts
-    module_.Alerts().OnInputOverflow.SetEvent(      this, &X6_1000::HandleInputFifoOverrunAlert);
-    module_.Alerts().OnInputOverrange.SetEvent(     this, &X6_1000::HandleInputOverrangeAlert);
+    trigger_.DelayedTrigger(true); // trigger delayed after start
+    //
+    //  Configure Module Event Handlers
+    module_.OnBeforeStreamStart.SetEvent(this, &X6_1000::HandleBeforeStreamStart);
+    module_.OnBeforeStreamStart.Synchronize();
+    module_.OnAfterStreamStart.SetEvent(this, &X6_1000::HandleAfterStreamStart);
+    module_.OnAfterStreamStart.Synchronize();
+    module_.OnAfterStreamStop.SetEvent(this, &X6_1000::HandleAfterStreamStop);
+    module_.OnAfterStreamStop.Synchronize();
 
     // Stream Event Handlers
     stream_.DirectDataMode(false);
@@ -71,6 +58,7 @@ void X6_1000::open(int deviceID) {
     const int TxBmSize = std::max(BusmasterSize/4, 1) * 4;
     module_.IncomingBusMasterSize(RxBmSize * Meg);
     module_.OutgoingBusMasterSize(TxBmSize * Meg);
+
     module_.Target(deviceID);
 
     try {
@@ -84,13 +72,13 @@ void X6_1000::open(int deviceID) {
     }
 
     module_.Reset();
-    FILE_LOG(logINFO) << "Module Device Opened Successfully...";
+    FILE_LOG(logINFO) << "X6 module opened and reset successfully...";
 
     isOpen_ = true;
 
     log_card_info();
 
-    set_defaults();
+    // set_defaults();
 
     //  Connect Stream
     stream_.ConnectTo(&module_);
@@ -141,8 +129,8 @@ void X6_1000::set_routes() {
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
 
     // route external sync source from front panel (other option is essP16)
-    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    // module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    // module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
 }
 
 void X6_1000::set_reference(ReferenceSource ref, float frequency) {
@@ -170,7 +158,19 @@ void X6_1000::set_clock(ClockSource src , float frequency, ExtSource extSrc) {
     // Route clock
     x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
     module_.Clock().Source(x6clksrc);
-    module_.Clock().Frequency(frequency);
+    // module_.Clock().Frequency(frequency);
+    //Run the ADC and DAC at full rate for now
+    module_.Clock().Adc().Frequency(1000 * 1e6);
+    module_.Clock().Dac().Frequency(1000 * 1e6);
+    // Readback Frequency
+    double adc_freq_actual = module_.Clock().Adc().FrequencyActual();
+    double dac_freq_actual = module_.Clock().Dac().FrequencyActual();
+    double adc_freq = module_.Clock().Adc().Frequency();
+    double dac_freq = module_.Clock().Dac().Frequency();
+
+    FILE_LOG(logDEBUG) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
+    FILE_LOG(logDEBUG) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
+
 }
 
 double X6_1000::get_pll_frequency() {
@@ -368,12 +368,13 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
-    for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
-        FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
-        module_.Input().ChannelEnabled(cnt, 1);
-    }
+    // for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
+    //     FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
+    //     module_.Input().ChannelEnabled(cnt, 1);
+    // }
 
     module_.Output().ChannelEnabled(0, true);
+    module_.Output().ChannelEnabled(2, true);
 }
 
 void X6_1000::set_defaults() {
@@ -417,8 +418,18 @@ void X6_1000::acquire() {
     }
 
     set_active_channels();
+    set_routes();
+    set_reference();
+    set_clock();
+
     // should only need to call this once, but for now we call it every time
+    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << myhex << read_wishbone_register(0x0800, 0x98);
+
+    FILE_LOG(logDEBUG) << "Preconfiguring stream...";
+
     stream_.Preconfigure();
+
+    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << myhex << read_wishbone_register(0x0800, 0x98);
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();
@@ -1281,9 +1292,10 @@ void X6_1000::silly() {
         msg << " Gen 1 only";
     FILE_LOG(logDEBUG) << msg.str();
 
+    module_.Input().ChannelDisableAll();
     module_.Output().ChannelDisableAll();
     module_.Output().ChannelEnabled(0, true);
-    module_.Output().ChannelEnabled(2, true);
+    // module_.Output().ChannelEnabled(2, true);
 
     //
     // Clock Configuration
