@@ -9,8 +9,6 @@
 #ifndef X6_1000_H_
 #define X6_1000_H_
 
-#include "headings.h"
-
 #include "X6_enums.h"
 
 #include "QDSPStream.h"
@@ -24,10 +22,6 @@
 #include <Application/TriggerManager_App.h>
 #include <HardwareRegister_Mb.h>
 #include <BufferDatagrams_Mb.h> // for ShortDG
-
-using std::vector;
-using std::string;
-using std::complex;
 
 class X6_1000
 {

@@ -1,7 +1,10 @@
-/*
- * libx6.h
- *
- */
+// libx6adc.h
+//
+// Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
 
 #ifndef LIBX6ADC_H
 #define LIBX6ADC_H

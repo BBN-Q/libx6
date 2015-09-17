@@ -1,9 +1,22 @@
+// X6_1000.cpp
+//
+// Provides interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
+
+#include <algorithm>  // std::max
+#include <chrono>     // std::chrono::seconds etc.
+#include <thread>     // std::this_thread
+
 #include "X6_1000.h"
 #include "X6_errno.h"
+#include "helpers.h"
+#include "constants.h"
 
 #include <IppMemoryUtils_Mb.h>  // for Init::UsePerformanceMemoryFunctions
 #include <BufferDatagrams_Mb.h> // for ShortDG
-#include <algorithm>            // std::max
 
 using namespace Innovative;
 

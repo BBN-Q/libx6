@@ -5,6 +5,7 @@
 #include "libx6adc.h"
 #include "constants.h"
 #include "X6_1000.h"
+#include "helpers.h"
 
 using namespace std;
 
