@@ -847,40 +847,6 @@ void X6_1000::HandleTimer(OpenWire::NotifyEvent & /*Event*/) {
     trigger_.AtTimerTick();
 }
 
-void X6_1000::HandleSoftwareAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleSoftwareAlert");
-}
-
-void X6_1000::HandleWarningTempAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleWarningTempAlert");
-}
-
-void X6_1000::HandleInputFifoOverrunAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleInputFifoOverrunAlert");
-}
-
-void X6_1000::HandleInputOverrangeAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleInputOverrangeAlert");
-}
-
-void X6_1000::HandleTriggerAlert(Innovative::AlertSignalEvent & event) {
-    std::string triggerType;
-    switch (event.Argument & 0x3) {
-        case 0:  triggerType = "? "; break;
-        case 1:  triggerType = "Input "; break;
-        case 2:  triggerType = "Output "; break;
-        case 3:  triggerType = "Input and Output "; break;
-    }
-    std::stringstream msg;
-    msg << "Trigger 0x" << std::hex << event.Argument
-        << " Type: " <<  triggerType;
-    FILE_LOG(logINFO) << msg.str();
-}
-
-void X6_1000::LogHandler(string handlerName) {
-    FILE_LOG(logINFO) << "Alert:" << handlerName;
-}
-
 void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));

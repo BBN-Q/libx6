@@ -170,9 +170,6 @@ private:
 	void initialize_accumulators();
 	void initialize_correlators();
 
-	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event,
-    				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
-
 	// Malibu Event handlers
 
 	void HandleDisableTrigger(OpenWire::NotifyEvent & Event);
@@ -197,17 +194,6 @@ private:
 	};
 
 	void HandleTimer(OpenWire::NotifyEvent & Event);
-
-	// Module Alerts
-	void HandleTimestampRolloverAlert(Innovative::AlertSignalEvent & event);
-    void HandleSoftwareAlert(Innovative::AlertSignalEvent & event);
-    void HandleWarningTempAlert(Innovative::AlertSignalEvent & event);
-    void HandleInputFifoOverrunAlert(Innovative::AlertSignalEvent & event);
-    void HandleInputOverrangeAlert(Innovative::AlertSignalEvent & event);
-    void HandleTriggerAlert(Innovative::AlertSignalEvent & event);
-
-    void LogHandler(string handlerName);
-
 };
 
 #endif
