@@ -38,10 +38,8 @@ int main ()
   cout << "Firmware revision: " << hexn<8> << firmwareVersion << endl;
 
   float logicTemp;
-  get_logic_temperature(0, 0, &logicTemp);
-  cout << "current logic temperature method 1 = " << logicTemp << endl;
-  get_logic_temperature(0, 1, &logicTemp);
-  cout << "current logic temperature method 2 = " << logicTemp << endl;
+  get_logic_temperature(0, &logicTemp);
+  cout << "current logic temperature " << logicTemp << endl;
 
   uint32_t regVal;
   read_register(0, 0x0800, 64, &regVal);

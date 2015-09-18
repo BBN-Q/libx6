@@ -309,11 +309,8 @@ X6_STATUS write_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_
 	return x6_call(deviceID, &X6_1000::write_wishbone_register, wbAddr, offset, data);
 }
 
-X6_STATUS get_logic_temperature(int deviceID, int method, float* temp) {
-	if (method == 0)
-		return x6_getter(deviceID, &X6_1000::get_logic_temperature, temp);
-	else
-		return x6_getter(deviceID, &X6_1000::get_logic_temperature_by_reg, temp);
+X6_STATUS get_logic_temperature(int deviceID, float* temp) {
+	return x6_getter(deviceID, &X6_1000::get_logic_temperature, temp);
 }
 
 #ifdef __cplusplus

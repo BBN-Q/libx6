@@ -27,7 +27,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_temperature(testCase)
             %Check temperature is between 20C and 80C
-            T = testCase.x6.getLogicTemperature();
+            T = testCase.x6.get_logic_temperature();
             assertTrue(testCase, (T > 20) && (T < 80))
         end
 

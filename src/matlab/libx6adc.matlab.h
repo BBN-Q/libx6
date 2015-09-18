@@ -79,7 +79,7 @@ EXPORT X6_STATUS read_register(int, unsigned, unsigned, unsigned*);
 EXPORT X6_STATUS write_register(int, unsigned, unsigned, unsigned);
 
 // II X6-1000M Test Interface
-EXPORT X6_STATUS get_logic_temperature(int, int, float*);
+EXPORT X6_STATUS get_logic_temperature(int, float*);
 
 #ifdef __cplusplus
 }

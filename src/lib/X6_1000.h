@@ -31,7 +31,6 @@ public:
 	~X6_1000();
 
 	float get_logic_temperature();
-	float get_logic_temperature_by_reg(); // second test method to get temp using WB register
 
 	int read_firmware_version();
 

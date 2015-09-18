@@ -126,17 +126,6 @@ float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }
 
-float X6_1000::get_logic_temperature_by_reg() {
-    Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(module_);
-    const unsigned int wbTemp_offset = 0x200;
-    const unsigned int tempControl_offset = 0;
-    Innovative::WishboneBusSpace wbs = Innovative::WishboneBusSpace(logicMemory, wbTemp_offset);
-    Innovative::Register reg = Innovative::Register(wbs, tempControl_offset );
-    Innovative::RegisterBitGroup Temperature = Innovative::RegisterBitGroup(reg, 8, 8);
-
-    return static_cast<float>(Temperature.Value());
-}
-
 void X6_1000::set_routes() {
     // Route external clock source from front panel (other option is cslP16)
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
