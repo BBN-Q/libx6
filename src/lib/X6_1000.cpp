@@ -91,14 +91,14 @@ void X6_1000::open(int deviceID) {
 
     log_card_info();
 
-    // set_defaults();
-
     //  Connect Stream
     stream_.ConnectTo(&module_);
     FILE_LOG(logINFO) << "Stream Connected...";
 
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
+
+    set_defaults();
   }
 
 void X6_1000::init() {
@@ -131,8 +131,8 @@ void X6_1000::set_routes() {
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
 
     // route external sync source from front panel (other option is essP16)
-    // module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-    // module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
 }
 
 void X6_1000::set_reference(ReferenceSource ref, float frequency) {
@@ -370,22 +370,22 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
-    // for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
-    //     FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
-    //     module_.Input().ChannelEnabled(cnt, 1);
-    // }
+    for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
+        FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
+        module_.Input().ChannelEnabled(cnt, 1);
+    }
 
     module_.Output().ChannelEnabled(0, true);
     module_.Output().ChannelEnabled(2, true);
 }
 
 void X6_1000::set_defaults() {
+    set_active_channels();
     set_routes();
     set_reference();
     set_clock();
     set_trigger_source();
     set_decimation();
-    set_active_channels();
 
     // disable test mode
     module_.Input().TestModeEnabled( false, 0);
