@@ -428,36 +428,36 @@ classdef X6 < hgsetget
 
             fprintf('current logic temperature = %.1f\n', x6.get_logic_temperature());
 
-%             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
-%             %             fprintf('Setting clock reference to external\n');
-%             %             x6.reference = 'EXTERNAL_REFERENCE';
-%
-%             fprintf('Enabling streams\n');
-%             numDemodChan = 1;
-%             numMatchFilters = 2; % 4
-%             for phys = 1:2
-%                 x6.enable_stream(phys, 0, 0); % the raw stream
-%                 x6.enable_stream(phys, 1, 0); % the demod stream
-%                 for demod = 1:numMatchFilters
-%                     x6.enable_stream(phys, demod, 1);
-%                 end
-%             end
-%
-%             fprintf('Setting NCO phase increments\n');
-%             x6.set_nco_frequency(1, 1, 10e6);
-%             x6.set_nco_frequency(2, 1, 20e6);
-%
-%             fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
-%             x6.set_averager_settings(2048, 64, 1, 1);
-%
-%             % write a waveform into transmitter memory
-%             for ct = 1:2048
-%                 x6.write_register(hex2dec('2200'), 9, ct-1);
-%                 x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
-%             end
-%
-%             % write waveform length
-%             x6.write_register(hex2dec('2200'), 8, 1024);
+            fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
+            fprintf('Setting clock reference to external\n');
+            x6.reference = 'EXTERNAL_REFERENCE';
+
+            fprintf('Enabling streams\n');
+            numDemodChan = 1;
+            numMatchFilters = 2; % 4
+            for phys = 1:2
+                x6.enable_stream(phys, 0, 0); % the raw stream
+                x6.enable_stream(phys, 1, 0); % the demod stream
+                for demod = 1:numMatchFilters
+                    x6.enable_stream(phys, demod, 1);
+                end
+            end
+
+            fprintf('Setting NCO phase increments\n');
+            x6.set_nco_frequency(1, 1, 10e6);
+            x6.set_nco_frequency(2, 1, 20e6);
+
+            fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
+            x6.set_averager_settings(2048, 64, 1, 20);
+
+            % write a waveform into transmitter memory
+            for ct = 1:2048
+                x6.write_register(hex2dec('2200'), 9, ct-1);
+                x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
+            end
+
+            % write waveform length
+            x6.write_register(hex2dec('2200'), 8, 1024);
 
             %DAC trigger window
             fprintf('Acquiring\n');
@@ -465,10 +465,9 @@ classdef X6 < hgsetget
 
             pause(0.5);
             dec2hex(x6.read_register(hex2dec('800'), hex2dec('98')), 8)
-
             x6.write_register(hex2dec('2200'), 0, 1);
 
-            success = x6.wait_for_acquisition(2);
+            success = x6.wait_for_acquisition(20);
             fprintf('Wait for acquisition returned %d\n', success);
 
             fprintf('Stopping\n');

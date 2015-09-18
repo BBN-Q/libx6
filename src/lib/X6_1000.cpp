@@ -376,7 +376,7 @@ void X6_1000::set_active_channels() {
     }
 
     module_.Output().ChannelEnabled(0, true);
-    module_.Output().ChannelEnabled(2, true);
+    // module_.Output().ChannelEnabled(2, true);
 }
 
 void X6_1000::set_defaults() {
@@ -423,7 +423,8 @@ void X6_1000::acquire() {
     set_routes();
     set_reference();
     set_clock();
-
+    set_trigger_source();
+    
     // should only need to call this once, but for now we call it every time
     FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << hexn<8> << read_wishbone_register(0x0800, 0x98);
 
@@ -497,14 +498,23 @@ void X6_1000::acquire() {
     // is this necessary??
     stream_.PrefillPacketCount(prefillPacketCount_);
 
+    set_trigger_source();
     trigger_.AtStreamStart();
 
+    FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
+    
     // flag must be set before calling stream start
     isRunning_ = true;
 
     //  Start Streaming
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
+
+    FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 }
 
 void X6_1000::wait_for_acquisition(unsigned timeOut){
