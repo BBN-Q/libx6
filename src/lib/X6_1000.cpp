@@ -24,6 +24,8 @@ using namespace Innovative;
 X6_1000::X6_1000() :
     isOpen_{false}, isRunning_{false} {
 
+    timer_.Interval(1000);
+
     // Use IPP performance memory functions.
     Init::UsePerformanceMemoryFunctions();
 }
@@ -65,6 +67,9 @@ void X6_1000::open(int deviceID) {
 
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
+
+    timer_.OnElapsed.SetEvent(this, &X6_1000::HandleTimer);
+    timer_.OnElapsed.Thunk();
 
     // Insure BM size is a multiple of four MB
     const int RxBmSize = std::max(BusmasterSize/4, 1) * 4;
@@ -537,8 +542,6 @@ void X6_1000::acquire() {
     // is this necessary??
     stream_.PrefillPacketCount(prefillPacketCount_);
 
-    module_.Input().Trigger().External(true);
-    module_.Output().Trigger().External(true);
     trigger_.AtStreamStart();
 
     FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
