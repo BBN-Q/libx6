@@ -537,6 +537,8 @@ void X6_1000::acquire() {
     // is this necessary??
     stream_.PrefillPacketCount(prefillPacketCount_);
 
+    module_.Input().Trigger().External(true);
+    module_.Output().Trigger().External(true);
     trigger_.AtStreamStart();
 
     FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
