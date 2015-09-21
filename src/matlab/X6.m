@@ -426,11 +426,13 @@ classdef X6 < hgsetget
 
             x6.connect(0);
 
+            x6.init();
+
             fprintf('current logic temperature = %.1f\n', x6.get_logic_temperature());
 
             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
             fprintf('Setting clock reference to external\n');
-            x6.reference = 'EXTERNAL_REFERENCE';
+            % x6.reference = 'EXTERNAL_REFERENCE';
 
             fprintf('Enabling streams\n');
             numDemodChan = 1;

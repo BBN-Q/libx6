@@ -98,13 +98,49 @@ void X6_1000::open(int deviceID) {
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
 
-    set_defaults();
+    //Set some default clocking so get_pll_frequency and *_nco_frequency work
+    //Use internal reference and 1GS ADC/DAC
+    FILE_LOG(logDEBUG) << "Setting default clocking to internal 10MHz reference.";
+    module_.Clock().Reference(IX6ClockIo::rsInternal);
+    module_.Clock().ReferenceFrequency(10e6);
+    module_.Clock().Source(IX6ClockIo::csInternal);
+    module_.Clock().Frequency(1e9);
   }
 
 void X6_1000::init() {
-    /*
-    TODO: some standard setup stuff here.  Maybe move some of the open code here.
-    */
+    //Initialize/preconfigure the stream for the current channel configuration
+
+    //For now we activate two input channels and 1 output channel
+    module_.Output().ChannelDisableAll();
+    module_.Input().ChannelDisableAll();
+    module_.Input().ChannelEnabled(0, true);
+    module_.Input().ChannelEnabled(1, true);
+    module_.Output().ChannelEnabled(0, true);
+    // module_.Output().ChannelEnabled(2, true);
+
+    //For now hard-code in some clocking and routing
+    module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
+    module_.Clock().Reference(IX6ClockIo::rsExternal);
+    module_.Clock().ReferenceFrequency(10e6);
+
+    module_.Clock().Source(IX6ClockIo::csInternal);
+    //Run the ADC and DAC at full rate for now
+    module_.Clock().Adc().Frequency(1000 * 1e6);
+    module_.Clock().Dac().Frequency(1000 * 1e6);
+    // Readback Frequency
+    double adc_freq_actual = module_.Clock().Adc().FrequencyActual();
+    double dac_freq_actual = module_.Clock().Dac().FrequencyActual();
+    double adc_freq = module_.Clock().Adc().Frequency();
+    double dac_freq = module_.Clock().Dac().Frequency();
+
+    FILE_LOG(logDEBUG) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
+    FILE_LOG(logDEBUG) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
+
+    FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+    FILE_LOG(logDEBUG) << "Preconfiguring stream...";
+    stream_.Preconfigure();
+    FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+
 }
 
 void X6_1000::close() {
@@ -419,20 +455,23 @@ void X6_1000::acquire() {
         }
     }
 
-    set_active_channels();
-    set_routes();
-    set_reference();
-    set_clock();
-    set_trigger_source();
-    
-    // should only need to call this once, but for now we call it every time
-    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+    trigger_.DelayedTriggerPeriod(0);
+    trigger_.ExternalTrigger(true);
+    trigger_.AtConfigure();
 
-    FILE_LOG(logDEBUG) << "Preconfiguring stream...";
+    module_.Output().Trigger().FramedMode(true);
+    module_.Output().Trigger().Edge(true);
+    module_.Output().Trigger().FrameSize(1024);
 
-    stream_.Preconfigure();
+    module_.Input().Trigger().FramedMode(true);
+    module_.Input().Trigger().Edge(true);
+    module_.Input().Trigger().FrameSize(1024);
 
-    FILE_LOG(logDEBUG) << "AFE reg. 0x898: " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+    //  Route External Trigger source
+    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+
+
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();
@@ -498,13 +537,12 @@ void X6_1000::acquire() {
     // is this necessary??
     stream_.PrefillPacketCount(prefillPacketCount_);
 
-    set_trigger_source();
     trigger_.AtStreamStart();
 
     FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
     FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
     FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
-    
+
     // flag must be set before calling stream start
     isRunning_ = true;
 
