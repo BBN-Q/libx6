@@ -24,7 +24,7 @@ using namespace Innovative;
 X6_1000::X6_1000() :
     isOpen_{false},
     isRunning_{false},
-    activeInputChannels_{false, false},
+    activeInputChannels_{true, true},
     activeOutputChannels_{false, false, false, false},
     refSource_{INTERNAL_REFERENCE}
     {
@@ -372,7 +372,7 @@ void X6_1000::set_active_channels() {
 
     for (unsigned ct = 0; ct < activeOutputChannels_.size(); ct++) {
         FILE_LOG(logINFO) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
-        module_.Input().ChannelEnabled(ct, activeOutputChannels_[ct]);
+        module_.Output().ChannelEnabled(ct, activeOutputChannels_[ct]);
     }
 }
 
@@ -486,6 +486,8 @@ void X6_1000::acquire() {
     trigger_.AtStreamStart();
 
     FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
     FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
     FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 
@@ -497,6 +499,8 @@ void X6_1000::acquire() {
     stream_.Start();
 
     FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
     FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
     FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 }

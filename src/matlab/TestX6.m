@@ -119,6 +119,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
+            init(testCase.x6);
 
             %Enable the two raw streams
             enable_stream(testCase.x6, 1, 0, 0);
@@ -144,7 +145,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Check the test pattern on the raw streams
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
-
+            init(testCase.x6);
+            
             %Enable the two raw streams
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 2, 0, 0);
@@ -188,7 +190,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test the filtered demodulated streams
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
-
+            init(testCase.x6);
+            
             %Enable the raw (to feed into expected calculation) and one demod stream
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 1, 1, 0);
@@ -238,6 +241,7 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test the integrated raw stream
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
+            init(testCase.x6);
 
             %Enable the raw (to feed into expected calculation) and one kernel integrator stream
             enable_stream(testCase.x6, 1, 0, 0);
@@ -282,6 +286,7 @@ classdef TestX6 < matlab.unittest.TestCase
             %Test the integrated demod stream
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
+            init(testCase.x6);
 
             %Enable the raw (to feed into expected calculation) and one kernel integrator stream
             enable_stream(testCase.x6, 1, 1, 0);
