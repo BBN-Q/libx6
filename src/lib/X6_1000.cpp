@@ -22,7 +22,12 @@ using namespace Innovative;
 
 // constructor
 X6_1000::X6_1000() :
-    isOpen_{false}, isRunning_{false} {
+    isOpen_{false},
+    isRunning_{false},
+    activeInputChannels_{false, false},
+    activeOutputChannels_{false, false, false, false},
+    refSource_{INTERNAL_REFERENCE}
+    {
 
     timer_.Interval(1000);
 
@@ -32,10 +37,6 @@ X6_1000::X6_1000() :
 
 X6_1000::~X6_1000() {
 	if (isOpen_) close();
-}
-
-unsigned int X6_1000::get_num_channels() {
-    return module_.Input().Channels();
 }
 
 void X6_1000::open(int deviceID) {
@@ -115,20 +116,16 @@ void X6_1000::open(int deviceID) {
 void X6_1000::init() {
     //Initialize/preconfigure the stream for the current channel configuration
 
-    //For now we activate two input channels and 1 output channel
-    module_.Output().ChannelDisableAll();
-    module_.Input().ChannelDisableAll();
-    module_.Input().ChannelEnabled(0, true);
-    module_.Input().ChannelEnabled(1, true);
-    module_.Output().ChannelEnabled(0, true);
-    // module_.Output().ChannelEnabled(2, true);
+    set_active_channels();
 
     //For now hard-code in some clocking and routing
     module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
-    module_.Clock().Reference(IX6ClockIo::rsExternal);
-    module_.Clock().ReferenceFrequency(10e6);
-
     module_.Clock().Source(IX6ClockIo::csInternal);
+
+    //Switch between internal and external reference
+    module_.Clock().ReferenceFrequency(10e6); //assume 10MHz for now
+    module_.Clock().Reference((refSource_ == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal);
+
     //Run the ADC and DAC at full rate for now
     module_.Clock().Adc().Frequency(1000 * 1e6);
     module_.Clock().Dac().Frequency(1000 * 1e6);
@@ -145,7 +142,6 @@ void X6_1000::init() {
     FILE_LOG(logDEBUG) << "Preconfiguring stream...";
     stream_.Preconfigure();
     FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
-
 }
 
 void X6_1000::close() {
@@ -167,79 +163,27 @@ float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }
 
-void X6_1000::set_routes() {
-    // Route external clock source from front panel (other option is cslP16)
-    module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
-
-    // route external sync source from front panel (other option is essP16)
-    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+void X6_1000::set_reference_source(REFERENCE_SOURCE ref) {
+    refSource_ = ref;
 }
 
-void X6_1000::set_reference(ReferenceSource ref, float frequency) {
-    IX6ClockIo::IIReferenceSource x6ref; // reference source
-    if (frequency < 0) throw X6_INVALID_FREQUENCY;
-
-    x6ref = (ref == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
-    FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
-
-    module_.Clock().Reference(x6ref);
-    module_.Clock().ReferenceFrequency(frequency);
-}
-
-ReferenceSource X6_1000::get_reference() {
-    auto iiref = module_.Clock().Reference();
-    return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
-}
-
-void X6_1000::set_clock(ClockSource src , float frequency, ExtSource extSrc) {
-
-    IX6ClockIo::IIClockSource x6clksrc; // clock source
-    if (frequency < 0) throw X6_INVALID_FREQUENCY;
-
-    FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
-    // Route clock
-    x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
-    module_.Clock().Source(x6clksrc);
-    // module_.Clock().Frequency(frequency);
-    //Run the ADC and DAC at full rate for now
-    module_.Clock().Adc().Frequency(1000 * 1e6);
-    module_.Clock().Dac().Frequency(1000 * 1e6);
-    // Readback Frequency
-    double adc_freq_actual = module_.Clock().Adc().FrequencyActual();
-    double dac_freq_actual = module_.Clock().Dac().FrequencyActual();
-    double adc_freq = module_.Clock().Adc().Frequency();
-    double dac_freq = module_.Clock().Dac().Frequency();
-
-    FILE_LOG(logDEBUG) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
-    FILE_LOG(logDEBUG) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
-
+REFERENCE_SOURCE X6_1000::get_reference_source() {
+    return refSource_;
 }
 
 double X6_1000::get_pll_frequency() {
     double freq = module_.Clock().FrequencyActual();
     FILE_LOG(logINFO) << "PLL frequency for X6: " << freq;
     return freq;
-
 }
 
-void X6_1000::set_trigger_source(TriggerSource trgSrc) {
+void X6_1000::set_trigger_source(TRIGGER_SOURCE trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
-
-    FILE_LOG(logINFO) << "Trigger Source set to " << ((trgSrc == EXTERNAL_TRIGGER) ? "External" : "Internal");
-
-    trigger_.ExternalTrigger( (trgSrc == EXTERNAL_TRIGGER) ? true : false);
-    trigger_.AtConfigure();
 }
 
-TriggerSource X6_1000::get_trigger_source() const {
-    // return cached trigger source until
-    // TODO: identify method for getting source from card
-    if (triggerSource_)
-        return EXTERNAL_TRIGGER;
-    else
-        return SOFTWARE_TRIGGER;
+TRIGGER_SOURCE X6_1000::get_trigger_source() const {
+    return triggerSource_;
 }
 
 void X6_1000::set_trigger_delay(float delay) {
@@ -328,10 +272,20 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     }
 }
 
-bool X6_1000::get_channel_enable(unsigned channel) {
-    // TODO get active channel status from board
-    if (channel >= get_num_channels()) return false;
-    return true;
+void X6_1000::set_input_channel_enable(unsigned channel, bool enable) {
+    activeInputChannels_[channel] = enable;
+}
+
+bool X6_1000::get_input_channel_enable(unsigned channel) {
+    return activeInputChannels_[channel];
+}
+
+void X6_1000::set_output_channel_enable(unsigned channel, bool enable) {
+    activeOutputChannels_[channel] = enable;
+}
+
+bool X6_1000::get_output_channel_enable(unsigned channel) {
+    return activeOutputChannels_[channel];
 }
 
 void X6_1000::set_nco_frequency(int a, int b, double freq) {
@@ -411,26 +365,15 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
-    for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
-        FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
-        module_.Input().ChannelEnabled(cnt, 1);
+    for (unsigned ct = 0; ct < activeInputChannels_.size(); ct++) {
+        FILE_LOG(logINFO) << "Physical input channel " << ct << (activeInputChannels_[ct] ? " enabled" : " disabled");
+        module_.Input().ChannelEnabled(ct, activeInputChannels_[ct]);
     }
 
-    module_.Output().ChannelEnabled(0, true);
-    // module_.Output().ChannelEnabled(2, true);
-}
-
-void X6_1000::set_defaults() {
-    set_active_channels();
-    set_routes();
-    set_reference();
-    set_clock();
-    set_trigger_source();
-    set_decimation();
-
-    // disable test mode
-    module_.Input().TestModeEnabled( false, 0);
-    module_.Output().TestModeEnabled( false, 0);
+    for (unsigned ct = 0; ct < activeOutputChannels_.size(); ct++) {
+        FILE_LOG(logINFO) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
+        module_.Input().ChannelEnabled(ct, activeOutputChannels_[ct]);
+    }
 }
 
 void X6_1000::log_card_info() {
@@ -461,7 +404,7 @@ void X6_1000::acquire() {
     }
 
     trigger_.DelayedTriggerPeriod(0);
-    trigger_.ExternalTrigger(true);
+    trigger_.ExternalTrigger(triggerSource_ == EXTERNAL_TRIGGER ? true : false);
     trigger_.AtConfigure();
 
     module_.Output().Trigger().FramedMode(true);
@@ -475,8 +418,6 @@ void X6_1000::acquire() {
     //  Route External Trigger source
     module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
     module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-
-
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();

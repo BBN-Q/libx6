@@ -125,31 +125,24 @@ X6_STATUS read_firmware_version(int deviceID, uint32_t* version) {
 	return x6_getter(deviceID, &X6_1000::read_firmware_version, version);
 }
 
-X6_STATUS set_sampleRate(int deviceID, double freq){
-	//assume for now we'll use the internal clock
-	//varadic pack must be last so pass default arguments here too
-	return x6_call(deviceID, &X6_1000::set_clock, INTERNAL_CLOCK, freq, FRONT_PANEL);
-}
-
 X6_STATUS get_sampleRate(int deviceID, double* freq) {
 	return x6_getter(deviceID, &X6_1000::get_pll_frequency, freq);
 }
 
-X6_STATUS set_trigger_source(int deviceID, TriggerSource triggerSource) {
+X6_STATUS set_trigger_source(int deviceID, TRIGGER_SOURCE triggerSource) {
 	return x6_call(deviceID, &X6_1000::set_trigger_source, triggerSource);
 }
 
-X6_STATUS get_trigger_source(int deviceID, TriggerSource* triggerSource) {
+X6_STATUS get_trigger_source(int deviceID, TRIGGER_SOURCE* triggerSource) {
 	return x6_getter(deviceID, &X6_1000::get_trigger_source, triggerSource);
 }
 
-X6_STATUS set_reference(int deviceID, ReferenceSource src) {
-	//varadic pack must be last so pass default argument here too
-	return x6_call(deviceID, &X6_1000::set_reference, src, 10e6);
+X6_STATUS set_reference_source(int deviceID, REFERENCE_SOURCE src) {
+	return x6_call(deviceID, &X6_1000::set_reference_source, src);
 }
 
-X6_STATUS get_reference(int deviceID, ReferenceSource* src) {
-	return x6_getter(deviceID, &X6_1000::get_reference, src);
+X6_STATUS get_reference_source(int deviceID, REFERENCE_SOURCE* src) {
+	return x6_getter(deviceID, &X6_1000::get_reference_source, src);
 }
 
 X6_STATUS enable_stream(int deviceID, int a, int b, int c) {

@@ -106,10 +106,6 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_sampleRate');
         end
 
-        function set.samplingRate(obj, rate)
-            x6_call(obj, 'set_sampleRate', rate);
-        end
-
         function val = get.triggerSource(obj)
             val = x6_getter(obj, 'get_trigger_source');
         end

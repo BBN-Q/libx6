@@ -9,6 +9,8 @@
 #ifndef X6_1000_H_
 #define X6_1000_H_
 
+#include <array>
+
 #include "X6_enums.h"
 
 #include "QDSPStream.h"
@@ -34,33 +36,14 @@ public:
 
 	int read_firmware_version();
 
-	/** Set reference source and frequency
-	 *  \param ref EXTERNAL || INTERNAL
-	 *  \param frequency Frequency in Hz
-	 *  \returns SUCCESS || INVALID_FREQUENCY
-	 */
-	void set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
-
-	ReferenceSource get_reference();
-
-	/** Set clock source and frequency
-	 *  \param src EXTERNAL || INTERNAL
-	 *  \param frequency Frequency in Hz
-	 *  \param extSrc FRONT_PANEL || P16
-	 *  \returns SUCCESS || INVALID_FREQUENCY
-	 */
-	void set_clock(ClockSource src = INTERNAL_CLOCK,
-		                 float frequency = 1e9,
-		                 ExtSource extSrc = FRONT_PANEL);
-
-	/** Set up clock and trigger routes */
-	void set_routes();
+	void set_reference_source(REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
+	REFERENCE_SOURCE get_reference_source();
 
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	void set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
-	TriggerSource get_trigger_source() const;
+	void set_trigger_source(TRIGGER_SOURCE trgSrc = EXTERNAL_TRIGGER);
+	TRIGGER_SOURCE get_trigger_source() const;
 
 	void set_trigger_delay(float delay = 0.0);
 
@@ -78,7 +61,10 @@ public:
 	void enable_stream(unsigned, unsigned, unsigned);
 	void disable_stream(unsigned, unsigned, unsigned);
 
-	bool get_channel_enable(unsigned channel);
+	void set_input_channel_enable(unsigned, bool);
+	bool get_input_channel_enable(unsigned);
+	void set_output_channel_enable(unsigned, bool);
+	bool get_output_channel_enable(unsigned);
 
 	void set_nco_frequency(int, int, double);
 	double get_nco_frequency(int, int);
@@ -91,8 +77,6 @@ public:
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
 	 */
 	double get_pll_frequency();
-
-	unsigned int get_num_channels();
 
 	void open(int deviceID);
 	void init();
@@ -139,7 +123,7 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
+	TRIGGER_SOURCE triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 
 	map<uint16_t, QDSPStream> activeQDSPStreams_;
 	//vector to go from VMP ordering to SID's
@@ -161,8 +145,11 @@ private:
 	unsigned roundRobins_;
 	unsigned recordsTaken_;
 
+	std::array<bool, 2> activeInputChannels_;
+	std::array<bool, 4> activeOutputChannels_;
+	REFERENCE_SOURCE refSource_;
+
 	void set_active_channels();
-	void set_defaults();
 	void log_card_info();
 	bool check_done();
 

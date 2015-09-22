@@ -67,7 +67,7 @@ int main ()
 
   set_trigger_source(0, EXTERNAL_TRIGGER);
 
-  TriggerSource triggerSource;
+  TRIGGER_SOURCE triggerSource;
   get_trigger_source(0, &triggerSource);
   cout << "get trigger source returns " << ((triggerSource == SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 

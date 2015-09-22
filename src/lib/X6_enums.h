@@ -6,7 +6,7 @@ enum ClockSource {
     INTERNAL_CLOCK        /**< Internal Generation */
 };
 
-enum ReferenceSource {
+enum REFERENCE_SOURCE {
     EXTERNAL_REFERENCE = 0,   /**< External Input */
     INTERNAL_REFERENCE        /**< Internal Generation */
 };
@@ -16,7 +16,7 @@ enum ExtSource {
     P16              /**< P16 input */
 };
 
-enum TriggerSource {
+enum TRIGGER_SOURCE {
     SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
     EXTERNAL_TRIGGER         /**< External trigger */
 };

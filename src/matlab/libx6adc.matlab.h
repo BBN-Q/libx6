@@ -1,7 +1,10 @@
-/*
- * libx6.h
- *
- */
+// libx6adc.h
+//
+// Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
 
 #ifndef LIBX6ADC_H
 #define LIBX6ADC_H
@@ -23,9 +26,9 @@ extern "C" {
 
 //Add typedefs for the enums for C compatibility
 typedef enum X6_STATUS X6_STATUS;
-typedef enum ReferenceSource ReferenceSource;
+typedef enum REFERENCE_SOURCE REFERENCE_SOURCE;
 typedef struct ChannelTuple ChannelTuple;
-typedef enum TriggerSource TriggerSource;
+typedef enum TRIGGER_SOURCE TRIGGER_SOURCE;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 
@@ -35,8 +38,8 @@ EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
 EXPORT X6_STATUS read_firmware_version(int, unsigned*);
 
-EXPORT X6_STATUS set_reference(int, ReferenceSource);
-EXPORT X6_STATUS get_reference(int, ReferenceSource*);
+EXPORT X6_STATUS set_reference_source(int, REFERENCE_SOURCE);
+EXPORT X6_STATUS get_reference_source(int, REFERENCE_SOURCE*);
 
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
@@ -65,9 +68,8 @@ EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
-EXPORT X6_STATUS set_trigger_source(int, TriggerSource);
-EXPORT X6_STATUS get_trigger_source(int, TriggerSource*);
-EXPORT X6_STATUS set_sampleRate(int, double);
+EXPORT X6_STATUS set_trigger_source(int, TRIGGER_SOURCE);
+EXPORT X6_STATUS get_trigger_source(int, TRIGGER_SOURCE*);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* Pulse generator methods */
