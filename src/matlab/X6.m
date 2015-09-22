@@ -223,7 +223,7 @@ classdef X6 < hgsetget
             x6_call(obj, 'transfer_variance', channels, length(channels), wfPtr, bufSize);
 
             wf = struct('real', [], 'imag', [], 'prod', []);
-            if channels(1).b == 0 % physical channel
+            if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf.real = wfPtr.Value;
                 wf.imag = zeros(length(wfPtr.Value), 1);
                 wf.prod = zeros(length(wfPtr.Value), 1);
