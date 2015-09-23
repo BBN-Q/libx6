@@ -137,6 +137,7 @@ private:
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
 	bool isRunning_;
+	bool needToInit_; 
 	int prefillPacketCount_;
 	unsigned recordLength_ = 0;
 	unsigned numRecords_ = 1;

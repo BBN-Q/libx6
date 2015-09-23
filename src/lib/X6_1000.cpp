@@ -24,6 +24,7 @@ using namespace Innovative;
 X6_1000::X6_1000() :
     isOpen_{false},
     isRunning_{false},
+    needToInit_{true},
     activeInputChannels_{true, true},
     activeOutputChannels_{false, false, false, false},
     refSource_{INTERNAL_REFERENCE}
@@ -142,6 +143,8 @@ void X6_1000::init() {
     FILE_LOG(logDEBUG) << "Preconfiguring stream...";
     stream_.Preconfigure();
     FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+
+    needToInit_ = false;
 }
 
 void X6_1000::close() {
@@ -164,7 +167,10 @@ float X6_1000::get_logic_temperature() {
 }
 
 void X6_1000::set_reference_source(REFERENCE_SOURCE ref) {
-    refSource_ = ref;
+    if ( refSource_ != REFERENCE_SOURCE) {
+        refSource_ = ref;
+        needToInit_ = true;
+    }
 }
 
 REFERENCE_SOURCE X6_1000::get_reference_source() {
@@ -273,7 +279,10 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
 }
 
 void X6_1000::set_input_channel_enable(unsigned channel, bool enable) {
-    activeInputChannels_[channel] = enable;
+    if (activeInputChannels_[channel] != enable) {
+        activeInputChannels_[channel] = enable;
+        needToInit_ = true;
+    }
 }
 
 bool X6_1000::get_input_channel_enable(unsigned channel) {
@@ -281,7 +290,10 @@ bool X6_1000::get_input_channel_enable(unsigned channel) {
 }
 
 void X6_1000::set_output_channel_enable(unsigned channel, bool enable) {
-    activeOutputChannels_[channel] = enable;
+    if (activeOutputChannels_[channel] != enable) {
+        activeOutputChannels_[channel] = enable;
+        needToInit_ = true;
+    }
 }
 
 bool X6_1000::get_output_channel_enable(unsigned channel) {
@@ -392,6 +404,11 @@ void X6_1000::log_card_info() {
 }
 
 void X6_1000::acquire() {
+    //Configure the streams (calibrate DACs) if necessary
+    if (needToInit_) {
+        init();
+    }
+
     //Some error checking frame sizes
     //Because of some FIFO's and clocking  we can't have more than 4096 samples
     QDSPStream rawStream1 = QDSPStream(1, 0, 0);
