@@ -94,6 +94,8 @@ void X6_1000::open(int deviceID) {
     module_.Reset();
     FILE_LOG(logINFO) << "X6 module opened and reset successfully...";
 
+    needToInit_ = true;
+
     isOpen_ = true;
 
     log_card_info();
