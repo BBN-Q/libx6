@@ -169,7 +169,7 @@ float X6_1000::get_logic_temperature() {
 }
 
 void X6_1000::set_reference_source(REFERENCE_SOURCE ref) {
-    if ( refSource_ != REFERENCE_SOURCE) {
+    if ( refSource_ != ref ) {
         refSource_ = ref;
         needToInit_ = true;
     }
