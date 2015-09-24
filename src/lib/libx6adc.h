@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <complex.h>
 #undef I //used in Malibu code
+#include <stdbool.h>
 
 #include "X6_errno.h"
 #include "X6_enums.h"
@@ -44,6 +45,11 @@ EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
 
 EXPORT X6_STATUS set_reference_source(int, REFERENCE_SOURCE);
 EXPORT X6_STATUS get_reference_source(int, REFERENCE_SOURCE*);
+
+EXPORT X6_STATUS set_input_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
+EXPORT X6_STATUS set_output_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_output_channel_enable(int, unsigned, bool*);
 
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);

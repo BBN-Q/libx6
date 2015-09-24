@@ -145,6 +145,22 @@ X6_STATUS get_reference_source(int deviceID, REFERENCE_SOURCE* src) {
 	return x6_getter(deviceID, &X6_1000::get_reference_source, src);
 }
 
+X6_STATUS set_input_channel_enable(int deviceID, unsigned chan, bool enable){
+	return x6_call(deviceID, &X6_1000::set_input_channel_enable, chan, enable);
+}
+
+X6_STATUS get_input_channel_enable(int deviceID, unsigned chan, bool* enable){
+	return x6_getter(deviceID, &X6_1000::get_input_channel_enable, enable, chan);
+}
+
+X6_STATUS set_output_channel_enable(int deviceID, unsigned chan, bool enable){
+	return x6_call(deviceID, &X6_1000::set_output_channel_enable, chan, enable);
+}
+
+X6_STATUS get_output_channel_enable(int deviceID, unsigned chan, bool* enable){
+	return x6_getter(deviceID, &X6_1000::get_output_channel_enable, enable, chan);
+}
+
 X6_STATUS enable_stream(int deviceID, int a, int b, int c) {
 	return x6_call(deviceID, &X6_1000::enable_stream, a, b, c);
 }
