@@ -22,6 +22,9 @@ endif()
 #and our own library headers
 INCLUDE_DIRECTORIES("./lib/")
 
+#Catch unit-testing
+INCLUDE_DIRECTORIES("../deps/Catch/include")
+
 #Malibu shared libraries
 if(WIN32)
 	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
@@ -70,7 +73,36 @@ ADD_EXECUTABLE(unit
 	./lib/Correlator.cpp
 )
 
+ADD_EXECUTABLE(run_tests
+	../test/run_tests.cpp
+	../test/test_Sanity.cpp
+	../test/test_Accumulator.cpp
+	./lib/QDSPStream.cpp
+	./lib/Accumulator.cpp
+	./lib/Correlator.cpp
+)
+
 TARGET_LINK_LIBRARIES(unit
+	-Wl,--start-group
+	Os_Mb
+	Application_Mb
+	Analysis_Mb
+	Framework_Con
+	Framework_Mb
+	Utility_Mb
+	Hardware_Mb
+	Pci_Mb
+	Ficl_Mb
+	Poco_Foundation_Mb
+	Poco_Net_Mb
+	-Wl,--end-group
+
+	wdapi # WinDriver library in Innovative\lib\gcc
+
+	pthread
+)
+
+TARGET_LINK_LIBRARIES(run_tests
 	-Wl,--start-group
 	Os_Mb
 	Application_Mb
