@@ -76,7 +76,7 @@ ADD_EXECUTABLE(run_tests
 	./lib/Correlator.cpp
 )
 
-TARGET_LINK_LIBRARIES(run_tests
+SET ( II_LIBS
 	-Wl,--start-group
 	Os_Mb
 	Application_Mb
@@ -90,32 +90,19 @@ TARGET_LINK_LIBRARIES(run_tests
 	Poco_Foundation_Mb
 	Poco_Net_Mb
 	-Wl,--end-group
+)
+
+TARGET_LINK_LIBRARIES(run_tests
+	${II_LIBS}
 
 	wdapi
 	pthread
 )
 
 TARGET_LINK_LIBRARIES(x6adc
-	-Wl,--start-group
-	Os_Mb
-	Application_Mb
-	Analysis_Mb
-	Framework_Con
-	Framework_Mb
-	Utility_Mb
-	Hardware_Mb
-	Pci_Mb
-	Ficl_Mb
-	Poco_Foundation_Mb
-	Poco_Net_Mb
-	-Wl,--end-group
-
+	${II_LIBS}
 	wdapi # WinDriver library in Innovative\lib\gcc
 	${IPP_LIB} # in Intel IPP directory listed above
-
-	# The following libraries are not currently required
-	#Framework_Win
-	#Vpx_Mb  ##
 )
 
 if(WIN32)
