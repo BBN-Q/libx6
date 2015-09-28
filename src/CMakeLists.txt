@@ -66,13 +66,6 @@ ADD_LIBRARY( x6adc SHARED ${DLL_SRC} )
 ADD_EXECUTABLE(x6test ../test/main.cpp )
 TARGET_LINK_LIBRARIES(x6test x6adc)
 
-ADD_EXECUTABLE(unit
-	../test/unit.cpp
-	./lib/QDSPStream.cpp
-	./lib/Accumulator.cpp
-	./lib/Correlator.cpp
-)
-
 ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp
 	../test/test_Sanity.cpp
@@ -81,26 +74,6 @@ ADD_EXECUTABLE(run_tests
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
-)
-
-TARGET_LINK_LIBRARIES(unit
-	-Wl,--start-group
-	Os_Mb
-	Application_Mb
-	Analysis_Mb
-	Framework_Con
-	Framework_Mb
-	Utility_Mb
-	Hardware_Mb
-	Pci_Mb
-	Ficl_Mb
-	Poco_Foundation_Mb
-	Poco_Net_Mb
-	-Wl,--end-group
-
-	wdapi # WinDriver library in Innovative\lib\gcc
-
-	pthread
 )
 
 TARGET_LINK_LIBRARIES(run_tests
@@ -118,8 +91,7 @@ TARGET_LINK_LIBRARIES(run_tests
 	Poco_Net_Mb
 	-Wl,--end-group
 
-	wdapi # WinDriver library in Innovative\lib\gcc
-
+	wdapi
 	pthread
 )
 
