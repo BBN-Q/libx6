@@ -5,7 +5,6 @@ using std::vector;
 
 #include "QDSPStream.h"
 #include "Accumulator.h"
-#include "Correlator.h"
 
 #include <Buffer_Mb.h>
 #include <BufferDatagrams_Mb.h>

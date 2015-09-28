@@ -77,6 +77,7 @@ ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp
 	../test/test_Sanity.cpp
 	../test/test_Accumulator.cpp
+	../test/test_Correlator.cpp
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
