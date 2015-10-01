@@ -32,6 +32,7 @@ typedef enum X6_STATUS X6_STATUS;
 typedef enum REFERENCE_SOURCE REFERENCE_SOURCE;
 typedef struct ChannelTuple ChannelTuple;
 typedef enum TRIGGER_SOURCE TRIGGER_SOURCE;
+typedef enum MODULE_FIRMWARE_VERSION MODULE_FIRMWARE_VERSION;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 

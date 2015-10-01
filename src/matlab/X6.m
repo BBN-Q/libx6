@@ -264,8 +264,8 @@ classdef X6 < hgsetget
         function [val, vStr] = get_firmware_version(obj, module)
             val = x6_getter(obj, 'get_firmware_version', module);
             %Create version string
-            major_ver = bitshift(ver, -8);
-            minor_ver = bitand(ver, hex2dec('FF'));
+            major_ver = bitshift(val, -8);
+            minor_ver = bitand(val, hex2dec('FF'));
             vStr = sprintf('v%d.%d', major_ver, minor_ver);
         end
 
