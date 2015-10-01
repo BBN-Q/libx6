@@ -33,8 +33,8 @@ int main ()
 
   cout << "connect_x6(0) returned " << rc << endl;
 
-  uint32_t firmwareVersion;
-  read_firmware_version(0, &firmwareVersion);
+  uint16_t firmwareVersion;
+  get_firmware_version(0, BBN_X6, &firmwareVersion);
   cout << "Firmware revision: " << hexn<8> << firmwareVersion << endl;
 
   float logicTemp;

@@ -21,6 +21,12 @@ enum TRIGGER_SOURCE {
     EXTERNAL_TRIGGER         /**< External trigger */
 };
 
+enum MODULE_FIRMWARE_VERSION {
+    BBN_X6,
+    BBN_QDSP,
+    BBN_PG
+};
+
 struct ChannelTuple {
     int a;
     int b;

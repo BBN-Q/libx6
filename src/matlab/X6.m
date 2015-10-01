@@ -261,6 +261,14 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_logic_temperature');
         end
 
+        function [val, vStr] = get_firmware_version(obj, module)
+            val = x6_getter(obj, 'get_firmware_version', module);
+            %Create version string
+            major_ver = bitshift(ver, -8);
+            minor_ver = bitand(ver, hex2dec('FF'));
+            vStr = sprintf('v%d.%d', major_ver, minor_ver);
+        end
+
         function set_nco_frequency(obj, a, b, freq)
             x6_call(obj, 'set_nco_frequency', a, b, freq);
         end

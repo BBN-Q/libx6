@@ -71,6 +71,7 @@ ADD_EXECUTABLE(run_tests
 	../test/test_Sanity.cpp
 	../test/test_Accumulator.cpp
 	../test/test_Correlator.cpp
+	../test/test_libx6.cpp
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
@@ -94,9 +95,10 @@ SET ( II_LIBS
 
 TARGET_LINK_LIBRARIES(run_tests
 	${II_LIBS}
-
 	wdapi
 	pthread
+
+	x6adc
 )
 
 TARGET_LINK_LIBRARIES(x6adc

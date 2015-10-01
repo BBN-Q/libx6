@@ -34,7 +34,7 @@ public:
 
 	float get_logic_temperature();
 
-	int read_firmware_version();
+	uint16_t get_firmware_version(MODULE_FIRMWARE_VERSION);
 
 	void set_reference_source(REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
 	REFERENCE_SOURCE get_reference_source();
@@ -137,7 +137,7 @@ private:
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
 	bool isRunning_;
-	bool needToInit_; 
+	bool needToInit_;
 	int prefillPacketCount_;
 	unsigned recordLength_ = 0;
 	unsigned numRecords_ = 1;
