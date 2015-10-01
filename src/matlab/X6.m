@@ -396,7 +396,7 @@ classdef X6 < hgsetget
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
                 myPath = fileparts(mfilename('fullpath'));
-                loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
+                [~,~] = loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
         end
 
