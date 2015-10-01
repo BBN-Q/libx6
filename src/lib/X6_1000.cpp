@@ -179,6 +179,7 @@ uint16_t X6_1000::get_firmware_version(MODULE_FIRMWARE_VERSION mod) {
         case BBN_PG:
         case BBN_QDSP:
             ver = static_cast<uint16_t>(regVal & 0x0000ffff);
+            break;
         default:
             ver = 0;
     }
