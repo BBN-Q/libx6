@@ -33,20 +33,12 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 	SECTION("firmware version checks") {
 		uint16_t ver;
 
-		SECTION("BBN firmware is greater than 0.8"){
-			get_firmware_version(0, BBN_X6, &ver);
-			REQUIRE( ver >= 0x0008);
-		}
-
-		SECTION("BBN QDSP firmware is greater than 1.0"){
-			get_firmware_version(0, BBN_QDSP, &ver);
-			REQUIRE( ver >= 0x0100);
-		}
-
-		SECTION("BBN PG firmware is greater than 0.1"){
-			get_firmware_version(0, BBN_PG, &ver);
-			REQUIRE( ver >= 0x0001);
-		}
+		get_firmware_version(0, BBN_X6, &ver);
+		REQUIRE( ver >= 0x0008);
+		get_firmware_version(0, BBN_QDSP, &ver);
+		REQUIRE( ver >= 0x0100);
+		get_firmware_version(0, BBN_PG, &ver);
+		REQUIRE( ver >= 0x0001);
 	}
 
 	disconnect_x6(0);
