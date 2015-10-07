@@ -157,7 +157,7 @@ void X6_1000::close() {
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 }
 
-uint16_t X6_1000::get_firmware_version(MODULE_FIRMWARE_VERSION mod) {
+uint16_t X6_1000::get_firmware_version(X6_MODULE_FIRMWARE_VERSION mod) {
     uint32_t regVal;
     switch (mod) {
         case BBN_PG:
@@ -190,14 +190,14 @@ float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }
 
-void X6_1000::set_reference_source(REFERENCE_SOURCE ref) {
+void X6_1000::set_reference_source(X6_REFERENCE_SOURCE ref) {
     if ( refSource_ != ref ) {
         refSource_ = ref;
         needToInit_ = true;
     }
 }
 
-REFERENCE_SOURCE X6_1000::get_reference_source() {
+X6_REFERENCE_SOURCE X6_1000::get_reference_source() {
     return refSource_;
 }
 
@@ -207,12 +207,12 @@ double X6_1000::get_pll_frequency() {
     return freq;
 }
 
-void X6_1000::set_trigger_source(TRIGGER_SOURCE trgSrc) {
+void X6_1000::set_trigger_source(X6_TRIGGER_SOURCE trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
 }
 
-TRIGGER_SOURCE X6_1000::get_trigger_source() const {
+X6_TRIGGER_SOURCE X6_1000::get_trigger_source() const {
     return triggerSource_;
 }
 
