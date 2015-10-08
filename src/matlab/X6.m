@@ -146,6 +146,7 @@ classdef X6 < hgsetget
 
         function acquire(obj)
             x6_call(obj, 'acquire');
+            pause(0.75);   %makes sure that the digitizers are ready before starting acquisition
             %Since we cannot easily pass callbacks to the C library to fire
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
