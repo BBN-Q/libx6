@@ -307,6 +307,23 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'read_pulse_waveform', pg, addr-1);
         end
 
+        function val = get_input_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_input_channel_enable', chan-1);
+        end
+
+        function set_input_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_input_channel_enable', chan-1, enable);
+        end
+
+        function val = get_output_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_output_channel_enable', chan-1);
+        end
+
+        function set_output_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_output_channel_enable', chan-1, enable);
+        end
+
+
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
             fields = fieldnames(settings);
