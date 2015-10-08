@@ -825,13 +825,18 @@ bool X6_1000::check_done() {
 }
 
 void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
-    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
+
+    //Check and write the length
     //Waveform length should be multiple of four and less than 16384
+    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
     if (((wf.size() % 4) != 0) || (wf.size() > 16384)){
         FILE_LOG(logERROR) << "invalid waveform length " << wf.size();
         throw X6_INVALID_WF_LEN;
     }
+    write_wishbone_register(BASE_PG[pg], WB_PG_WF_LENGTH, wf.size()/2);
 
+
+    //Check and write the data
     auto range_check = [](double val){
         const double maxVal = 1 - 1.0/(1 << 15);
         const double minVal = -1.0;
@@ -850,8 +855,8 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
         uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
         FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
                     wf[ct+1] << "(" << hexn<4> << fixedValB << ") as " << hexn<8> << stackedVal;
-        write_wishbone_register(BASE_PG[pg], 9, ct/2); // address
-        write_wishbone_register(BASE_PG[pg], 10, stackedVal); //data
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_ADDR, ct/2); // address
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_DATA, stackedVal); //data
     }
 }
 
