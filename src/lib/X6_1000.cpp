@@ -9,6 +9,7 @@
 #include <algorithm>  // std::max
 #include <chrono>     // std::chrono::seconds etc.
 #include <thread>     // std::this_thread
+#include <bitset>
 
 #include "X6_1000.h"
 #include "X6_errno.h"
@@ -531,6 +532,13 @@ void X6_1000::acquire() {
     FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
     FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
     FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
+
+    // Enable the pulse generators
+    for (size_t pg = 0; pg < 2; pg++) {
+        std::bitset<32> reg(read_wishbone_register(BASE_PG[pg], WB_PG_CONTROL));
+        reg.set(0);
+        write_wishbone_register(BASE_PG[pg], WB_PG_CONTROL, reg.to_ulong());
+    }
 
     // flag must be set before calling stream start
     isRunning_ = true;

@@ -38,6 +38,7 @@ const int WB_QDSP_PHASE_INC               = 0x34;
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};
 
+const int WB_PG_CONTROL   = 0x00;
 const int WB_PG_MODULE_FIRMWARE_VERSION = 0x02;
 const int WB_PG_WF_LENGTH = 0x08;
 const int WB_PG_WF_ADDR   = 0x09;
