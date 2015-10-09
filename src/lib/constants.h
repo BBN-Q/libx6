@@ -23,26 +23,26 @@ const int LSB_MASK = 0xFF;
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
 //Registers we read from
-const int WB_ADDR_VERSION  = 0x10; // UPDATE ME
-const int WB_OFFSET_VERSION  = 0x01; // UPDATE ME
-const int WB_ADDR_DIGITIZER_MODE = 0x11; //update me
-const int WB_OFFSET_DIGITIZER_MODE = 0x01; //update me
+const int WB_QDSP_TEST                    = 0x01;
+const int WB_QDSP_RECORD_LENGTH           = 0x02;
+const int WB_QDSP_STREAM_ENABLE           = 0x03;
+const int WB_QDSP_MODULE_FIRMWARE_VERSION = 0x04;
+const int WB_QDSP_RAW_KERNEL_LENGTH       = 0x10;
+const int WB_QDSP_DEMOD_KERNEL_LENGTH     = 0x14;
+const int WB_QDSP_RAW_KERNEL_ADDR_DATA    = 0x20;
+const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA  = 0x28;
+const int WB_QDSP_THRESHOLD               = 0x30;
+const int WB_QDSP_PHASE_INC               = 0x34;
 
-const int WB_QDSP_TEST                   = 0x01;
-const int WB_QDSP_RECORD_LENGTH          = 0x02;
-const int WB_QDSP_STREAM_ENABLE          = 0x03;
-const int WB_QDSP_RAW_KERNEL_LENGTH      = 0x10;
-const int WB_QDSP_DEMOD_KERNEL_LENGTH    = 0x14;
-const int WB_QDSP_RAW_KERNEL_ADDR_DATA   = 0x20;
-const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA = 0x28;
-const int WB_QDSP_THRESHOLD              = 0x30;
-const int WB_QDSP_PHASE_INC              = 0x34;
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};
 
-//Expected version
-const int FIRMWARE_VERSION =  0x1;
+const int WB_PG_CONTROL   = 0x00;
+const int WB_PG_MODULE_FIRMWARE_VERSION = 0x02;
+const int WB_PG_WF_LENGTH = 0x08;
+const int WB_PG_WF_ADDR   = 0x09;
+const int WB_PG_WF_DATA   = 0x0A;
 
 //Readout filter parameters
 const int VIRTUAL_CH_RATIO = 4; // Number of virtual channels per physical channel

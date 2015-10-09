@@ -1,15 +1,37 @@
+// X6_1000.cpp
+//
+// Provides interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
+
+#include <algorithm>  // std::max
+#include <chrono>     // std::chrono::seconds etc.
+#include <thread>     // std::this_thread
+#include <bitset>
+
 #include "X6_1000.h"
 #include "X6_errno.h"
+#include "helpers.h"
+#include "constants.h"
 
 #include <IppMemoryUtils_Mb.h>  // for Init::UsePerformanceMemoryFunctions
 #include <BufferDatagrams_Mb.h> // for ShortDG
-#include <algorithm>            // std::max
 
 using namespace Innovative;
 
 // constructor
 X6_1000::X6_1000() :
-    isOpen_{false}, isRunning_{false} {
+    isOpen_{false},
+    isRunning_{false},
+    needToInit_{true},
+    activeInputChannels_{true, true},
+    activeOutputChannels_{false, false, false, false},
+    refSource_{INTERNAL_REFERENCE}
+    {
+
+    timer_.Interval(1000);
 
     // Use IPP performance memory functions.
     Init::UsePerformanceMemoryFunctions();
@@ -19,45 +41,28 @@ X6_1000::~X6_1000() {
 	if (isOpen_) close();
 }
 
-unsigned int X6_1000::get_num_channels() {
-    return module_.Input().Channels();
-}
-
-void X6_1000::setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> & event,
-    void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event)) {
-
-    event.SetEvent(this, CallBackFunction );
-    event.Unsynchronize();
-}
-
 void X6_1000::open(int deviceID) {
     /* Connects to the II module with the given device ID returns MODULE_ERROR
      * if the device cannot be found
      */
 
     if (isOpen_) return;
+
     deviceID_ = deviceID;
 
-    // Timer event handlers
-    setHandler(timer_.OnElapsed, &X6_1000::HandleTimer);
-
-    // Trigger event handlers
+    //  Configure Trigger Manager Event Handlers
     trigger_.OnDisableTrigger.SetEvent(this, &X6_1000::HandleDisableTrigger);
     trigger_.OnExternalTrigger.SetEvent(this, &X6_1000::HandleExternalTrigger);
     trigger_.OnSoftwareTrigger.SetEvent(this, &X6_1000::HandleSoftwareTrigger);
+    trigger_.DelayedTrigger(true); // trigger delayed after start
 
-    // Module event handlers
-    setHandler(module_.OnBeforeStreamStart, &X6_1000::HandleBeforeStreamStart);
-    setHandler(module_.OnAfterStreamStart, &X6_1000::HandleAfterStreamStart);
-    setHandler(module_.OnAfterStreamStop, &X6_1000::HandleAfterStreamStop);
-
-    // General alerts
-    module_.Alerts().OnSoftwareAlert.SetEvent(      this, &X6_1000::HandleSoftwareAlert);
-    module_.Alerts().OnWarningTemperature.SetEvent( this, &X6_1000::HandleWarningTempAlert);
-    module_.Alerts().OnTrigger.SetEvent(            this, &X6_1000::HandleTriggerAlert);
-    // Input alerts
-    module_.Alerts().OnInputOverflow.SetEvent(      this, &X6_1000::HandleInputFifoOverrunAlert);
-    module_.Alerts().OnInputOverrange.SetEvent(     this, &X6_1000::HandleInputOverrangeAlert);
+    //  Configure Module Event Handlers
+    module_.OnBeforeStreamStart.SetEvent(this, &X6_1000::HandleBeforeStreamStart);
+    module_.OnBeforeStreamStart.Synchronize();
+    module_.OnAfterStreamStart.SetEvent(this, &X6_1000::HandleAfterStreamStart);
+    module_.OnAfterStreamStart.Synchronize();
+    module_.OnAfterStreamStop.SetEvent(this, &X6_1000::HandleAfterStreamStop);
+    module_.OnAfterStreamStop.Synchronize();
 
     // Stream Event Handlers
     stream_.DirectDataMode(false);
@@ -66,11 +71,15 @@ void X6_1000::open(int deviceID) {
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
 
+    timer_.OnElapsed.SetEvent(this, &X6_1000::HandleTimer);
+    timer_.OnElapsed.Thunk();
+
     // Insure BM size is a multiple of four MB
     const int RxBmSize = std::max(BusmasterSize/4, 1) * 4;
     const int TxBmSize = std::max(BusmasterSize/4, 1) * 4;
     module_.IncomingBusMasterSize(RxBmSize * Meg);
     module_.OutgoingBusMasterSize(TxBmSize * Meg);
+
     module_.Target(deviceID);
 
     try {
@@ -84,13 +93,13 @@ void X6_1000::open(int deviceID) {
     }
 
     module_.Reset();
-    FILE_LOG(logINFO) << "Module Device Opened Successfully...";
+    FILE_LOG(logINFO) << "X6 module opened and reset successfully...";
+
+    needToInit_ = true;
 
     isOpen_ = true;
 
     log_card_info();
-
-    set_defaults();
 
     //  Connect Stream
     stream_.ConnectTo(&module_);
@@ -98,12 +107,47 @@ void X6_1000::open(int deviceID) {
 
     prefillPacketCount_ = stream_.PrefillPacketCount();
     FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
+
+    //Set some default clocking so get_pll_frequency and *_nco_frequency work
+    //Use internal reference and 1GS ADC/DAC
+    FILE_LOG(logDEBUG) << "Setting default clocking to internal 10MHz reference.";
+    module_.Clock().Reference(IX6ClockIo::rsInternal);
+    module_.Clock().ReferenceFrequency(10e6);
+    module_.Clock().Source(IX6ClockIo::csInternal);
+    module_.Clock().Frequency(1e9);
   }
 
 void X6_1000::init() {
-    /*
-    TODO: some standard setup stuff here.  Maybe move some of the open code here.
-    */
+    //Initialize/preconfigure the stream for the current channel configuration
+
+    set_active_channels();
+
+    //For now hard-code in some clocking and routing
+    module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
+    module_.Clock().Source(IX6ClockIo::csInternal);
+
+    //Switch between internal and external reference
+    module_.Clock().ReferenceFrequency(10e6); //assume 10MHz for now
+    module_.Clock().Reference((refSource_ == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal);
+
+    //Run the ADC and DAC at full rate for now
+    module_.Clock().Adc().Frequency(1000 * 1e6);
+    module_.Clock().Dac().Frequency(1000 * 1e6);
+    // Readback Frequency
+    double adc_freq_actual = module_.Clock().Adc().FrequencyActual();
+    double dac_freq_actual = module_.Clock().Dac().FrequencyActual();
+    double adc_freq = module_.Clock().Adc().Frequency();
+    double dac_freq = module_.Clock().Dac().Frequency();
+
+    FILE_LOG(logDEBUG) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
+    FILE_LOG(logDEBUG) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
+
+    FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+    FILE_LOG(logDEBUG) << "Preconfiguring stream...";
+    stream_.Preconfigure();
+    FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+
+    needToInit_ = false;
 }
 
 void X6_1000::close() {
@@ -114,89 +158,63 @@ void X6_1000::close() {
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 }
 
-int X6_1000::read_firmware_version() {
-    int version = module_.Info().FpgaLogicVersion();
-    int subrevision = module_.Info().FpgaLogicSubrevision();
-    FILE_LOG(logINFO) << "Logic version: " << myhex << version << ", " << myhex << subrevision;
-    return version;
+uint16_t X6_1000::get_firmware_version(X6_MODULE_FIRMWARE_VERSION mod) {
+    uint32_t regVal;
+    switch (mod) {
+        case BBN_PG:
+            //Read from PG regs
+            regVal = read_wishbone_register(BASE_PG[0], WB_PG_MODULE_FIRMWARE_VERSION);
+            break;
+
+        case BBN_X6:
+        case BBN_QDSP:
+            regVal = read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_VERSION);
+            break;
+    }
+
+    uint16_t ver;
+    switch (mod) {
+        case BBN_X6:
+            ver =  static_cast<uint16_t>(regVal >> 16);
+            break;
+        case BBN_PG:
+        case BBN_QDSP:
+            ver = static_cast<uint16_t>(regVal & 0x0000ffff);
+            break;
+        default:
+            ver = 0;
+    }
+    return ver;
 }
 
 float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }
 
-float X6_1000::get_logic_temperature_by_reg() {
-    Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(module_);
-    const unsigned int wbTemp_offset = 0x200;
-    const unsigned int tempControl_offset = 0;
-    Innovative::WishboneBusSpace wbs = Innovative::WishboneBusSpace(logicMemory, wbTemp_offset);
-    Innovative::Register reg = Innovative::Register(wbs, tempControl_offset );
-    Innovative::RegisterBitGroup Temperature = Innovative::RegisterBitGroup(reg, 8, 8);
-
-    return static_cast<float>(Temperature.Value());
+void X6_1000::set_reference_source(X6_REFERENCE_SOURCE ref) {
+    if ( refSource_ != ref ) {
+        refSource_ = ref;
+        needToInit_ = true;
+    }
 }
 
-void X6_1000::set_routes() {
-    // Route external clock source from front panel (other option is cslP16)
-    module_.Clock().ExternalClkSelect(IX6ClockIo::cslFrontPanel);
-
-    // route external sync source from front panel (other option is essP16)
-    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
-}
-
-void X6_1000::set_reference(ReferenceSource ref, float frequency) {
-    IX6ClockIo::IIReferenceSource x6ref; // reference source
-    if (frequency < 0) throw X6_INVALID_FREQUENCY;
-
-    x6ref = (ref == EXTERNAL_REFERENCE) ? IX6ClockIo::rsExternal : IX6ClockIo::rsInternal;
-    FILE_LOG(logDEBUG1) << "Setting reference frequency to " << frequency;
-
-    module_.Clock().Reference(x6ref);
-    module_.Clock().ReferenceFrequency(frequency);
-}
-
-ReferenceSource X6_1000::get_reference() {
-    auto iiref = module_.Clock().Reference();
-    return (iiref == IX6ClockIo::rsExternal) ? EXTERNAL_REFERENCE : INTERNAL_REFERENCE;
-}
-
-void X6_1000::set_clock(ClockSource src , float frequency, ExtSource extSrc) {
-
-    IX6ClockIo::IIClockSource x6clksrc; // clock source
-    if (frequency < 0) throw X6_INVALID_FREQUENCY;
-
-    FILE_LOG(logDEBUG1) << "Setting clock frequency to " << frequency;
-    // Route clock
-    x6clksrc = (src ==  EXTERNAL_CLOCK) ? IX6ClockIo::csExternal : IX6ClockIo::csInternal;
-    module_.Clock().Source(x6clksrc);
-    module_.Clock().Frequency(frequency);
+X6_REFERENCE_SOURCE X6_1000::get_reference_source() {
+    return refSource_;
 }
 
 double X6_1000::get_pll_frequency() {
     double freq = module_.Clock().FrequencyActual();
     FILE_LOG(logINFO) << "PLL frequency for X6: " << freq;
     return freq;
-
 }
 
-void X6_1000::set_trigger_source(TriggerSource trgSrc) {
+void X6_1000::set_trigger_source(X6_TRIGGER_SOURCE trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
-
-    FILE_LOG(logINFO) << "Trigger Source set to " << ((trgSrc == EXTERNAL_TRIGGER) ? "External" : "Internal");
-
-    trigger_.ExternalTrigger( (trgSrc == EXTERNAL_TRIGGER) ? true : false);
-    trigger_.AtConfigure();
 }
 
-TriggerSource X6_1000::get_trigger_source() const {
-    // return cached trigger source until
-    // TODO: identify method for getting source from card
-    if (triggerSource_)
-        return EXTERNAL_TRIGGER;
-    else
-        return SOFTWARE_TRIGGER;
+X6_TRIGGER_SOURCE X6_1000::get_trigger_source() const {
+    return triggerSource_;
 }
 
 void X6_1000::set_trigger_delay(float delay) {
@@ -258,12 +276,12 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
     int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
     int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
     reg |= 1 << bit;
-    FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
-    Channel chan = Channel(a, b, c);
-    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << myhex << chan.streamID;
-    activeChannels_[chan.streamID] = chan;
+    QDSPStream stream = QDSPStream(a, b, c);
+    FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << hexn<4> << stream.streamID;
+    activeQDSPStreams_[stream.streamID] = stream;
 }
 
 void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
@@ -271,13 +289,13 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
     int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
     reg &= ~(1 << bit);
-    FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << myhex << reg;
+    FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
     write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
     //Find the channel
-    uint16_t streamID = Channel(a,b,c).streamID;
-    if (activeChannels_.count(streamID)) {
-        activeChannels_.erase(streamID);
+    uint16_t streamID = QDSPStream(a,b,c).streamID;
+    if (activeQDSPStreams_.count(streamID)) {
+        activeQDSPStreams_.erase(streamID);
         FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
     }
     else {
@@ -285,10 +303,26 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
     }
 }
 
-bool X6_1000::get_channel_enable(unsigned channel) {
-    // TODO get active channel status from board
-    if (channel >= get_num_channels()) return false;
-    return true;
+void X6_1000::set_input_channel_enable(unsigned channel, bool enable) {
+    if (activeInputChannels_[channel] != enable) {
+        activeInputChannels_[channel] = enable;
+        needToInit_ = true;
+    }
+}
+
+bool X6_1000::get_input_channel_enable(unsigned channel) {
+    return activeInputChannels_[channel];
+}
+
+void X6_1000::set_output_channel_enable(unsigned channel, bool enable) {
+    if (activeOutputChannels_[channel] != enable) {
+        activeOutputChannels_[channel] = enable;
+        needToInit_ = true;
+    }
+}
+
+bool X6_1000::get_output_channel_enable(unsigned channel) {
+    return activeOutputChannels_[channel];
 }
 
 void X6_1000::set_nco_frequency(int a, int b, double freq) {
@@ -368,25 +402,15 @@ void X6_1000::set_active_channels() {
     module_.Output().ChannelDisableAll();
     module_.Input().ChannelDisableAll();
 
-    for (unsigned cnt = 0; cnt < get_num_channels(); cnt++) {
-        FILE_LOG(logINFO) << "Physical channel " << cnt << " enabled";
-        module_.Input().ChannelEnabled(cnt, 1);
+    for (unsigned ct = 0; ct < activeInputChannels_.size(); ct++) {
+        FILE_LOG(logINFO) << "Physical input channel " << ct << (activeInputChannels_[ct] ? " enabled" : " disabled");
+        module_.Input().ChannelEnabled(ct, activeInputChannels_[ct]);
     }
 
-    module_.Output().ChannelEnabled(0, true);
-}
-
-void X6_1000::set_defaults() {
-    set_routes();
-    set_reference();
-    set_clock();
-    set_trigger_source();
-    set_decimation();
-    set_active_channels();
-
-    // disable test mode
-    module_.Input().TestModeEnabled( false, 0);
-    module_.Output().TestModeEnabled( false, 0);
+    for (unsigned ct = 0; ct < activeOutputChannels_.size(); ct++) {
+        FILE_LOG(logINFO) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
+        module_.Output().ChannelEnabled(ct, activeOutputChannels_[ct]);
+    }
 }
 
 void X6_1000::log_card_info() {
@@ -405,20 +429,37 @@ void X6_1000::log_card_info() {
 }
 
 void X6_1000::acquire() {
+    //Configure the streams (calibrate DACs) if necessary
+    if (needToInit_) {
+        init();
+    }
+
     //Some error checking frame sizes
     //Because of some FIFO's and clocking  we can't have more than 4096 samples
-    Channel rawStream1 = Channel(1, 0, 0);
-    Channel rawStream2 = Channel(2, 0, 0);
+    QDSPStream rawStream1 = QDSPStream(1, 0, 0);
+    QDSPStream rawStream2 = QDSPStream(2, 0, 0);
 
-    if (activeChannels_.count(rawStream1.streamID) || activeChannels_.count(rawStream2.streamID)){
+    if (activeQDSPStreams_.count(rawStream1.streamID) || activeQDSPStreams_.count(rawStream2.streamID)){
         if (recordLength_ > MAX_LENGTH_RAW_STREAM) {
             throw X6_RAW_STREAM_TOO_LONG;
         }
     }
 
-    set_active_channels();
-    // should only need to call this once, but for now we call it every time
-    stream_.Preconfigure();
+    trigger_.DelayedTriggerPeriod(0);
+    trigger_.ExternalTrigger(triggerSource_ == EXTERNAL_TRIGGER ? true : false);
+    trigger_.AtConfigure();
+
+    module_.Output().Trigger().FramedMode(true);
+    module_.Output().Trigger().Edge(true);
+    module_.Output().Trigger().FrameSize(1024);
+
+    module_.Input().Trigger().FramedMode(true);
+    module_.Input().Trigger().Edge(true);
+    module_.Input().Trigger().FrameSize(1024);
+
+    //  Route External Trigger source
+    module_.Output().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
+    module_.Input().Trigger().ExternalSyncSource( IX6IoDevice::essFrontPanel );
 
     // Initialize VeloMergeParsers with stream IDs
     VMPs_.clear();
@@ -428,19 +469,19 @@ void X6_1000::acquire() {
     virtChans_.clear();
     resultChans_.clear();
 
-    for (auto kv : activeChannels_){
+    for (auto kv : activeQDSPStreams_){
         switch (kv.second.type) {
             case PHYSICAL:
                 physChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC physical stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC physical stream ID: " << hexn<4> << kv.first;
                 break;
             case DEMOD:
                 virtChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << hexn<4> << kv.first;
                 break;
             case RESULT:
                 resultChans_.push_back(kv.first);
-                FILE_LOG(logDEBUG) << "ADC result stream ID: " << myhex << kv.first;
+                FILE_LOG(logDEBUG) << "ADC result stream ID: " << hexn<4> << kv.first;
         }
     }
     initialize_accumulators();
@@ -486,7 +527,18 @@ void X6_1000::acquire() {
 
     trigger_.AtStreamStart();
 
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
+
+    // Enable the pulse generators
+    for (size_t pg = 0; pg < 2; pg++) {
+        std::bitset<32> reg(read_wishbone_register(BASE_PG[pg], WB_PG_CONTROL));
+        reg.set(0);
+        write_wishbone_register(BASE_PG[pg], WB_PG_CONTROL, reg.to_ulong());
+    }
 
     // flag must be set before calling stream start
     isRunning_ = true;
@@ -495,7 +547,11 @@ void X6_1000::acquire() {
     FILE_LOG(logINFO) << "Arming acquisition";
     stream_.Start();
 
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+    FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 }
 
 void X6_1000::wait_for_acquisition(unsigned timeOut){
@@ -533,10 +589,10 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length) {
-    //Check we have the channel
-    uint16_t sid = channel.streamID;
-    if(activeChannels_.find(sid) == activeChannels_.end()){
+void X6_1000::transfer_waveform(QDSPStream stream, double * buffer, size_t length) {
+    //Check we have the stream
+    uint16_t sid = stream.streamID;
+    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -547,10 +603,10 @@ void X6_1000::transfer_waveform(Channel channel, double * buffer, size_t length)
     accumulators_[sid].snapshot(buffer);
 }
 
-void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length) {
-    //Check we have the channel
-    uint16_t sid = channel.streamID;
-    if(activeChannels_.find(sid) == activeChannels_.end()){
+void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t length) {
+    //Check we have the stream
+    uint16_t sid = stream.streamID;
+    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -561,11 +617,11 @@ void X6_1000::transfer_variance(Channel channel, double * buffer, size_t length)
     accumulators_[sid].snapshot_variance(buffer);
 }
 
-void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation(vector<QDSPStream> & streams, double *buffer, size_t length) {
     // check that we have the correlator
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
@@ -577,11 +633,11 @@ void X6_1000::transfer_correlation(vector<Channel> & channels, double *buffer, s
     correlators_[sids].snapshot(buffer);
 }
 
-void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *buffer, size_t length) {
+void X6_1000::transfer_correlation_variance(vector<QDSPStream> & streams, double *buffer, size_t length) {
     // check that we have the correlator
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
     if (correlators_.find(sids) == correlators_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
         throw X6_INVALID_CHANNEL;
@@ -593,22 +649,22 @@ void X6_1000::transfer_correlation_variance(vector<Channel> & channels, double *
     correlators_[sids].snapshot_variance(buffer);
 }
 
-int X6_1000::get_buffer_size(vector<Channel> & channels) {
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
-    if (channels.size() == 1) {
+int X6_1000::get_buffer_size(vector<QDSPStream> & streams) {
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
+    if (streams.size() == 1) {
         return accumulators_[sids[0]].get_buffer_size();
     } else {
         return correlators_[sids].get_buffer_size();
     }
 }
 
-int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
-    vector<uint16_t> sids(channels.size());
-    for (size_t i = 0; i < channels.size(); i++)
-        sids[i] = channels[i].streamID;
-    if (channels.size() == 1) {
+int X6_1000::get_variance_buffer_size(vector<QDSPStream> & streams) {
+    vector<uint16_t> sids(streams.size());
+    for (size_t i = 0; i < streams.size(); i++)
+        sids[i] = streams[i].streamID;
+    if (streams.size() == 1) {
         return accumulators_[sids[0]].get_variance_buffer_size();
     } else {
         return correlators_[sids].get_variance_buffer_size();
@@ -616,26 +672,26 @@ int X6_1000::get_variance_buffer_size(vector<Channel> & channels) {
 }
 
 void X6_1000::initialize_accumulators() {
-    for (auto kv : activeChannels_) {
+    for (auto kv : activeQDSPStreams_) {
         accumulators_[kv.first] = Accumulator(kv.second, recordLength_, numSegments_, waveforms_);
     }
 }
 
 void X6_1000::initialize_correlators() {
     vector<uint16_t> streamIDs = {};
-    vector<Channel> channels = {};
+    vector<QDSPStream> streams = {};
 
     // create all n-body correlators
     for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
         streamIDs.resize(n);
-        channels.resize(n);
+        streams.resize(n);
 
         for (auto c : combinations(resultChans_.size(), n)) {
             for (int i = 0; i < n; i++) {
                 streamIDs[i] = resultChans_[c[i]];
-                channels[i] = activeChannels_[streamIDs[i]];
+                streams[i] = activeQDSPStreams_[streamIDs[i]];
             }
-            correlators_[streamIDs] = Correlator(channels, numSegments_, waveforms_);
+            correlators_[streamIDs] = Correlator(streams, numSegments_, waveforms_);
         }
     }
 }
@@ -655,13 +711,8 @@ void  X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
     //This is called when ``AtStreamStart`` is called on the trigger manager module
     // and external trigger has been set with ExternalTrigger(true) being called on the trigger module
     FILE_LOG(logDEBUG) << "X6_1000::HandleExternalTrigger";
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
     module_.Input().Trigger().External(true);
     module_.Output().Trigger().External(true);
-    module_.Output().Trigger().FramedMode(true);
-    module_.Output().Trigger().Edge(true);
-    module_.Output().Trigger().FrameSize(1024);
-    FILE_LOG(logDEBUG) << "AFE reg. 129: " << myhex << read_wishbone_register(0x0800, 129);
 }
 
 
@@ -701,7 +752,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   while (ct < buffer.SizeInInts()){
       VitaHeaderDatagram vh_dg(pos+ct);
       double timeStamp = vh_dg.TS_Seconds() + 5e-9*vh_dg.TS_FSeconds();
-      FILE_LOG(logDEBUG3) << "\t stream ID = " << myhex << vh_dg.StreamId() <<
+      FILE_LOG(logDEBUG3) << "\t stream ID = " << hexn<4> << vh_dg.StreamId() <<
               " with size " << vh_dg.PacketSize() <<
               "; packet count = " << std::dec << vh_dg.PacketCount() <<
               " at timestamp " << timeStamp;
@@ -720,7 +771,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   }
 }
 
-void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t chanType) {
+void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T streamType) {
     if (!isRunning_) {
         return;
     }
@@ -729,7 +780,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     PacketBufferHeader header(Event.Data);
     uint16_t sid;
 
-    switch (chanType) {
+    switch (streamType) {
         case PHYSICAL:
             sid = physChans_[header.PeripheralId()];
             break;
@@ -744,17 +795,17 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     // interpret the data as 16 or 32-bit integers depending on the channel type
     ShortDG sbufferDG(Event.Data);
     IntegerDG ibufferDG(Event.Data);
-    switch (chanType) {
+    switch (streamType) {
         case PHYSICAL:
         case DEMOD:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(sbufferDG);
             }
             break;
         case RESULT:
-            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << myhex << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
+            FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
             // accumulate the data in the appropriate channel
             if (accumulators_[sid].recordsTaken < numRecords_) {
                 accumulators_[sid].accumulate(ibufferDG);
@@ -771,7 +822,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 
 bool X6_1000::check_done() {
     for (auto & kv : accumulators_) {
-        FILE_LOG(logDEBUG2) << "Channel " << myhex << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
+        FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
     for (auto & kv : accumulators_) {
             if (kv.second.recordsTaken < numRecords_) {
@@ -782,13 +833,18 @@ bool X6_1000::check_done() {
 }
 
 void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
-    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
+
+    //Check and write the length
     //Waveform length should be multiple of four and less than 16384
+    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
     if (((wf.size() % 4) != 0) || (wf.size() > 16384)){
         FILE_LOG(logERROR) << "invalid waveform length " << wf.size();
         throw X6_INVALID_WF_LEN;
     }
+    write_wishbone_register(BASE_PG[pg], WB_PG_WF_LENGTH, wf.size()/2);
 
+
+    //Check and write the data
     auto range_check = [](double val){
         const double maxVal = 1 - 1.0/(1 << 15);
         const double minVal = -1.0;
@@ -807,8 +863,8 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
         uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
         FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
                     wf[ct+1] << "(" << hexn<4> << fixedValB << ") as " << hexn<8> << stackedVal;
-        write_wishbone_register(BASE_PG[pg], 9, ct/2); // address
-        write_wishbone_register(BASE_PG[pg], 10, stackedVal); //data
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_ADDR, ct/2); // address
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_DATA, stackedVal); //data
     }
 }
 
@@ -832,49 +888,6 @@ void X6_1000::HandleTimer(OpenWire::NotifyEvent & /*Event*/) {
     trigger_.AtTimerTick();
 }
 
-void X6_1000::HandleSoftwareAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleSoftwareAlert");
-}
-
-void X6_1000::HandleWarningTempAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleWarningTempAlert");
-}
-
-void X6_1000::HandleInputFifoOverrunAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleInputFifoOverrunAlert");
-}
-
-void X6_1000::HandleInputOverrangeAlert(Innovative::AlertSignalEvent & event) {
-    LogHandler("HandleInputOverrangeAlert");
-}
-
-void X6_1000::HandleTriggerAlert(Innovative::AlertSignalEvent & event) {
-    std::string triggerType;
-    switch (event.Argument & 0x3) {
-        case 0:  triggerType = "? "; break;
-        case 1:  triggerType = "Input "; break;
-        case 2:  triggerType = "Output "; break;
-        case 3:  triggerType = "Input and Output "; break;
-    }
-    std::stringstream msg;
-    msg << "Trigger 0x" << std::hex << event.Argument
-        << " Type: " <<  triggerType;
-    FILE_LOG(logINFO) << msg.str();
-}
-
-void X6_1000::LogHandler(string handlerName) {
-    FILE_LOG(logINFO) << "Alert:" << handlerName;
-}
-
-void X6_1000::set_digitizer_mode(const DigitizerMode & mode) {
-    FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
-    write_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE, mode);
-}
-
-DigitizerMode X6_1000::get_digitizer_mode() const {
-    return DigitizerMode(read_wishbone_register(WB_ADDR_DIGITIZER_MODE, WB_OFFSET_DIGITIZER_MODE));
-}
-
 void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32_t data) {
      // Initialize WishboneAddress Space for APS specific firmware
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
@@ -883,7 +896,6 @@ void X6_1000::write_wishbone_register(uint32_t baseAddr, uint32_t offset, uint32
     Innovative::Register reg = Register(WB_X6, offset);
     reg.Value(data);
 }
-
 
 uint32_t X6_1000::read_wishbone_register(uint32_t baseAddr, uint32_t offset) const {
     Innovative::AddressingSpace & logicMemory = Innovative::LogicMemorySpace(const_cast<X6_1000M&>(module_));
@@ -899,309 +911,4 @@ void X6_1000::write_dsp_register(unsigned instance, uint32_t offset, uint32_t da
 
 uint32_t X6_1000::read_dsp_register(unsigned instance, uint32_t offset) const {
     return read_wishbone_register(BASE_DSP[instance], offset);
-}
-
-Accumulator::Accumulator() :
-    recordsTaken{0}, wfmCt_{0}, numSegments_{0}, numWaveforms_{0}, recordLength_{0} {};
-
-Accumulator::Accumulator(const Channel & chan, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) :
-                         recordsTaken{0}, channel_{chan}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
-    recordLength_ = calc_record_length(chan, recordLength);
-    data_.assign(recordLength_*numSegments, 0);
-    idx_ = data_.begin();
-    if (chan.type == PHYSICAL) {
-        data2_.assign(recordLength_*numSegments_, 0);
-    } else {
-        // complex data, so 3-component correlations (real*real, imag*imag, real*imag)
-        data2_.assign(recordLength_*numSegments*3/2, 0);
-    }
-    idx2_ = data2_.begin();
-    fixed_to_float_ = fixed_to_float(chan);
-};
-
-void Accumulator::reset() {
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    std::fill(data2_.begin(), data2_.end(), 0);
-    idx2_ = data_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
-}
-
-size_t Accumulator::calc_record_length(const Channel & chan, const size_t & recordLength) {
-    switch (chan.type) {
-        case PHYSICAL:
-            return recordLength / RAW_DECIMATION_FACTOR;
-            break;
-        case DEMOD:
-            return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
-            break;
-        case RESULT:
-            return 2;
-            break;
-        default:
-            return 0;
-    }
-}
-
-int Accumulator::fixed_to_float(const Channel & chan) {
-    switch (chan.type) {
-        case PHYSICAL:
-            return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
-            break;
-        case DEMOD:
-            return 1 << 14;
-            break;
-        case RESULT:
-            if (chan.channelID[1]) {
-                return 1 << 19;
-            }
-            else {
-                return 1 << 15;
-            }
-            break;
-        default:
-            return 0;
-    }
-}
-
-size_t Accumulator::get_buffer_size() {
-    return data_.size();
-}
-
-size_t Accumulator::get_variance_buffer_size() {
-    return data2_.size();
-}
-
-void Accumulator::snapshot(double * buf) {
-    /* Copies current data into a *preallocated* buffer*/
-    double scale = max(static_cast<int>(recordsTaken), 1) / numSegments_ * fixed_to_float_;
-    for(size_t ct=0; ct < data_.size(); ct++){
-        buf[ct] = static_cast<double>(data_[ct]) / scale;
-    }
-}
-
-void Accumulator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-    double scale = (N-1) * fixed_to_float_ * fixed_to_float_;
-
-    if (N < 2) {
-        for(size_t ct=0; ct < data2_.size(); ct++){
-            buf[ct] = 0.0;
-        }
-    } else if (channel_.type == PHYSICAL) {
-        for (size_t ct = 0; ct < data2_.size(); ct++) {
-            buf[ct] = static_cast<double>(data2_[ct] - data_[ct]*data_[ct]/N) / scale;
-        }
-    } else {
-        // construct complex vector of data
-        std::complex<int64_t>* cvec = reinterpret_cast<std::complex<int64_t> *>(data_.data());
-        // calculate 3 components of variance
-        for(size_t ct=0; ct < data_.size()/2; ct++) {
-            buf[3*ct] = static_cast<double>(data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / scale;
-            buf[3*ct+1] = static_cast<double>(data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / scale;
-            buf[3*ct+2] = static_cast<double>(data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / scale;
-        }
-    }
-}
-
-template <class T>
-void Accumulator::accumulate(const AccessDatagram<T> & buffer) {
-    //TODO: worry about performance, cache-friendly etc.
-    FILE_LOG(logDEBUG4) << "Accumulating data...";
-    FILE_LOG(logDEBUG4) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
-    FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
-    FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
-
-    // The assumption is that this will be called with a full record size
-    // Accumulate the buffer into data_
-    std::transform(idx_, idx_+recordLength_, buffer.begin(), idx_, std::plus<int64_t>());
-    // record the square of the buffer as well
-    if (channel_.type == PHYSICAL) {
-        // data is real, just square and sum it.
-        std::transform(idx2_, idx2_+recordLength_, buffer.begin(), idx2_, [](int64_t a, int64_t b) {
-            return a + b*b;
-        });
-    } else {
-        // data is complex: real/imaginary are interleaved every other point
-        // form a complex vector from the input buffer
-        vector<std::complex<int64_t>> cvec(recordLength_/2);
-        for (int i = 0; i < recordLength_/2; i++) {
-            cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
-        }
-        // calculate 3-component correlations into a triple of successive points
-        for (int i = 0; i < cvec.size(); i++) {
-            idx2_[3*i] += cvec[i].real() * cvec[i].real();
-            idx2_[3*i+1] += cvec[i].imag() * cvec[i].imag();
-            idx2_[3*i+2] += cvec[i].real() * cvec[i].imag();
-        }
-    }
-    recordsTaken++;
-
-    //If we've filled up the number of waveforms move onto the next segment, otherwise jump back to the beginning of the record
-    if (++wfmCt_ == numWaveforms_) {
-        wfmCt_ = 0;
-        std::advance(idx_, recordLength_);
-        if (channel_.type == PHYSICAL)
-            std::advance(idx2_, recordLength_);
-        else
-            std::advance(idx2_, recordLength_ * 3/2);
-    }
-
-    //Final check if we're at the end
-    if (idx_ == data_.end()) {
-        idx_ = data_.begin();
-        idx2_ = data2_.begin();
-    }
-}
-
-Correlator::Correlator() :
-    recordsTaken{0}, wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {};
-
-Correlator::Correlator(const vector<Channel> & channels, const size_t & numSegments, const size_t & numWaveforms) :
-                        recordsTaken{0}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
-    recordLength_ = 2; // assume a RESULT channel
-    buffers_.resize(channels.size());
-    data_.assign(recordLength_*numSegments, 0);
-    idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments*3/2, 0);
-    idx2_ = data2_.begin();
-    // set up mapping of SIDs to an index into buffers_
-    fixed_to_float_ = 1;
-    for (size_t i = 0; i < channels.size(); i++) {
-        bufferSID_[channels[i].streamID] = i;
-        fixed_to_float_ *= 1 << 14; // assumes a RESULT channel, grows with the number of terms in the correlation
-    }
-};
-
-void Correlator::reset() {
-    for (size_t i = 0; i < buffers_.size(); i++)
-        buffers_[i].clear();
-    data_.assign(recordLength_*numSegments_, 0);
-    idx_ = data_.begin();
-    data2_.assign(recordLength_*numSegments_*3/2, 0);
-    idx2_ = data2_.begin();
-    wfmCt_ = 0;
-    recordsTaken = 0;
-}
-
-template <class T>
-void Correlator::accumulate(const int & sid, const AccessDatagram<T> & buffer) {
-    // copy the data
-    for (size_t i = 0; i < buffer.size(); i++)
-        buffers_[bufferSID_[sid]].push_back(buffer[i]);
-    correlate();
-}
-
-void Correlator::correlate() {
-    vector<size_t> bufsizes(buffers_.size());
-    std::transform(buffers_.begin(), buffers_.end(), bufsizes.begin(), [](vector<int> b) {
-        return b.size();
-    });
-    size_t minsize = *std::min_element(bufsizes.begin(), bufsizes.end());
-    if (minsize == 0)
-        return;
-
-    // correlate
-    // data is real/imag interleaved, so process a pair of points at a time from each channel
-    for (size_t i = 0; i < minsize; i += 2) {
-        std::complex<double> c = 1;
-        for (size_t j = 0; j < buffers_.size(); j++) {
-            c *= std::complex<double>(buffers_[j][i], buffers_[j][i+1]);
-        }
-        c /= fixed_to_float_;
-        idx_[0] += c.real();
-        idx_[1] += c.imag();
-        idx2_[0] += c.real()*c.real();
-        idx2_[1] += c.imag()*c.imag();
-        idx2_[2] += c.real()*c.imag();
-
-        if (++wfmCt_ == numWaveforms_) {
-            wfmCt_ = 0;
-            std::advance(idx_, 2);
-            std::advance(idx2_, 3);
-            if (idx_ == data_.end()) {
-                idx_ = data_.begin();
-                idx2_ = data2_.begin();
-            }
-        }
-    }
-    for (size_t j = 0; j < buffers_.size(); j++)
-        buffers_[j].erase(buffers_[j].begin(), buffers_[j].begin()+minsize);
-
-    recordsTaken += minsize/2;
-}
-
-size_t Correlator::get_buffer_size() {
-    return data_.size();
-}
-
-size_t Correlator::get_variance_buffer_size() {
-    return data2_.size();
-}
-
-void Correlator::snapshot(double * buf) {
-    /* Copies current data into a *preallocated* buffer*/
-    double N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-    for(size_t ct=0; ct < data_.size(); ct++){
-        buf[ct] = data_[ct] / N;
-    }
-}
-
-void Correlator::snapshot_variance(double * buf) {
-    int64_t N = max(static_cast<int>(recordsTaken / numSegments_), 1);
-
-    if (N < 2) {
-        for(size_t ct=0; ct < data2_.size(); ct++){
-            buf[ct] = 0.0;
-        }
-    } else {
-        // construct complex vector of data
-        std::complex<double>* cvec = reinterpret_cast<std::complex<double> *>(data_.data());
-        // calculate 3 components of variance
-        for(size_t ct=0; ct < data_.size()/2; ct++) {
-            buf[3*ct] = (data2_[3*ct] - cvec[ct].real()*cvec[ct].real()/N) / (N-1);
-            buf[3*ct+1] = (data2_[3*ct+1] - cvec[ct].imag()*cvec[ct].imag()/N) / (N-1);
-            buf[3*ct+2] = (data2_[3*ct+2] - cvec[ct].real()*cvec[ct].imag()/N) / (N-1);
-        }
-    }
-}
-
-Channel::Channel() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
-
-Channel::Channel(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
-    streamID = (a << 8) + (b << 4) + c;
-    if ((b == 0) && (c == 0)) {
-        type = PHYSICAL;
-    } else if (c != 0) {
-        type = RESULT;
-    } else {
-        type = DEMOD;
-    }
-};
-
-vector<vector<int>> combinations(int n, int r) {
-    /*
-     * Returns all combinations of r choices from the list of integers 0,1,...,n-1.
-     * Based upon code in the Julia standard library.
-     */
-    vector<vector<int>> c;
-    vector<int> s(r);
-    int i;
-    if (n < r) return c;
-    for (i = 0; i < r; i++)
-        s[i] = i;
-    c.push_back(s);
-    while (s[0] < n - r) {
-        for (i = r-1; i >= 0; i--) {
-            s[i] += 1;
-            if (s[i] > n - r + i)
-                continue;
-            for (int j = i+1; j < r; j++)
-                s[j] = s[j-1] + 1;
-            break;
-        }
-        c.push_back(s);
-    }
-    return c;
 }

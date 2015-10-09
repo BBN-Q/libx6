@@ -5,6 +5,7 @@
 #include "libx6adc.h"
 #include "constants.h"
 #include "X6_1000.h"
+#include "helpers.h"
 
 using namespace std;
 
@@ -32,15 +33,13 @@ int main ()
 
   cout << "connect_x6(0) returned " << rc << endl;
 
-  uint32_t firmwareVersion;
-  read_firmware_version(0, &firmwareVersion);
+  uint16_t firmwareVersion;
+  get_firmware_version(0, BBN_X6, &firmwareVersion);
   cout << "Firmware revision: " << hexn<8> << firmwareVersion << endl;
 
   float logicTemp;
-  get_logic_temperature(0, 0, &logicTemp);
-  cout << "current logic temperature method 1 = " << logicTemp << endl;
-  get_logic_temperature(0, 1, &logicTemp);
-  cout << "current logic temperature method 2 = " << logicTemp << endl;
+  get_logic_temperature(0, &logicTemp);
+  cout << "current logic temperature " << logicTemp << endl;
 
   uint32_t regVal;
   read_register(0, 0x0800, 64, &regVal);
@@ -68,7 +67,7 @@ int main ()
 
   set_trigger_source(0, EXTERNAL_TRIGGER);
 
-  TriggerSource triggerSource;
+  X6_TRIGGER_SOURCE triggerSource;
   get_trigger_source(0, &triggerSource);
   cout << "get trigger source returns " << ((triggerSource == SOFTWARE_TRIGGER) ? "SOFTWARE_TRIGGER" : "EXTERNAL_TRIGGER") << endl;
 

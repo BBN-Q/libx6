@@ -106,10 +106,6 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_sampleRate');
         end
 
-        function set.samplingRate(obj, rate)
-            x6_call(obj, 'set_sampleRate', rate);
-        end
-
         function val = get.triggerSource(obj)
             val = x6_getter(obj, 'get_trigger_source');
         end
@@ -150,6 +146,7 @@ classdef X6 < hgsetget
 
         function acquire(obj)
             x6_call(obj, 'acquire');
+            pause(0.75);   %makes sure that the digitizers are ready before starting acquisition
             %Since we cannot easily pass callbacks to the C library to fire
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
@@ -248,22 +245,29 @@ classdef X6 < hgsetget
         end
 
         function write_spi(obj, chip, addr, data)
-           %read flag is low so just address
-           val = bitshift(addr, 16) + data;
-           obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+            %read flag is low so just address
+            val = bitshift(addr, 16) + data;
+            obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
         end
 
         function val = read_spi(obj, chip, addr)
-           %read flag is high
-           val = bitshift(1, 28) + bitshift(addr, 16);
-           obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
-           val = int32(obj.read_register(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
-           assert(bitget(val, 32) == 1, 'Oops! Read valid flag was not set!');
+            %read flag is high
+            val = bitshift(1, 28) + bitshift(addr, 16);
+            obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
+            val = int32(obj.read_register(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
+            assert(bitget(val, 32) == 1, 'Oops! Read valid flag was not set!');
         end
 
-        function val = getLogicTemperature(obj)
-            % get temprature using method one based on Malibu Objects
-            val = x6_getter(obj, 'get_logic_temperature', 0);
+        function val = get_logic_temperature(obj)
+            val = x6_getter(obj, 'get_logic_temperature');
+        end
+
+        function [val, vStr] = get_firmware_version(obj, module)
+            val = x6_getter(obj, 'get_firmware_version', module);
+            %Create version string
+            major_ver = bitshift(val, -8);
+            minor_ver = bitand(val, hex2dec('FF'));
+            vStr = sprintf('v%d.%d', major_ver, minor_ver);
         end
 
         function set_nco_frequency(obj, a, b, freq)
@@ -302,6 +306,23 @@ classdef X6 < hgsetget
         function val = read_pulse_waveform(obj, pg, addr)
             val = x6_getter(obj, 'read_pulse_waveform', pg, addr-1);
         end
+
+        function val = get_input_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_input_channel_enable', chan-1);
+        end
+
+        function set_input_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_input_channel_enable', chan-1, enable);
+        end
+
+        function val = get_output_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_output_channel_enable', chan-1);
+        end
+
+        function set_output_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_output_channel_enable', chan-1, enable);
+        end
+
 
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
@@ -359,18 +380,18 @@ classdef X6 < hgsetget
             if ~isempty(settings.demodKernel)
                 %Try to decode base64 encoded kernels
                 if (ischar(settings.demodKernel))
-                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernel)), 'uint8');
-                   tmp = typecast(tmp, 'double');
-                   settings.demodKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernel)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.demodKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
                 end
                 obj.write_kernel(a, b, 1, settings.demodKernel);
             end
             if ~isempty(settings.rawKernel)
                 %Try to decode base64 encoded kernels
                 if (ischar(settings.rawKernel))
-                   tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernel)), 'uint8');
-                   tmp = typecast(tmp, 'double');
-                   settings.rawKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernel)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.rawKernel = tmp(1:2:end) + 1j*tmp(2:2:end);
                 end
                 obj.write_kernel(a, 0, b, settings.rawKernel);
             end
@@ -393,15 +414,15 @@ classdef X6 < hgsetget
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
                 myPath = fileparts(mfilename('fullpath'));
-                loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
+                [~,~] = loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
         end
 
         function check_status(status)
-          X6.load_library();
-          assert(strcmp(status, 'X6_OK'),...
-            'X6:Fail',...
-            'X6 library call failed with status: %s', calllib('libx6adc', 'get_error_msg', status));
+            X6.load_library();
+            assert(strcmp(status, 'X6_OK'),...
+                'X6:Fail',...
+                'X6 library call failed with status: %s', calllib('libx6adc', 'get_error_msg', status));
         end
 
         function val = num_devices()
@@ -423,15 +444,17 @@ classdef X6 < hgsetget
 
             x6 = X6();
 
-            x6.set_debug_level(6);
+            x6.set_debug_level(4);
 
             x6.connect(0);
 
-            fprintf('current logic temperature = %.1f\n', x6.getLogicTemperature());
+            x6.init();
+
+            fprintf('current logic temperature = %.1f\n', x6.get_logic_temperature());
 
             fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
             fprintf('Setting clock reference to external\n');
-            x6.reference = 'EXTERNAL_REFERENCE';
+            % x6.reference = 'EXTERNAL_REFERENCE';
 
             fprintf('Enabling streams\n');
             numDemodChan = 1;
@@ -448,23 +471,8 @@ classdef X6 < hgsetget
             x6.set_nco_frequency(1, 1, 10e6);
             x6.set_nco_frequency(2, 1, 20e6);
 
-            fprintf('Writing integration kernels\n');
-            x6.write_kernel(1, 1, ones(100,1));
-            x6.write_kernel(1, 2, ones(100,1));
-            x6.write_kernel(1, 3, ones(100,1));
-            x6.write_kernel(1, 4, ones(100,1));
-            x6.write_kernel(2, 1, ones(100,1));
-            x6.write_kernel(2, 2, ones(100,1));
-            x6.write_kernel(2, 3, ones(100,1));
-
-            fprintf('Writing decision engine thresholds\n');
-            x6.set_threshold(1, 1, 0.5);
-            x6.set_threshold(1, 2, 0.5);
-            x6.set_threshold(2, 1, 0.5);
-            x6.set_threshold(2, 2, 0.5);
-
             fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
-            x6.set_averager_settings(2048, 16, 1, 1);
+            x6.set_averager_settings(2048, 64, 1, 20);
 
             % write a waveform into transmitter memory
             for ct = 1:2048
@@ -479,54 +487,29 @@ classdef X6 < hgsetget
             fprintf('Acquiring\n');
             x6.acquire();
 
-            success = x6.wait_for_acquisition(1);
+            pause(0.5);
+            dec2hex(x6.read_register(hex2dec('800'), hex2dec('98')), 8)
+            x6.write_register(hex2dec('2200'), 0, 1);
+
+            success = x6.wait_for_acquisition(20);
             fprintf('Wait for acquisition returned %d\n', success);
 
             fprintf('Stopping\n');
             x6.stop();
 
-            fprintf('Transferring waveforms\n');
-            wfs = cell(numDemodChan+1,1);
-            for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(struct('a', 1, 'b', ct, 'c', 0));
-            end
-            figure();
-            subplot(numDemodChan+1,1,1);
-            plot(wfs{1}(:));
-            title('Raw Channel 1');
 
-            for ct = 1:numDemodChan
-                subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}(:)), 'b');
-                hold on
-                plot(imag(wfs{ct+1}(:)), 'r');
-                title(sprintf('Virtual Channel %d',ct));
-            end
-
-
-            for ct = 0:numDemodChan
-                wfs{ct+1} = x6.transfer_stream(struct('a', 2, 'b', ct, 'c', 0));
-            end
-            figure();
-            subplot(numDemodChan+1,1,1);
-            plot(wfs{1}(:));
-            title('Raw Channel 2');
-
-            for ct = 1:numDemodChan
-                subplot(numDemodChan+1,1,ct+1);
-                plot(real(wfs{ct+1}(:)), 'b');
-                hold on
-                plot(imag(wfs{ct+1}(:)), 'r');
-                title(sprintf('Virtual Channel %d',ct));
-            end
-
-            fprintf('Result vectors:\n');
-            fprintf('Ch 1.1:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 1, 'c', 1))));
-            fprintf('Ch 1.2:\n'); disp(real(x6.transfer_stream(struct('a', 1, 'b', 2, 'c', 1))));
-            fprintf('Ch 2.1:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 1, 'c', 1))));
-            fprintf('Ch 2.2:\n'); disp(real(x6.transfer_stream(struct('a', 2, 'b', 2, 'c', 1))));
 
             x6.disconnect();
+
+
+            unloadlibrary('libx6adc')
+        end
+
+        function silly()
+            fprintf('BBN X6-1000 Test Executable\n')
+            X6.load_library();
+            X6.set_debug_level(4);
+            calllib('libx6adc', 'silly');
             unloadlibrary('libx6adc')
         end
 

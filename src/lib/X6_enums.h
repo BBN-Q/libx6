@@ -1,14 +1,12 @@
 #ifndef X6_enums_H_
 #define X6_enums_H_
 
-enum DigitizerMode {DIGITIZE=0, AVERGAGE, FILTER, FILTER_AND_AVERAGE} ;
-
 enum ClockSource {
     EXTERNAL_CLOCK = 0,   /**< External Input */
     INTERNAL_CLOCK        /**< Internal Generation */
 };
 
-enum ReferenceSource {
+enum X6_REFERENCE_SOURCE {
     EXTERNAL_REFERENCE = 0,   /**< External Input */
     INTERNAL_REFERENCE        /**< Internal Generation */
 };
@@ -18,9 +16,15 @@ enum ExtSource {
     P16              /**< P16 input */
 };
 
-enum TriggerSource {
+enum X6_TRIGGER_SOURCE {
     SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
     EXTERNAL_TRIGGER         /**< External trigger */
+};
+
+enum X6_MODULE_FIRMWARE_VERSION {
+    BBN_X6,
+    BBN_QDSP,
+    BBN_PG
 };
 
 struct ChannelTuple {

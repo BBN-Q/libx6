@@ -1,34 +1,29 @@
-#include "headings.h"
+// X6_1000.h
+//
+// Provides interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
+
+#ifndef X6_1000_H_
+#define X6_1000_H_
+
+#include <array>
 
 #include "X6_enums.h"
 
+#include "QDSPStream.h"
+#include "Accumulator.h"
+#include "Correlator.h"
+
+// II Malibu headers
 #include <X6_1000M_Mb.h>
 #include <VitaPacketStream_Mb.h>
 #include <SoftwareTimer_Mb.h>
 #include <Application/TriggerManager_App.h>
 #include <HardwareRegister_Mb.h>
 #include <BufferDatagrams_Mb.h> // for ShortDG
-
-#ifndef X6_1000_H_
-#define X6_1000_H_
-
-using std::vector;
-using std::string;
-using std::complex;
-
-/**
- * X6_1000 Class: Provides interface to Innovative Illustrations X6_1000 card
- *
- * The expectation is that this class will support a custom FPGA image for digitzer usage.
- *
- * This interface utilizes the II [Malibu library](www.innovative-dsp.com/products.php?product=Malibu)
- */
-
-class Accumulator;
-class Correlator;
-class Channel;
-
-enum channel_t { PHYSICAL, DEMOD, RESULT };
 
 class X6_1000
 {
@@ -38,37 +33,17 @@ public:
 	~X6_1000();
 
 	float get_logic_temperature();
-	float get_logic_temperature_by_reg(); // second test method to get temp using WB register
 
-	int read_firmware_version();
+	uint16_t get_firmware_version(X6_MODULE_FIRMWARE_VERSION);
 
-	/** Set reference source and frequency
-	 *  \param ref EXTERNAL || INTERNAL
-	 *  \param frequency Frequency in Hz
-	 *  \returns SUCCESS || INVALID_FREQUENCY
-	 */
-	void set_reference(ReferenceSource ref = INTERNAL_REFERENCE, float frequency = 10e6);
-
-	ReferenceSource get_reference();
-
-	/** Set clock source and frequency
-	 *  \param src EXTERNAL || INTERNAL
-	 *  \param frequency Frequency in Hz
-	 *  \param extSrc FRONT_PANEL || P16
-	 *  \returns SUCCESS || INVALID_FREQUENCY
-	 */
-	void set_clock(ClockSource src = INTERNAL_CLOCK,
-		                 float frequency = 1e9,
-		                 ExtSource extSrc = FRONT_PANEL);
-
-	/** Set up clock and trigger routes */
-	void set_routes();
+	void set_reference_source(X6_REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
+	X6_REFERENCE_SOURCE get_reference_source();
 
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	void set_trigger_source(TriggerSource trgSrc = EXTERNAL_TRIGGER);
-	TriggerSource get_trigger_source() const;
+	void set_trigger_source(X6_TRIGGER_SOURCE trgSrc = EXTERNAL_TRIGGER);
+	X6_TRIGGER_SOURCE get_trigger_source() const;
 
 	void set_trigger_delay(float delay = 0.0);
 
@@ -86,10 +61,10 @@ public:
 	void enable_stream(unsigned, unsigned, unsigned);
 	void disable_stream(unsigned, unsigned, unsigned);
 
-	bool get_channel_enable(unsigned channel);
-
-	void set_digitizer_mode(const DigitizerMode &);
-	DigitizerMode get_digitizer_mode() const;
+	void set_input_channel_enable(unsigned, bool);
+	bool get_input_channel_enable(unsigned);
+	void set_output_channel_enable(unsigned, bool);
+	bool get_output_channel_enable(unsigned);
 
 	void set_nco_frequency(int, int, double);
 	double get_nco_frequency(int, int);
@@ -103,8 +78,6 @@ public:
 	 */
 	double get_pll_frequency();
 
-	unsigned int get_num_channels();
-
 	void open(int deviceID);
 	void init();
 	void close();
@@ -115,12 +88,12 @@ public:
 	bool get_is_running();
 	bool get_has_new_data();
 
-	void transfer_waveform(Channel, double *, size_t);
-	void transfer_variance(Channel, double *, size_t);
-	void transfer_correlation(vector<Channel> &, double *, size_t);
-	void transfer_correlation_variance(vector<Channel> &, double *, size_t);
-	int get_buffer_size(vector<Channel> &);
-	int get_variance_buffer_size(vector<Channel> &);
+	void transfer_waveform(QDSPStream, double *, size_t);
+	void transfer_variance(QDSPStream, double *, size_t);
+	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
+	void transfer_correlation_variance(vector<QDSPStream> &, double *, size_t);
+	int get_buffer_size(vector<QDSPStream> &);
+	int get_variance_buffer_size(vector<QDSPStream> &);
 
 	/* Pulse generator methods */
 	void write_pulse_waveform(unsigned, vector<double>&);
@@ -150,9 +123,9 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	TriggerSource triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
+	X6_TRIGGER_SOURCE triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 
-	map<uint16_t, Channel> activeChannels_;
+	map<uint16_t, QDSPStream> activeQDSPStreams_;
 	//vector to go from VMP ordering to SID's
 	vector<int> physChans_;
 	vector<int> virtChans_;
@@ -164,6 +137,7 @@ private:
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
 	bool isRunning_;
+	bool needToInit_;
 	int prefillPacketCount_;
 	unsigned recordLength_ = 0;
 	unsigned numRecords_ = 1;
@@ -172,16 +146,16 @@ private:
 	unsigned roundRobins_;
 	unsigned recordsTaken_;
 
+	std::array<bool, 2> activeInputChannels_;
+	std::array<bool, 4> activeOutputChannels_;
+	X6_REFERENCE_SOURCE refSource_;
+
 	void set_active_channels();
-	void set_defaults();
 	void log_card_info();
 	bool check_done();
 
 	void initialize_accumulators();
 	void initialize_correlators();
-
-	void setHandler(OpenWire::EventHandler<OpenWire::NotifyEvent> &event,
-    				void (X6_1000:: *CallBackFunction)(OpenWire::NotifyEvent & Event));
 
 	// Malibu Event handlers
 
@@ -194,7 +168,7 @@ private:
 	void HandleAfterStreamStop(OpenWire::NotifyEvent & Event);
 
 	void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
-	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, channel_t);
+	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T);
 	void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
 		VMPDataAvailable(Event, PHYSICAL);
 	};
@@ -207,99 +181,6 @@ private:
 	};
 
 	void HandleTimer(OpenWire::NotifyEvent & Event);
-
-	// Module Alerts
-	void HandleTimestampRolloverAlert(Innovative::AlertSignalEvent & event);
-    void HandleSoftwareAlert(Innovative::AlertSignalEvent & event);
-    void HandleWarningTempAlert(Innovative::AlertSignalEvent & event);
-    void HandleInputFifoOverrunAlert(Innovative::AlertSignalEvent & event);
-    void HandleInputOverrangeAlert(Innovative::AlertSignalEvent & event);
-    void HandleTriggerAlert(Innovative::AlertSignalEvent & event);
-
-    void LogHandler(string handlerName);
 };
-
-class Channel{
-public:
-	Channel();
-	Channel(unsigned, unsigned, unsigned);
-
-	unsigned channelID[3];
-	uint16_t streamID;
-	channel_t type;
-};
-
-class Accumulator{
-friend X6_1000;
-
-public:
-	/* Helper class to accumulate/average data */
-	Accumulator();
-	Accumulator(const Channel &, const size_t &, const size_t &, const size_t &);
-	template <class T>
-	void accumulate(const Innovative::AccessDatagram<T> &);
-
-	void reset();
-	void snapshot(double *);
-	void snapshot_variance(double *);
-	size_t get_buffer_size();
-	size_t get_variance_buffer_size();
-	size_t calc_record_length(const Channel &, const size_t &);
-	int fixed_to_float(const Channel &);
-
-	size_t recordsTaken;
-
-private:
-	Channel channel_;
-	size_t wfmCt_;
-	size_t numSegments_;
-	size_t numWaveforms_;
-	size_t recordLength_;
-	int fixed_to_float_;
-
-	vector<int64_t> data_;
-	vector<int64_t>::iterator idx_;
-	// second data object to store the square of the data
-	vector<int64_t> data2_;
-	vector<int64_t>::iterator idx2_;
-};
-
-class Correlator {
-public:
-	Correlator();
-	Correlator(const vector<Channel> &, const size_t &, const size_t &);
-	template <class T>
-	void accumulate(const int &, const Innovative::AccessDatagram<T> &);
-	void correlate();
-
-	void reset();
-	void snapshot(double *);
-	void snapshot_variance(double *);
-	size_t get_buffer_size();
-	size_t get_variance_buffer_size();
-
-	size_t recordsTaken;
-
-private:
-	size_t wfmCt_;
-	size_t recordLength_;
-	size_t numSegments_;
-	size_t numWaveforms_;
-	int64_t fixed_to_float_;
-
-	// buffers for raw data from the channels
-	vector<vector<int>> buffers_;
-	map<uint16_t, int> bufferSID_;
-
-	// buffer for the correlated values A*B(*C*D*...)
-	vector<double> data_;
-	vector<double>::iterator idx_;
-	// buffer for (A*B)^2
-	vector<double> data2_;
-	vector<double>::iterator idx2_;
-};
-
-vector<vector<int>> combinations(int, int);
-
 
 #endif

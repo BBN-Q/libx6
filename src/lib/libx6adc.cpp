@@ -1,11 +1,13 @@
-/*
- * libx6adc.cpp
- *
- *  Created on: Oct 30, 2013
- *      Author: qlab
- */
+// libx6adc.cpp
+//
+// Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
+//
+// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+//
+// Copyright 2013-2015 Raytheon BBN Technologies
 
-#include "headings.h"
+#include <memory> //unique_ptr
+
 #include "libx6adc.h"
 #include "X6_1000.h"
 
@@ -119,43 +121,44 @@ X6_STATUS initX6(int deviceID) {
 	return x6_call(deviceID, &X6_1000::init);
 }
 
-X6_STATUS read_firmware_version(int deviceID, uint32_t* version) {
-	return x6_getter(deviceID, &X6_1000::read_firmware_version, version);
-}
-
-X6_STATUS set_digitizer_mode(int deviceID, DigitizerMode mode) {
-	return x6_call(deviceID, &X6_1000::set_digitizer_mode, mode);
-}
-
-X6_STATUS get_digitizer_mode(int deviceID, DigitizerMode* digitizerMode) {
-	return x6_getter(deviceID, &X6_1000::get_digitizer_mode, digitizerMode);
-}
-
-X6_STATUS set_sampleRate(int deviceID, double freq){
-	//assume for now we'll use the internal clock
-	//varadic pack must be last so pass default arguments here too
-	return x6_call(deviceID, &X6_1000::set_clock, INTERNAL_CLOCK, freq, FRONT_PANEL);
+X6_STATUS get_firmware_version(int deviceID, X6_MODULE_FIRMWARE_VERSION module, uint16_t* version) {
+	return x6_getter(deviceID, &X6_1000::get_firmware_version, version, module);
 }
 
 X6_STATUS get_sampleRate(int deviceID, double* freq) {
 	return x6_getter(deviceID, &X6_1000::get_pll_frequency, freq);
 }
 
-X6_STATUS set_trigger_source(int deviceID, TriggerSource triggerSource) {
+X6_STATUS set_trigger_source(int deviceID, X6_TRIGGER_SOURCE triggerSource) {
 	return x6_call(deviceID, &X6_1000::set_trigger_source, triggerSource);
 }
 
-X6_STATUS get_trigger_source(int deviceID, TriggerSource* triggerSource) {
+X6_STATUS get_trigger_source(int deviceID, X6_TRIGGER_SOURCE* triggerSource) {
 	return x6_getter(deviceID, &X6_1000::get_trigger_source, triggerSource);
 }
 
-X6_STATUS set_reference(int deviceID, ReferenceSource src) {
-	//varadic pack must be last so pass default argument here too
-	return x6_call(deviceID, &X6_1000::set_reference, src, 10e6);
+X6_STATUS set_reference_source(int deviceID, X6_REFERENCE_SOURCE src) {
+	return x6_call(deviceID, &X6_1000::set_reference_source, src);
 }
 
-X6_STATUS get_reference(int deviceID, ReferenceSource* src) {
-	return x6_getter(deviceID, &X6_1000::get_reference, src);
+X6_STATUS get_reference_source(int deviceID, X6_REFERENCE_SOURCE* src) {
+	return x6_getter(deviceID, &X6_1000::get_reference_source, src);
+}
+
+X6_STATUS set_input_channel_enable(int deviceID, unsigned chan, bool enable){
+	return x6_call(deviceID, &X6_1000::set_input_channel_enable, chan, enable);
+}
+
+X6_STATUS get_input_channel_enable(int deviceID, unsigned chan, bool* enable){
+	return x6_getter(deviceID, &X6_1000::get_input_channel_enable, enable, chan);
+}
+
+X6_STATUS set_output_channel_enable(int deviceID, unsigned chan, bool enable){
+	return x6_call(deviceID, &X6_1000::set_output_channel_enable, chan, enable);
+}
+
+X6_STATUS get_output_channel_enable(int deviceID, unsigned chan, bool* enable){
+	return x6_getter(deviceID, &X6_1000::get_output_channel_enable, enable, chan);
 }
 
 X6_STATUS enable_stream(int deviceID, int a, int b, int c) {
@@ -221,9 +224,9 @@ X6_STATUS stop(int deviceID) {
 X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> channels(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		channels[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
 		return x6_call(deviceID, &X6_1000::transfer_waveform, channels[0], buffer, bufferLength);
@@ -233,31 +236,31 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 }
 
 X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
-		return x6_call(deviceID, &X6_1000::transfer_variance, channels[0], buffer, bufferLength);
+		return x6_call(deviceID, &X6_1000::transfer_variance, streams[0], buffer, bufferLength);
 	} else {
-		return x6_call(deviceID, &X6_1000::transfer_correlation_variance, channels, buffer, bufferLength);
+		return x6_call(deviceID, &X6_1000::transfer_correlation_variance, streams, buffer, bufferLength);
 	}
 }
 
 X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, channels);
+	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, streams);
 }
 
 X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
-	vector<Channel> channels(numChannels);
+	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
-		channels[i] = Channel(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
+		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
-	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, channels);
+	return x6_getter(deviceID, &X6_1000::get_variance_buffer_size, bufferSize, streams);
 }
 
 /* Pulse generator methods */
@@ -315,11 +318,8 @@ X6_STATUS write_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_
 	return x6_call(deviceID, &X6_1000::write_wishbone_register, wbAddr, offset, data);
 }
 
-X6_STATUS get_logic_temperature(int deviceID, int method, float* temp) {
-	if (method == 0)
-		return x6_getter(deviceID, &X6_1000::get_logic_temperature, temp);
-	else
-		return x6_getter(deviceID, &X6_1000::get_logic_temperature_by_reg, temp);
+X6_STATUS get_logic_temperature(int deviceID, float* temp) {
+	return x6_getter(deviceID, &X6_1000::get_logic_temperature, temp);
 }
 
 #ifdef __cplusplus

@@ -153,7 +153,7 @@ Connect to X6 with the given device ID. For a single X6 card, ID = 0.
 
 Disconnect from the X6 card.
 
-`set_reference(int ID, int referenceSource)`
+`set_reference(int ID, int REFERENCE_SOURCE)`
 
 Set the reference clock source to `EXTERNAL = 0` or `INTERNAL = 1`.
 
