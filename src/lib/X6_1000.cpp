@@ -132,7 +132,14 @@ void X6_1000::init() {
 
     //Run the ADC and DAC at full rate for now
     module_.Clock().Adc().Frequency(1000 * 1e6);
-    module_.Clock().Dac().Frequency(1000 * 1e6);
+    //Full rate in one channel mode is 1GS but two channels at 500MS/s
+    if (activeOutputChannels_[1] || activeOutputChannels_[3]) {
+        module_.Clock().Dac().Frequency(500 * 1e6);
+    }
+    else {
+        module_.Clock().Dac().Frequency(1000 * 1e6);
+    }
+
     // Readback Frequency
     double adc_freq_actual = module_.Clock().Adc().FrequencyActual();
     double dac_freq_actual = module_.Clock().Dac().FrequencyActual();
