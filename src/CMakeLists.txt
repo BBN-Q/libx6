@@ -22,6 +22,9 @@ endif()
 #and our own library headers
 INCLUDE_DIRECTORIES("./lib/")
 
+#Catch unit-testing
+INCLUDE_DIRECTORIES("../deps/Catch/include")
+
 #Malibu shared libraries
 if(WIN32)
 	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
@@ -63,14 +66,18 @@ ADD_LIBRARY( x6adc SHARED ${DLL_SRC} )
 ADD_EXECUTABLE(x6test ../test/main.cpp )
 TARGET_LINK_LIBRARIES(x6test x6adc)
 
-ADD_EXECUTABLE(unit
-	../test/unit.cpp
+ADD_EXECUTABLE(run_tests
+	../test/run_tests.cpp
+	../test/test_Sanity.cpp
+	../test/test_Accumulator.cpp
+	../test/test_Correlator.cpp
+	../test/test_libx6.cpp
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
 )
 
-TARGET_LINK_LIBRARIES(unit
+SET ( II_LIBS
 	-Wl,--start-group
 	Os_Mb
 	Application_Mb
@@ -84,33 +91,20 @@ TARGET_LINK_LIBRARIES(unit
 	Poco_Foundation_Mb
 	Poco_Net_Mb
 	-Wl,--end-group
+)
 
-	wdapi # WinDriver library in Innovative\lib\gcc
-
+TARGET_LINK_LIBRARIES(run_tests
+	${II_LIBS}
+	wdapi
 	pthread
+
+	x6adc
 )
 
 TARGET_LINK_LIBRARIES(x6adc
-	-Wl,--start-group
-	Os_Mb
-	Application_Mb
-	Analysis_Mb
-	Framework_Con
-	Framework_Mb
-	Utility_Mb
-	Hardware_Mb
-	Pci_Mb
-	Ficl_Mb
-	Poco_Foundation_Mb
-	Poco_Net_Mb
-	-Wl,--end-group
-
+	${II_LIBS}
 	wdapi # WinDriver library in Innovative\lib\gcc
 	${IPP_LIB} # in Intel IPP directory listed above
-
-	# The following libraries are not currently required
-	#Framework_Win
-	#Vpx_Mb  ##
 )
 
 if(WIN32)

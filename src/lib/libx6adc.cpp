@@ -121,27 +121,27 @@ X6_STATUS initX6(int deviceID) {
 	return x6_call(deviceID, &X6_1000::init);
 }
 
-X6_STATUS read_firmware_version(int deviceID, uint32_t* version) {
-	return x6_getter(deviceID, &X6_1000::read_firmware_version, version);
+X6_STATUS get_firmware_version(int deviceID, X6_MODULE_FIRMWARE_VERSION module, uint16_t* version) {
+	return x6_getter(deviceID, &X6_1000::get_firmware_version, version, module);
 }
 
 X6_STATUS get_sampleRate(int deviceID, double* freq) {
 	return x6_getter(deviceID, &X6_1000::get_pll_frequency, freq);
 }
 
-X6_STATUS set_trigger_source(int deviceID, TRIGGER_SOURCE triggerSource) {
+X6_STATUS set_trigger_source(int deviceID, X6_TRIGGER_SOURCE triggerSource) {
 	return x6_call(deviceID, &X6_1000::set_trigger_source, triggerSource);
 }
 
-X6_STATUS get_trigger_source(int deviceID, TRIGGER_SOURCE* triggerSource) {
+X6_STATUS get_trigger_source(int deviceID, X6_TRIGGER_SOURCE* triggerSource) {
 	return x6_getter(deviceID, &X6_1000::get_trigger_source, triggerSource);
 }
 
-X6_STATUS set_reference_source(int deviceID, REFERENCE_SOURCE src) {
+X6_STATUS set_reference_source(int deviceID, X6_REFERENCE_SOURCE src) {
 	return x6_call(deviceID, &X6_1000::set_reference_source, src);
 }
 
-X6_STATUS get_reference_source(int deviceID, REFERENCE_SOURCE* src) {
+X6_STATUS get_reference_source(int deviceID, X6_REFERENCE_SOURCE* src) {
 	return x6_getter(deviceID, &X6_1000::get_reference_source, src);
 }
 

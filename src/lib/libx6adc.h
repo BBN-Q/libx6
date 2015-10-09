@@ -29,9 +29,10 @@ extern "C" {
 
 //Add typedefs for the enums for C compatibility
 typedef enum X6_STATUS X6_STATUS;
-typedef enum REFERENCE_SOURCE REFERENCE_SOURCE;
+typedef enum X6_REFERENCE_SOURCE X6_REFERENCE_SOURCE;
 typedef struct ChannelTuple ChannelTuple;
-typedef enum TRIGGER_SOURCE TRIGGER_SOURCE;
+typedef enum X6_TRIGGER_SOURCE X6_TRIGGER_SOURCE;
+typedef enum X6_MODULE_FIRMWARE_VERSION X6_MODULE_FIRMWARE_VERSION;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 
@@ -41,10 +42,10 @@ void cleanup() __attribute__((destructor));
 EXPORT X6_STATUS connect_x6(int);
 EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
-EXPORT X6_STATUS read_firmware_version(int, uint32_t*);
+EXPORT X6_STATUS get_firmware_version(int, X6_MODULE_FIRMWARE_VERSION, uint16_t*);
 
-EXPORT X6_STATUS set_reference_source(int, REFERENCE_SOURCE);
-EXPORT X6_STATUS get_reference_source(int, REFERENCE_SOURCE*);
+EXPORT X6_STATUS set_reference_source(int, X6_REFERENCE_SOURCE);
+EXPORT X6_STATUS get_reference_source(int, X6_REFERENCE_SOURCE*);
 
 EXPORT X6_STATUS set_input_channel_enable(int, unsigned, bool);
 EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
@@ -79,8 +80,8 @@ EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);
-EXPORT X6_STATUS set_trigger_source(int, TRIGGER_SOURCE);
-EXPORT X6_STATUS get_trigger_source(int, TRIGGER_SOURCE*);
+EXPORT X6_STATUS set_trigger_source(int, X6_TRIGGER_SOURCE);
+EXPORT X6_STATUS get_trigger_source(int, X6_TRIGGER_SOURCE*);
 EXPORT X6_STATUS get_sampleRate(int, double*);
 
 /* Pulse generator methods */

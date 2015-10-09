@@ -27,6 +27,23 @@ Malibu 1.8.5 this is TDM GCC 4.8.1. We have used
 II used.  It is easiest to use this with the MSYS2 environment for cmake and
 make.
 
+### Uninstalling previous II drivers and software
+
+If you already have II software installed and want to start from scratch try the following modified from end of this [forum thread](http://www.innovative-dsp.com/forum/viewtopic.php?t=2032).
+
+1. Open Device Manager and disable the WinJungo driver. Careful if you have
+other WinJungo devices like Xilinx USB JTAG cables.
+2. Open a PowerShell as administrator.
+3. Move to  ``C:\Innovative\Driver`` (not wdreg as the forum says)
+4. Run `` .\wdreg_gui.exe -inf .\windrvr6.inf uninstall``
+5. Run `` .\wdreg_gui.exe -name kp_malibu uninstall``
+6. Run `` .\wdreg_gui.exe -name memdrv uninstall``
+7. Uninstall and remaining II Jungo drivers using Device Manager.
+8. Uses MSYS2 grep to find all files in ``C:\Windows\INF`` that contain 1303 and remove them.
+9. In the ``C:\windows\system32\drivers`` folder. Delete kp_malibu.sys, memdrv.sys, and windrvr6.sys
+10. Delete ``C:\Inovative`` folder.
+11. Restart
+
 ### Instructions
 
 #### MSYS2 Development Environment Setup

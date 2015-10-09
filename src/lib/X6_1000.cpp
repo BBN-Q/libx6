@@ -9,6 +9,7 @@
 #include <algorithm>  // std::max
 #include <chrono>     // std::chrono::seconds etc.
 #include <thread>     // std::this_thread
+#include <bitset>
 
 #include "X6_1000.h"
 #include "X6_errno.h"
@@ -157,25 +158,47 @@ void X6_1000::close() {
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 }
 
-int X6_1000::read_firmware_version() {
-    int version = module_.Info().FpgaLogicVersion();
-    int subrevision = module_.Info().FpgaLogicSubrevision();
-    FILE_LOG(logINFO) << "Logic version: " << hexn<2> << version << ", " << hexn<2> << subrevision;
-    return version;
+uint16_t X6_1000::get_firmware_version(X6_MODULE_FIRMWARE_VERSION mod) {
+    uint32_t regVal;
+    switch (mod) {
+        case BBN_PG:
+            //Read from PG regs
+            regVal = read_wishbone_register(BASE_PG[0], WB_PG_MODULE_FIRMWARE_VERSION);
+            break;
+
+        case BBN_X6:
+        case BBN_QDSP:
+            regVal = read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_VERSION);
+            break;
+    }
+
+    uint16_t ver;
+    switch (mod) {
+        case BBN_X6:
+            ver =  static_cast<uint16_t>(regVal >> 16);
+            break;
+        case BBN_PG:
+        case BBN_QDSP:
+            ver = static_cast<uint16_t>(regVal & 0x0000ffff);
+            break;
+        default:
+            ver = 0;
+    }
+    return ver;
 }
 
 float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }
 
-void X6_1000::set_reference_source(REFERENCE_SOURCE ref) {
+void X6_1000::set_reference_source(X6_REFERENCE_SOURCE ref) {
     if ( refSource_ != ref ) {
         refSource_ = ref;
         needToInit_ = true;
     }
 }
 
-REFERENCE_SOURCE X6_1000::get_reference_source() {
+X6_REFERENCE_SOURCE X6_1000::get_reference_source() {
     return refSource_;
 }
 
@@ -185,12 +208,12 @@ double X6_1000::get_pll_frequency() {
     return freq;
 }
 
-void X6_1000::set_trigger_source(TRIGGER_SOURCE trgSrc) {
+void X6_1000::set_trigger_source(X6_TRIGGER_SOURCE trgSrc) {
     // cache trigger source
     triggerSource_ = trgSrc;
 }
 
-TRIGGER_SOURCE X6_1000::get_trigger_source() const {
+X6_TRIGGER_SOURCE X6_1000::get_trigger_source() const {
     return triggerSource_;
 }
 
@@ -510,6 +533,13 @@ void X6_1000::acquire() {
     FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
     FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 
+    // Enable the pulse generators
+    for (size_t pg = 0; pg < 2; pg++) {
+        std::bitset<32> reg(read_wishbone_register(BASE_PG[pg], WB_PG_CONTROL));
+        reg.set(0);
+        write_wishbone_register(BASE_PG[pg], WB_PG_CONTROL, reg.to_ulong());
+    }
+
     // flag must be set before calling stream start
     isRunning_ = true;
 
@@ -803,13 +833,18 @@ bool X6_1000::check_done() {
 }
 
 void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
-    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
+
+    //Check and write the length
     //Waveform length should be multiple of four and less than 16384
+    FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
     if (((wf.size() % 4) != 0) || (wf.size() > 16384)){
         FILE_LOG(logERROR) << "invalid waveform length " << wf.size();
         throw X6_INVALID_WF_LEN;
     }
+    write_wishbone_register(BASE_PG[pg], WB_PG_WF_LENGTH, wf.size()/2);
 
+
+    //Check and write the data
     auto range_check = [](double val){
         const double maxVal = 1 - 1.0/(1 << 15);
         const double minVal = -1.0;
@@ -828,8 +863,8 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
         uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
         FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
                     wf[ct+1] << "(" << hexn<4> << fixedValB << ") as " << hexn<8> << stackedVal;
-        write_wishbone_register(BASE_PG[pg], 9, ct/2); // address
-        write_wishbone_register(BASE_PG[pg], 10, stackedVal); //data
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_ADDR, ct/2); // address
+        write_wishbone_register(BASE_PG[pg], WB_PG_WF_DATA, stackedVal); //data
     }
 }
 

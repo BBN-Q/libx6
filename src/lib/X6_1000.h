@@ -34,16 +34,16 @@ public:
 
 	float get_logic_temperature();
 
-	int read_firmware_version();
+	uint16_t get_firmware_version(X6_MODULE_FIRMWARE_VERSION);
 
-	void set_reference_source(REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
-	REFERENCE_SOURCE get_reference_source();
+	void set_reference_source(X6_REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
+	X6_REFERENCE_SOURCE get_reference_source();
 
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
-	void set_trigger_source(TRIGGER_SOURCE trgSrc = EXTERNAL_TRIGGER);
-	TRIGGER_SOURCE get_trigger_source() const;
+	void set_trigger_source(X6_TRIGGER_SOURCE trgSrc = EXTERNAL_TRIGGER);
+	X6_TRIGGER_SOURCE get_trigger_source() const;
 
 	void set_trigger_delay(float delay = 0.0);
 
@@ -123,7 +123,7 @@ private:
 	Innovative::VeloBuffer       	outputPacket_;
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
-	TRIGGER_SOURCE triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
+	X6_TRIGGER_SOURCE triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
 
 	map<uint16_t, QDSPStream> activeQDSPStreams_;
 	//vector to go from VMP ordering to SID's
@@ -137,7 +137,7 @@ private:
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
 	bool isRunning_;
-	bool needToInit_; 
+	bool needToInit_;
 	int prefillPacketCount_;
 	unsigned recordLength_ = 0;
 	unsigned numRecords_ = 1;
@@ -148,7 +148,7 @@ private:
 
 	std::array<bool, 2> activeInputChannels_;
 	std::array<bool, 4> activeOutputChannels_;
-	REFERENCE_SOURCE refSource_;
+	X6_REFERENCE_SOURCE refSource_;
 
 	void set_active_channels();
 	void log_card_info();

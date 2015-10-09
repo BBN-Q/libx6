@@ -146,6 +146,7 @@ classdef X6 < hgsetget
 
         function acquire(obj)
             x6_call(obj, 'acquire');
+            pause(0.75);   %makes sure that the digitizers are ready before starting acquisition
             %Since we cannot easily pass callbacks to the C library to fire
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
@@ -261,6 +262,14 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_logic_temperature');
         end
 
+        function [val, vStr] = get_firmware_version(obj, module)
+            val = x6_getter(obj, 'get_firmware_version', module);
+            %Create version string
+            major_ver = bitshift(val, -8);
+            minor_ver = bitand(val, hex2dec('FF'));
+            vStr = sprintf('v%d.%d', major_ver, minor_ver);
+        end
+
         function set_nco_frequency(obj, a, b, freq)
             x6_call(obj, 'set_nco_frequency', a, b, freq);
         end
@@ -297,6 +306,23 @@ classdef X6 < hgsetget
         function val = read_pulse_waveform(obj, pg, addr)
             val = x6_getter(obj, 'read_pulse_waveform', pg, addr-1);
         end
+
+        function val = get_input_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_input_channel_enable', chan-1);
+        end
+
+        function set_input_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_input_channel_enable', chan-1, enable);
+        end
+
+        function val = get_output_channel_enable(obj, chan)
+            val = x6_getter(obj, 'get_output_channel_enable', chan-1);
+        end
+
+        function set_output_channel_enable(obj, chan, enable)
+            x6_call(obj, 'set_output_channel_enable', chan-1, enable);
+        end
+
 
         %Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
@@ -388,7 +414,7 @@ classdef X6 < hgsetget
             % build library path and load it if necessary
             if ~libisloaded('libx6adc')
                 myPath = fileparts(mfilename('fullpath'));
-                loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
+                [~,~] = loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
         end
 

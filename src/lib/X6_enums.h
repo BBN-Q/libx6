@@ -6,7 +6,7 @@ enum ClockSource {
     INTERNAL_CLOCK        /**< Internal Generation */
 };
 
-enum REFERENCE_SOURCE {
+enum X6_REFERENCE_SOURCE {
     EXTERNAL_REFERENCE = 0,   /**< External Input */
     INTERNAL_REFERENCE        /**< Internal Generation */
 };
@@ -16,9 +16,15 @@ enum ExtSource {
     P16              /**< P16 input */
 };
 
-enum TRIGGER_SOURCE {
+enum X6_TRIGGER_SOURCE {
     SOFTWARE_TRIGGER = 0,    /**< Software generated trigger */
     EXTERNAL_TRIGGER         /**< External trigger */
+};
+
+enum X6_MODULE_FIRMWARE_VERSION {
+    BBN_X6,
+    BBN_QDSP,
+    BBN_PG
 };
 
 struct ChannelTuple {
