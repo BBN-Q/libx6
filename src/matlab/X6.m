@@ -475,13 +475,9 @@ classdef X6 < hgsetget
             x6.set_averager_settings(2048, 64, 1, 20);
 
             % write a waveform into transmitter memory
-            for ct = 1:2048
-                x6.write_register(hex2dec('2200'), 9, ct-1);
-                x6.write_register(hex2dec('2200'), 10, bitshift(int32(8*ct), 16) + bitand(int32(8*ct-4), hex2dec('FFFF')));
-            end
-
-            % write waveform length
-            x6.write_register(hex2dec('2200'), 8, 1024);
+            x6.write_pulse_waveform(0, linspace(0,0.99,2000));
+            x6.set_output_channel_enable(1, true);
+            x6.set_output_channel_enable(2, true);
 
             %DAC trigger window
             fprintf('Acquiring\n');
@@ -489,7 +485,6 @@ classdef X6 < hgsetget
 
             pause(0.5);
             dec2hex(x6.read_register(hex2dec('800'), hex2dec('98')), 8)
-            x6.write_register(hex2dec('2200'), 0, 1);
 
             success = x6.wait_for_acquisition(20);
             fprintf('Wait for acquisition returned %d\n', success);
