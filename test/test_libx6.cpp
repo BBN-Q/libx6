@@ -51,13 +51,13 @@ TEST_CASE("record length") {
 	SECTION("record length validators and register") {
 
 		//minimum size of 128
-		CHECK_THROWS( set_averager_settings(0, 96, 64, 1 , 1) );
+		CHECK( set_averager_settings(0, 96, 64, 1 , 1) == X6_INVALID_RECORD_LENGTH);
 
 		//maximum size of 16384
-		CHECK_THROWS( set_averager_settings(0, 16416, 64, 1 , 1) );
+		CHECK( set_averager_settings(0, 16416, 64, 1 , 1) == X6_INVALID_RECORD_LENGTH);
 
 		//multiple of 32
-		CHECK_THROWS( set_averager_settings(0, 144, 64, 1 , 1) );
+		CHECK( set_averager_settings(0, 144, 64, 1 , 1) == X6_INVALID_RECORD_LENGTH);
 
 		//Check registers are set
 		set_averager_settings(0, 256, 64, 1 , 1);
