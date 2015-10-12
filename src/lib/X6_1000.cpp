@@ -363,9 +363,33 @@ double X6_1000::get_threshold(int a, int c) {
 }
 
 void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {
-    //TODO throw error if kernel too long
-    //TODO throw error if a,b,c are not a kernel integration channel
-    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel of length to: " << kernel.size();
+
+    if ( (b == 0 && c == 0) || (b != 0 && c == 0) ) {
+        FILE_LOG(logERROR) << "Attempt to write kernel to non kernel integration stream";
+        throw X6_INVALID_KERNEL_STREAM;
+    }
+
+    if (
+        (( b == 0 ) && ( kernel.size() > MAX_RAW_KERNEL_LENGTH )) &&
+        (( b != 0 ) && ( kernel.size() > MAX_DEMOD_KERNEL_LENGTH )) ) {
+            FILE_LOG(logERROR) << "kernel too long for raw kernel";
+            throw X6_INVALID_KERNEL_LENGTH;
+    }
+
+    //Check the kernel is in range
+    auto range_check = [](double val){
+        if ((val > MAX_KERNEL_VALUE) || (val < MIN_KERNEL_VALUE)){
+            FILE_LOG(logERROR) << "kernel value " << val << " is out of range";
+            throw X6_KERNEL_OUT_OF_RANGE;
+        }
+    };
+
+    for (auto val : kernel) {
+        range_check(std::real(val));
+        range_check(std::imag(val));
+    }
+
+    FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel with length  " << kernel.size();
 
     //Depending on raw or demod integrator we are enumerated by c or b
     int KI = (b==0) ? c : b;
@@ -375,10 +399,11 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
     //Write the length register
     write_dsp_register(a-1, wbLengthReg + (KI-1), kernel.size());
 
+
     //Kernel memory as address/data pairs
     for (size_t ct = 0; ct < kernel.size(); ct++) {
-        int32_t scaled_re = std::real(kernel[ct]) * ((1 << 15) - 1);
-        int32_t scaled_im = std::imag(kernel[ct]) * ((1 << 15) - 1);
+        int32_t scaled_re = std::real(kernel[ct]) * (1 << 15);
+        int32_t scaled_im = std::imag(kernel[ct]) * (1 << 15);
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
         write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), ct);
         write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1, packedval);

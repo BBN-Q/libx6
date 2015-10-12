@@ -13,7 +13,16 @@ const int MAX_NUM_DEVICES = 5;
 //Some maximum sizes of things we can fit
 const int MAX_RECORD_LENGTH = 16384; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
 const int MIN_RECORD_LENGTH = 128; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
-const int RECORD_LENGTH_GRANULARITY = 32 //to ensure decimated demod streams work
+const int RECORD_LENGTH_GRANULARITY = 32; //to ensure decimated demod streams work
+
+const double MAX_KERNEL_VALUE = 1 - 1.0/(1 << 15);
+const double MIN_KERNEL_VALUE = -1.0;
+
+const int MAX_RAW_KERNEL_LENGTH = 4096;
+const int MAX_DEMOD_KERNEL_LENGTH = 512;
+
+const double MAX_WF_VALUE = 1 - 1.0/(1 << 15);
+const double MIN_WF_VALUE = -1.0;
 
 // WishBone interface
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
@@ -29,7 +38,6 @@ const int WB_QDSP_RAW_KERNEL_ADDR_DATA    = 0x20;
 const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA  = 0x28;
 const int WB_QDSP_THRESHOLD               = 0x30;
 const int WB_QDSP_PHASE_INC               = 0x34;
-
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};
