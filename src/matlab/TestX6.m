@@ -251,6 +251,15 @@ classdef TestX6 < matlab.unittest.TestCase
         end
 
         function test_raw_kernel_memory(testCase)
+
+            %Test kernel too long throws
+            kernel = (-1.0 + 2*rand(4097,1)) + 1i*(-1.0 + 2*rand(4097,1));
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 0, 1, kernel), 'X6:Fail');
+
+            %Test kernel over range throws
+            kernel(81) = 1.0;
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 0, 1, kernel), 'X6:Fail');
+
             %Check we can write/read to the raw kernel memory
             kernel = (-1.0 + 2*rand(4096,1)) + 1i*(-1.0 + 2*rand(4096,1));
             write_kernel(testCase.x6, 1, 0, 1, kernel);
@@ -295,6 +304,15 @@ classdef TestX6 < matlab.unittest.TestCase
         end
 
         function test_demod_kernel_memory(testCase)
+
+            %Test kernel too long throws
+            kernel = (-1.0 + 2*rand(513,1)) + 1i*(-1.0 + 2*rand(513,1));
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 1, 1, kernel), 'X6:Fail');
+
+            %Test kernel over range throws
+            kernel(81) = 1.0;
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 1, 1, kernel), 'X6:Fail');
+
             %Check we can write/read to the demod kernel memory
             kernel = (-1.0 + 2*rand(512,1)) + 1i*(-1.0 + 2*rand(512,1));
             write_kernel(testCase.x6, 1, 1, 1, kernel);
