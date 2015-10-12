@@ -1,7 +1,7 @@
 #include "catch.hpp"
 
 #include "libx6adc.h"
-
+#include "constants.h"
 
 TEST_CASE("board present", "[get_num_devices]"){
 	SECTION("at least one board present"){
@@ -39,6 +39,34 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 		REQUIRE( ver >= 0x0100);
 		get_firmware_version(0, BBN_PG, &ver);
 		REQUIRE( ver >= 0x0001);
+	}
+
+	disconnect_x6(0);
+}
+
+TEST_CASE("record length") {
+
+	connect_x6(0);
+
+	SECTION("record length validators and register") {
+
+		//minimum size of 128
+		CHECK_THROWS( set_averager_settings(0, 96, 64, 1 , 1) );
+
+		//maximum size of 16384
+		CHECK_THROWS( set_averager_settings(0, 16416, 64, 1 , 1) );
+
+		//multiple of 32
+		CHECK_THROWS( set_averager_settings(0, 144, 64, 1 , 1) );
+
+		//Check registers are set
+		set_averager_settings(0, 256, 64, 1 , 1);
+		for (size_t ct = 0; ct < 2; ct++) {
+			uint32_t val;
+			read_register(0, BASE_DSP[ct], WB_QDSP_RECORD_LENGTH, &val);
+			CHECK( val = 256);
+		}
+
 	}
 
 	disconnect_x6(0);

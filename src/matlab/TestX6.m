@@ -67,7 +67,7 @@ classdef TestX6 < matlab.unittest.TestCase
             if stream.b == 0
                 bit = stream.c;
             else
-                bit = 15+ stream.b + 4*stream.c;
+                bit = 15 + stream.b + 4*stream.c;
             end
             verifyFalse(testCase, logical(bitget(checkVal, bit+1))); %bitget is 1 indexed
 
@@ -75,17 +75,15 @@ classdef TestX6 < matlab.unittest.TestCase
             verifyTrue(testCase, isempty(find(cellfun(@(x) isequal(x, [stream.a, stream.b, stream.c]), testCase.x6.enabledStreams), 1) ) );
         end
 
-        function test_recordLength_length(testCase)
-            %Test record length over max throws error
-            set_averager_settings(testCase.x6, 16448, 16, 1, 1);
-            %Doesn't throw until we try and acquire with an active raw stream
-            enable_stream(testCase.x6, 1, 0, 0);
-            assertError(testCase, @() testCase.x6.acquire(), 'X6:Fail');
-        end
+        function test_recordLength_validators(testCase)
+            %Min of 128
+            verifyError(testCase, @() set_averager_settings(testCase.x6, 96, 16, 1, 1), 'X6:Fail');
 
-        function test_recordLenth_granularity(testCase)
-            %Record length should be multiple of 4
-            assertError(testCase, @() set_averager_settings(testCase.x6, 123, 16, 1, 1), 'X6:Fail');
+            %Max of 16384
+            verifyError(testCase, @() set_averager_settings(testCase.x6, 16448, 16, 1, 1), 'X6:Fail');
+
+            %Record length should be multiple of 32
+            verifyError(testCase, @() set_averager_settings(testCase.x6, 144, 16, 1, 1), 'X6:Fail');
         end
 
         function test_recordLength_register(testCase)
