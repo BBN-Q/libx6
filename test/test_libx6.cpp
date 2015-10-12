@@ -96,8 +96,9 @@ void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & 
 	for (size_t ct = 0; ct < checkIdx.size(); ct++) {
 		complex<double> val;
 		read_kernel(0, 1, 0, 1, checkIdx[ct], reinterpret_cast<_Complex double*>(&val));
-		CHECK( std::real(val) == Approx( std::real(kernel[checkIdx[ct]])).epsilon( 2 / (1 << 15)) );
-		CHECK( std::imag(val) == Approx( std::imag(kernel[checkIdx[ct]])).epsilon( 2 / (1 << 15)) );
+		INFO( "Read back: " << val << " ; expected: " << kernel[checkIdx[ct]] );
+		CHECK( std::real(val) == Approx( std::real(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
+		CHECK( std::imag(val) == Approx( std::imag(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
 	}
 
 }

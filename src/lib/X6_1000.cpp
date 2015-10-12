@@ -370,7 +370,7 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
     }
 
     if (
-        (( b == 0 ) && ( kernel.size() > MAX_RAW_KERNEL_LENGTH )) &&
+        (( b == 0 ) && ( kernel.size() > MAX_RAW_KERNEL_LENGTH )) ||
         (( b != 0 ) && ( kernel.size() > MAX_DEMOD_KERNEL_LENGTH )) ) {
             FILE_LOG(logERROR) << "kernel too long for raw kernel";
             throw X6_INVALID_KERNEL_LENGTH;
