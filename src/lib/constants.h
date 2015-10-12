@@ -11,13 +11,9 @@
 const int MAX_NUM_DEVICES = 5;
 
 //Some maximum sizes of things we can fit
-const int X6_READTIMEOUT = 1000;
-const int X6_WRITETIMEOUT = 500;
-
-const int MAX_LENGTH_RAW_STREAM = 16384; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
-
-//Command byte bits
-const int LSB_MASK = 0xFF;
+const int MAX_RECORD_LENGTH = 16384; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
+const int MIN_RECORD_LENGTH = 128; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
+const int RECORD_LENGTH_GRANULARITY = 32 //to ensure decimated demod streams work
 
 // WishBone interface
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};

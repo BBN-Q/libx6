@@ -253,19 +253,19 @@ void X6_1000::set_record_length(int recordLength) {
     // Validate the record length
 
     // minimum of 128 -- really just to enforce a 4 word demod vita packet - could revist of need shorter
-    if (recordLength < 128) {
+    if (recordLength < MIN_RECORD_LENGTH) {
         FILE_LOG(logERROR) << "Record length of " << recordLength << " too short; min. 132 samples.";
         throw X6_INVALID_RECORD_LENGTH;
     }
 
     // maximum of 16384 -- really just to enforce a 4096 word raw stream packet - could revist later
-    if (recordLength > 16384) {
+    if (recordLength > MAX_RECORD_LENGTH) {
         FILE_LOG(logERROR) << "Record length of " << recordLength << " too long; max. of 16384 samples.";
         throw X6_INVALID_RECORD_LENGTH;
     }
 
     // mulitple of 32 -- really just to enforce a valid demod stream (total decimation 32) - could revist later
-    if (recordLength % 32 != 0) {
+    if (recordLength % RECORD_LENGTH_GRANULARITY != 0) {
         FILE_LOG(logERROR) << "Record length of " << recordLength << " is not a mulitple of 132";
         throw X6_INVALID_RECORD_LENGTH;
     }
