@@ -240,40 +240,43 @@ int X6_1000::get_decimation() {
     return (decimation > 0) ? decimation : 1;
 }
 
-void X6_1000::set_frame(int recordLength) {
-    FILE_LOG(logINFO) << "Setting recordLength_ = " << recordLength;
+void X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
+    set_record_length(recordLength);
+    numSegments_ = numSegments;
+    waveforms_ = waveforms;
+    roundRobins_ = roundRobins;
+    numRecords_ = numSegments * waveforms * roundRobins;
+}
 
-    recordLength_ = recordLength;
+void X6_1000::set_record_length(int recordLength) {
 
-    // setup the trigger window size
-    int frameGranularity = module_.Input().Info().TriggerFrameGranularity();
-    if (recordLength % frameGranularity != 0) {
-        FILE_LOG(logERROR) << "Invalid frame size: " << recordLength;
-        throw X6_INVALID_FRAMESIZE;
+    // Validate the record length
+
+    // minimum of 128 -- really just to enforce a 4 word demod vita packet - could revist of need shorter
+    if (recordLength < 128) {
+        FILE_LOG(logERROR) << "Record length of " << recordLength << " too short; min. 132 samples.";
+        throw X6_INVALID_RECORD_LENGTH;
     }
-    module_.Input().Trigger().FramedMode(true);
-    module_.Input().Trigger().Edge(true);
-    module_.Input().Trigger().FrameSize(recordLength);
 
-    // (some of?) the following seems to be necessary to get external triggering to work
-    module_.Input().Pulse().Reset();
-    module_.Input().Pulse().Enabled(false);
+    // maximum of 16384 -- really just to enforce a 4096 word raw stream packet - could revist later
+    if (recordLength > 16384) {
+        FILE_LOG(logERROR) << "Record length of " << recordLength << " too long; max. of 16384 samples.";
+        throw X6_INVALID_RECORD_LENGTH;
+    }
 
-    module_.Output().Pulse().Reset();
-    module_.Output().Pulse().Enabled(false);
+    // mulitple of 32 -- really just to enforce a valid demod stream (total decimation 32) - could revist later
+    if (recordLength % 32 != 0) {
+        FILE_LOG(logERROR) << "Record length of " << recordLength << " is not a mulitple of 132";
+        throw X6_INVALID_RECORD_LENGTH;
+    }
+
+    FILE_LOG(logINFO) << "Setting recordLength_ = " << recordLength;
+    recordLength_ = recordLength;
 
     //Set the QDSP register
     for (int inst = 0; inst <= 1; ++inst) {
         write_dsp_register(inst, WB_QDSP_RECORD_LENGTH, recordLength_);
     }
-}
-
-void X6_1000::set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins) {
-    set_frame(recordLength);
-    numSegments_ = numSegments;
-    waveforms_ = waveforms;
-    roundRobins_ = roundRobins;
-    numRecords_ = numSegments * waveforms * roundRobins;
 }
 
 void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
@@ -441,17 +444,7 @@ void X6_1000::acquire() {
         init();
     }
 
-    //Some error checking frame sizes
-    //Because of some FIFO's and clocking  we can't have more than 4096 samples
-    QDSPStream rawStream1 = QDSPStream(1, 0, 0);
-    QDSPStream rawStream2 = QDSPStream(2, 0, 0);
-
-    if (activeQDSPStreams_.count(rawStream1.streamID) || activeQDSPStreams_.count(rawStream2.streamID)){
-        if (recordLength_ > MAX_LENGTH_RAW_STREAM) {
-            throw X6_RAW_STREAM_TOO_LONG;
-        }
-    }
-
+    //Some trigger stuff cribbed from II examples - necessity of all of it is unclear
     trigger_.DelayedTriggerPeriod(0);
     trigger_.ExternalTrigger(triggerSource_ == EXTERNAL_TRIGGER ? true : false);
     trigger_.AtConfigure();

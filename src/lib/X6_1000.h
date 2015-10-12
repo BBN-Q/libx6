@@ -55,8 +55,8 @@ public:
 	void set_decimation(bool enabled = false, int factor = 1);
 	int get_decimation();
 
-	void set_frame(int recordLength);
 	void set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
+	void set_record_length(int recordLength);
 
 	void enable_stream(unsigned, unsigned, unsigned);
 	void disable_stream(unsigned, unsigned, unsigned);
