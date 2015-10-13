@@ -63,9 +63,6 @@ SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
 ADD_LIBRARY( x6adc SHARED ${DLL_SRC} )
 
-ADD_EXECUTABLE(x6test ../test/main.cpp )
-TARGET_LINK_LIBRARIES(x6test x6adc)
-
 ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp
 	../test/test_Sanity.cpp
