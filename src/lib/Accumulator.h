@@ -33,8 +33,6 @@ public:
 	size_t get_buffer_size();
 	size_t get_variance_buffer_size();
 	size_t calc_record_length(const QDSPStream &, const size_t &);
-	int fixed_to_float(const QDSPStream &);
-
 	size_t recordsTaken;
 
 private:
@@ -43,7 +41,7 @@ private:
 	size_t numSegments_;
 	size_t numWaveforms_;
 	size_t recordLength_;
-	int fixed_to_float_;
+	unsigned fixed_to_float_;
 
 	vector<int64_t> data_;
 	vector<int64_t>::iterator idx_;

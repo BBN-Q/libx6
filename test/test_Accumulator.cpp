@@ -22,7 +22,7 @@ TEST_CASE( "Accumulator mean and variance", "[accumulator]") {
 
 	QDSPStream stream(1,1,1);
 	Accumulator accumlator(stream, 1024, 2, 1);
-	const int scale = 1 << 19; //see Accumulator::fixed_to_float
+	const unsigned scale = stream.fixed_to_float();
 
 	ibuf[0] = 0 * scale; ibuf[1] = 10 * scale; // segment 1
 	accumlator.accumulate(ibuf);

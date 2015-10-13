@@ -55,7 +55,7 @@ TEST_CASE("stream correlator mean and variance", "[correlator]") {
 
 	Innovative::Buffer buf( Innovative::Holding<int>(2) );
 	Innovative::IntegerDG ibuf(buf);
-	const int scale = 1 << 19; //see Accumulator::fixed_to_float
+	const unsigned scale = stream1.fixed_to_float();
 
 	ibuf[0] = 0 * scale; ibuf[1] = 7 * scale; // segment 1, stream1
     corr.accumulate(sid1, ibuf);
