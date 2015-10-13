@@ -24,7 +24,7 @@ Accumulator::Accumulator(const QDSPStream & stream, const size_t & recordLength,
         data2_.assign(recordLength_*numSegments*3/2, 0);
     }
     idx2_ = data2_.begin();
-    fixed_to_float_ = fixed_to_float(stream);
+    fixed_to_float_ = stream.fixed_to_float();
 };
 
 void Accumulator::reset() {
@@ -46,27 +46,6 @@ size_t Accumulator::calc_record_length(const QDSPStream & stream, const size_t &
             break;
         case RESULT:
             return 2;
-            break;
-        default:
-            return 0;
-    }
-}
-
-int Accumulator::fixed_to_float(const QDSPStream & stream) {
-    switch (stream.type) {
-        case PHYSICAL:
-            return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
-            break;
-        case DEMOD:
-            return 1 << 14;
-            break;
-        case RESULT:
-            if (stream.channelID[1]) {
-                return 1 << 19;
-            }
-            else {
-                return 1 << 15;
-            }
             break;
         default:
             return 0;

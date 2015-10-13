@@ -26,7 +26,7 @@ Correlator::Correlator(const vector<QDSPStream> & streams, const size_t & numSeg
     fixed_to_float_ = 1;
     for (size_t i = 0; i < streams.size(); i++) {
         bufferSID_[streams[i].streamID] = i;
-        fixed_to_float_ *= 1 << 19; // assumes a RESULT channel, grows with the number of terms in the correlation
+        fixed_to_float_ *= streams[i].fixed_to_float();
     }
 };
 

@@ -22,6 +22,8 @@ public:
 	unsigned channelID[3];
 	uint16_t streamID;
 	STREAM_T type;
+
+	unsigned fixed_to_float() const;
 };
 
 #endif // QDSPSTREAM_H_

@@ -21,3 +21,24 @@ QDSPStream::QDSPStream(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
         type = DEMOD;
     }
 };
+
+unsigned QDSPStream::fixed_to_float() const {
+    switch (type) {
+        case PHYSICAL:
+            return 1 << 13; // signed 12-bit integers from ADC and then four samples summed
+            break;
+        case DEMOD:
+            return 1 << 14;
+            break;
+        case RESULT:
+            if (channelID[1]) {
+                return 1 << 19;
+            }
+            else {
+                return 1 << 15;
+            }
+            break;
+        default:
+            return 0;
+    }
+}

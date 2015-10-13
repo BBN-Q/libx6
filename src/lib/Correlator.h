@@ -39,7 +39,7 @@ private:
 	size_t recordLength_;
 	size_t numSegments_;
 	size_t numWaveforms_;
-	int64_t fixed_to_float_;
+	uint64_t fixed_to_float_;
 
 	// buffers for raw data from the channels
 	vector<vector<int>> buffers_;
