@@ -2,7 +2,7 @@
 
 # Creates the Matlab compatible version of the header file
 
-cp ../lib/libx6adc.h libx6adc.matlab.h
+cp ../lib/libx6.h libx6.matlab.h
 
 #Strip out the contstructor/destructor attributes Matlab can't handle
 #Change the path to the includes
@@ -23,4 +23,4 @@ s/uint16_t/unsigned short/g
 s/_Complex//g
 /^#include <stdbool.h>/d
 s/bool/int/g
-/^X6_STATUS update_log/d' libx6adc.matlab.h
+/^X6_STATUS update_log/d' libx6.matlab.h

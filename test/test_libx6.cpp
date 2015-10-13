@@ -7,7 +7,7 @@ using std::vector;
 #include <random>
 #include <algorithm>
 
-#include "libx6adc.h"
+#include "libx6.h"
 #include "constants.h"
 
 

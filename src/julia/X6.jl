@@ -6,7 +6,7 @@ end
 X6() = X6(-1)
 
 const DSP_WB_OFFSET = [0x2000, 0x2100]
-const X6_LIBRARY = "C:\\Users\\qlab\\Documents\\GitHub\\libx6\\build\\libx6adc"
+const X6_LIBRARY = "C:\\Users\\qlab\\Documents\\GitHub\\libx6\\build\\libx6"
 const DECIMATION_FACTOR = 4
 
 immutable Channel

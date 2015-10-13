@@ -1,4 +1,4 @@
-// libx6adc.h
+// libx6.h
 //
 // Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
 //
@@ -6,8 +6,8 @@
 //
 // Copyright 2013-2015 Raytheon BBN Technologies
 
-#ifndef LIBX6ADC_H
-#define LIBX6ADC_H
+#ifndef LIBX6_H
+#define LIBX6_H
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -16,9 +16,12 @@
 #endif
 
 #include <stdio.h>
+#include <complex.h>
+#undef I //used in Malibu code
+#include <stdbool.h>
 
-#include "../lib/X6_errno.h"
-#include "../lib/X6_enums.h"
+#include "X6_errno.h"
+#include "X6_enums.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,19 +36,21 @@ typedef enum X6_MODULE_FIRMWARE_VERSION X6_MODULE_FIRMWARE_VERSION;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 
+void init() __attribute__((constructor));
+void cleanup() __attribute__((destructor));
 
 EXPORT X6_STATUS connect_x6(int);
 EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
-EXPORT X6_STATUS get_firmware_version(int, X6_MODULE_FIRMWARE_VERSION, unsigned short*);
+EXPORT X6_STATUS get_firmware_version(int, X6_MODULE_FIRMWARE_VERSION, uint16_t*);
 
 EXPORT X6_STATUS set_reference_source(int, X6_REFERENCE_SOURCE);
 EXPORT X6_STATUS get_reference_source(int, X6_REFERENCE_SOURCE*);
 
-EXPORT X6_STATUS set_input_channel_enable(int, unsigned, int);
-EXPORT X6_STATUS get_input_channel_enable(int, unsigned, int*);
-EXPORT X6_STATUS set_output_channel_enable(int, unsigned, int);
-EXPORT X6_STATUS get_output_channel_enable(int, unsigned, int*);
+EXPORT X6_STATUS set_input_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
+EXPORT X6_STATUS set_output_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_output_channel_enable(int, unsigned, bool*);
 
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
@@ -56,8 +61,8 @@ EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
 EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS get_threshold(int, int, int, double*);
-EXPORT X6_STATUS write_kernel(int, int, int, int, double *, unsigned);
-EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double *);
+EXPORT X6_STATUS write_kernel(int, int, int, int, double _Complex*, unsigned);
+EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double _Complex*);
 
 EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
@@ -70,6 +75,7 @@ EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, int*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
 EXPORT X6_STATUS set_log(char*);
+X6_STATUS update_log(FILE*);
 EXPORT X6_STATUS set_logging_level(int);
 
 /* unused/unfinished methods */
@@ -83,8 +89,8 @@ EXPORT X6_STATUS write_pulse_waveform(int, unsigned, double*, unsigned);
 EXPORT X6_STATUS read_pulse_waveform(int, unsigned, unsigned, double*);
 
 /* debug methods */
-EXPORT X6_STATUS read_register(int, unsigned, unsigned, unsigned*);
-EXPORT X6_STATUS write_register(int, unsigned, unsigned, unsigned);
+EXPORT X6_STATUS read_register(int, uint32_t, uint32_t, uint32_t*);
+EXPORT X6_STATUS write_register(int, uint32_t, uint32_t, uint32_t);
 
 // II X6-1000M Test Interface
 EXPORT X6_STATUS get_logic_temperature(int, float*);
@@ -93,4 +99,4 @@ EXPORT X6_STATUS get_logic_temperature(int, float*);
 }
 #endif
 
-#endif /* LIBX6ADC_H */
+#endif /* LIBX6_H */

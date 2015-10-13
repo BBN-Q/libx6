@@ -1,4 +1,4 @@
-// libx6adc.cpp
+// libx6.cpp
 //
 // Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
 //
@@ -8,7 +8,7 @@
 
 #include <memory> //unique_ptr
 
-#include "libx6adc.h"
+#include "libx6.h"
 #include "X6_1000.h"
 
 // globals

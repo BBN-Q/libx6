@@ -57,19 +57,19 @@ classdef X6 < hgsetget
 
         function x6_call(obj, func, varargin)
             % Make void call to the library
-            status = calllib('libx6adc', func, obj.deviceID, varargin{:});
+            status = calllib('libx6', func, obj.deviceID, varargin{:});
             X6.check_status(status);
         end
 
         function val = x6_getter(obj, func, varargin)
             % Make a getter call to the library passing and returning a pointer
-            [status, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+            [status, val] = calllib('libx6', func, obj.deviceID, varargin{:}, 0);
             X6.check_status(status);
         end
 
         function val = x6_channel_getter(obj, func, varargin)
             % Specialized getter for API's that also take a ChannelTuple pointer
-            [status, ~, val] = calllib('libx6adc', func, obj.deviceID, varargin{:}, 0);
+            [status, ~, val] = calllib('libx6', func, obj.deviceID, varargin{:}, 0);
             X6.check_status(status);
         end
 
@@ -405,14 +405,14 @@ classdef X6 < hgsetget
             %Helper functtion to load the platform dependent library
             switch computer()
                 case 'PCWIN64'
-                    libfname = 'libx6adc.dll';
-                    libheader = 'libx6adc.matlab.h';
+                    libfname = 'libx6.dll';
+                    libheader = 'libx6.matlab.h';
                     %protoFile = @obj.libx6;
                 otherwise
                     error('Unsupported platform.');
             end
             % build library path and load it if necessary
-            if ~libisloaded('libx6adc')
+            if ~libisloaded('libx6')
                 myPath = fileparts(mfilename('fullpath'));
                 [~,~] = loadlibrary(fullfile(myPath, X6.LIBRARY_PATH, libfname), fullfile(myPath, libheader));
             end
@@ -422,12 +422,12 @@ classdef X6 < hgsetget
             X6.load_library();
             assert(strcmp(status, 'X6_OK'),...
                 'X6:Fail',...
-                'X6 library call failed with status: %s', calllib('libx6adc', 'get_error_msg', status));
+                'X6 library call failed with status: %s', calllib('libx6', 'get_error_msg', status));
         end
 
         function val = num_devices()
             X6.load_library();
-            [status, val]  = calllib('libx6adc', 'get_num_devices', 0);
+            [status, val]  = calllib('libx6', 'get_num_devices', 0);
             X6.check_status(status);
         end
 
@@ -435,7 +435,7 @@ classdef X6 < hgsetget
         function set_debug_level(level)
             % sets logging level in libx6.log
             % level = {logERROR=0, logWARNING, logINFO, logDEBUG, logDEBUG1, logDEBUG2, logDEBUG3, logDEBUG4}
-            calllib('libx6adc', 'set_logging_level', level);
+            calllib('libx6', 'set_logging_level', level);
         end
 
         function UnitTest()
@@ -492,20 +492,9 @@ classdef X6 < hgsetget
             fprintf('Stopping\n');
             x6.stop();
 
-
-
             x6.disconnect();
 
-
-            unloadlibrary('libx6adc')
-        end
-
-        function silly()
-            fprintf('BBN X6-1000 Test Executable\n')
-            X6.load_library();
-            X6.set_debug_level(4);
-            calllib('libx6adc', 'silly');
-            unloadlibrary('libx6adc')
+            unloadlibrary('libx6')
         end
 
     end

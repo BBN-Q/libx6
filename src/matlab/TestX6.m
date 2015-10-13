@@ -18,7 +18,7 @@ classdef TestX6 < matlab.unittest.TestCase
         function takedown_x6(testCase)
             disconnect(testCase.x6);
             testCase.x6 = [];
-            unloadlibrary('libx6adc');
+            unloadlibrary('libx6');
         end
 
     end

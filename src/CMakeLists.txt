@@ -6,7 +6,7 @@
 # make
 
 
-PROJECT( libx6adc )
+PROJECT( libx6 )
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
@@ -52,7 +52,7 @@ endif()
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
 
 SET ( DLL_SRC
-	./lib/libx6adc.cpp
+	./lib/libx6.cpp
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
@@ -61,7 +61,7 @@ SET ( DLL_SRC
 
 SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
-ADD_LIBRARY( x6adc SHARED ${DLL_SRC} )
+ADD_LIBRARY( x6 SHARED ${DLL_SRC} )
 
 ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp
@@ -95,17 +95,17 @@ TARGET_LINK_LIBRARIES(run_tests
 	wdapi
 	pthread
 
-	x6adc
+	x6
 )
 
-TARGET_LINK_LIBRARIES(x6adc
+TARGET_LINK_LIBRARIES(x6
 	${II_LIBS}
 	wdapi # WinDriver library in Innovative\lib\gcc
 	${IPP_LIB} # in Intel IPP directory listed above
 )
 
 if(WIN32)
-	TARGET_LINK_LIBRARIES(x6adc
+	TARGET_LINK_LIBRARIES(x6
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
 	)
 endif(WIN32)
