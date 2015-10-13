@@ -125,8 +125,6 @@ classdef TestX6 < matlab.unittest.TestCase
 
             acquire(testCase.x6);
 
-            pause(0.5);
-
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
 
@@ -150,8 +148,6 @@ classdef TestX6 < matlab.unittest.TestCase
             set_averager_settings(testCase.x6, 5120, 64, 1, 1);
 
             acquire(testCase.x6);
-
-            pause(0.5);
 
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
@@ -196,8 +192,6 @@ classdef TestX6 < matlab.unittest.TestCase
             set_averager_settings(testCase.x6, 5120, 64, 1, 1);
 
             acquire(testCase.x6);
-
-            pause(0.5);
 
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
@@ -288,8 +282,6 @@ classdef TestX6 < matlab.unittest.TestCase
 
             acquire(testCase.x6);
 
-            pause(0.5);
-
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
 
@@ -340,8 +332,6 @@ classdef TestX6 < matlab.unittest.TestCase
             set_averager_settings(testCase.x6, 5120, 64, 1, 1);
 
             acquire(testCase.x6);
-
-            pause(0.5);
 
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
