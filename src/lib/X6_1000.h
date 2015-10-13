@@ -105,9 +105,9 @@ public:
 	void write_dsp_register(unsigned, uint32_t, uint32_t);
 	uint32_t read_dsp_register(unsigned, uint32_t) const;
 
-	const int BusmasterSize = 4; /**< Rx & Tx BusMaster size in MB */
-	const int MHz = 1e6;         /**< Constant for converting MHz */
-	const int Meg = 1024 * 1024;
+	/**< Rx & Tx BusMaster size in MB */
+	const int RxBusmasterSize = 4;
+	const int TxBusmasterSize = 32;
 
 private:
 	// disable copying because some the innovative stuff it holds on to is non-copyable

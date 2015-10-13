@@ -74,9 +74,10 @@ void X6_1000::open(int deviceID) {
     timer_.OnElapsed.SetEvent(this, &X6_1000::HandleTimer);
     timer_.OnElapsed.Thunk();
 
-    // Insure BM size is a multiple of four MB
-    const int RxBmSize = std::max(BusmasterSize/4, 1) * 4;
-    const int TxBmSize = std::max(BusmasterSize/4, 1) * 4;
+    // Insure BM size is a multiple of four MB and at least 4 MB
+    const int RxBmSize = std::max(RxBusmasterSize/4, 1) * 4;
+    const int TxBmSize = std::max(TxBusmasterSize/4, 1) * 4;
+    const int Meg = (1 << 20);
     module_.IncomingBusMasterSize(RxBmSize * Meg);
     module_.OutgoingBusMasterSize(TxBmSize * Meg);
 
