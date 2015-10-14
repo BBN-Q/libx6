@@ -122,6 +122,14 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_reference');
         end
 
+        function set.digitzer_mode(obj, dig_mode)
+            x6_call(obj, 'set_digitizer_mode', dig_mode);
+        end
+
+        function val = get.digitzer_mode(obj)
+            val = x6_getter(obj, 'get_digitizer_mode');
+        end
+
         function enable_stream(obj, a, b, c)
             x6_call(obj, 'enable_stream', a, b, c)
             obj.enabledStreams{end+1} = [a,b,c];
@@ -151,7 +159,7 @@ classdef X6 < hgsetget
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
             function do_poll(~,~)
-                if (x6_getter(obj, 'get_has_new_data'))
+                if (x6_getter(obj, 'get_num_new_records'))
                     notify(obj, 'DataReady');
                 end
             end

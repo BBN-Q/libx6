@@ -17,6 +17,7 @@ enum X6_STATUS {
   X6_INVALID_KERNEL_STREAM = -12,
   X6_INVALID_KERNEL_LENGTH = -13,
   X6_KERNEL_OUT_OF_RANGE = -14,
+  X6_MODE_ERROR = -15
 };
 
 #ifdef __cplusplus
@@ -37,7 +38,8 @@ static std::map<X6_STATUS, std::string> errorsMsgs = {
 {X6_INVALID_WF_LEN, "Pulse generator waveform must be multiple of 4."},
 {X6_WF_OUT_OF_RANGE, "Pulse generator waveform values must be between -1.0 and (1-1/2^15)."},
 {X6_INVALID_KERNEL_STREAM, "Attempted to write kernel to non kernel (raw or demod.) stream."},
-{X6_KERNEL_OUT_OF_RANGE, "Kernel values must be between -1.0 and (1-1/2^15)."}
+{X6_KERNEL_OUT_OF_RANGE, "Kernel values must be between -1.0 and (1-1/2^15)."},
+{X6_MODE_ERROR, "Feature requested incompatible with digitizer mode."}
 };
 
 #endif

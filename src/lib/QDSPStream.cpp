@@ -8,6 +8,7 @@
 // Copyright 2015, Raytheon BBN Technologies
 
 #include "QDSPStream.h"
+#include "constants.h"
 
 QDSPStream::QDSPStream() : channelID{0,0,0}, streamID{0}, type{PHYSICAL} {};
 
@@ -37,6 +38,22 @@ unsigned QDSPStream::fixed_to_float() const {
             else {
                 return 1 << 15;
             }
+            break;
+        default:
+            return 0;
+    }
+}
+
+size_t QDSPStream::calc_record_length(const size_t & recordLength) const {
+    switch (type) {
+        case PHYSICAL:
+            return recordLength / RAW_DECIMATION_FACTOR;
+            break;
+        case DEMOD:
+            return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
+            break;
+        case RESULT:
+            return 2;
             break;
         default:
             return 0;

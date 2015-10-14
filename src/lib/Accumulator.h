@@ -32,7 +32,6 @@ public:
 	void snapshot_variance(double *);
 	size_t get_buffer_size();
 	size_t get_variance_buffer_size();
-	size_t calc_record_length(const QDSPStream &, const size_t &);
 	size_t recordsTaken;
 
 private:

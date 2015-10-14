@@ -145,6 +145,14 @@ X6_STATUS get_reference_source(int deviceID, X6_REFERENCE_SOURCE* src) {
 	return x6_getter(deviceID, &X6_1000::get_reference_source, src);
 }
 
+X6_STATUS set_digitizer_mode(int deviceID, X6_DIGITIZER_MODE mode) {
+	return x6_call(deviceID, &X6_1000::set_digitizer_mode, mode);
+}
+
+X6_STATUS get_digitizer_mode(int deviceID, X6_DIGITIZER_MODE* mode) {
+	return x6_getter(deviceID, &X6_1000::get_digitizer_mode, mode);
+}
+
 X6_STATUS set_input_channel_enable(int deviceID, unsigned chan, bool enable){
 	return x6_call(deviceID, &X6_1000::set_input_channel_enable, chan, enable);
 }
@@ -213,8 +221,8 @@ X6_STATUS get_is_running(int deviceID, int* isRunning) {
 	return x6_getter(deviceID, &X6_1000::get_is_running, isRunning);
 }
 
-X6_STATUS get_has_new_data(int deviceID, int* hasNewData) {
-	return x6_getter(deviceID, &X6_1000::get_has_new_data, hasNewData);
+X6_STATUS get_num_new_records(int deviceID, unsigned* hasNewData) {
+	return x6_getter(deviceID, &X6_1000::get_num_new_records, hasNewData);
 }
 
 X6_STATUS stop(int deviceID) {
