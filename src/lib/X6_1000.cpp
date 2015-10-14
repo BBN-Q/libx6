@@ -521,6 +521,7 @@ void X6_1000::acquire() {
         }
     }
     initialize_accumulators();
+    initialize_queues();
     initialize_correlators();
 
     VMPs_[0].Init(physChans_);
@@ -642,14 +643,22 @@ void X6_1000::transfer_waveform(QDSPStream stream, double * buffer, size_t lengt
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
-    //Don't copy more than we have
-    if (length < accumulators_[sid].get_buffer_size() ) {
-        FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+    if (digitizerMode_ == AVERAGER) {
+        //Don't copy more than we have
+        if (length < accumulators_[sid].get_buffer_size() ) {
+            FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+        }
+        accumulators_[sid].snapshot(buffer);
     }
-    accumulators_[sid].snapshot(buffer);
+    else {
+        queues_[sid].get(buffer, length);
+    }
 }
 
 void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t length) {
+    if (digitizerMode_ == DIGITIZER) {
+        throw X6_MODE_ERROR;
+    }
     //Check we have the stream
     uint16_t sid = stream.streamID;
     if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
@@ -740,6 +749,12 @@ void X6_1000::initialize_accumulators() {
     }
 }
 
+void X6_1000::initialize_queues() {
+    for (auto kv : activeQDSPStreams_) {
+        queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+    }
+}
+
 void X6_1000::initialize_correlators() {
     vector<uint16_t> streamIDs = {};
     vector<QDSPStream> streams = {};
@@ -758,6 +773,7 @@ void X6_1000::initialize_correlators() {
         }
     }
 }
+
 /****************************************************************************
  * Event Handlers
  ****************************************************************************/

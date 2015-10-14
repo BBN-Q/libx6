@@ -59,6 +59,7 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	FILE_LOG(logDEBUG4) << "Buffering data...";
 	FILE_LOG(logDEBUG4) << "recordsTaken = " << recordsTaken;
 	FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
+	FILE_LOG(logDEBUG4) << "queue size is " << queue_.size();
 
 	for (auto val : buffer) {
 		queue_.push(val);

@@ -29,6 +29,7 @@ classdef X6 < hgsetget
         samplingRate = 1e9;
         triggerSource
         reference
+        digitizer_mode
         deviceID = 0;
         enabledStreams = {} %keep track of enabled streams so we can transfer them all
         dataTimer
@@ -122,11 +123,11 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_reference');
         end
 
-        function set.digitzer_mode(obj, dig_mode)
+        function set.digitizer_mode(obj, dig_mode)
             x6_call(obj, 'set_digitizer_mode', dig_mode);
         end
 
-        function val = get.digitzer_mode(obj)
+        function val = get.digitizer_mode(obj)
             val = x6_getter(obj, 'get_digitizer_mode');
         end
 
@@ -207,6 +208,10 @@ classdef X6 < hgsetget
             % when passed a single channel struct, returns the corresponding waveform
             % when passed multiple channels, returns the correlation of the channels
             bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
+            if bufSize == 0
+                wf = [];
+                return
+            end
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 

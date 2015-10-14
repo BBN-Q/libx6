@@ -163,6 +163,7 @@ private:
 	bool check_done();
 
 	void initialize_accumulators();
+	void initialize_queues();
 	void initialize_correlators();
 
 	// Malibu Event handlers
