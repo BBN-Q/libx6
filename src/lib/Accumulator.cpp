@@ -7,14 +7,13 @@
 // Copyright 2015, Raytheon BBN Technologies
 
 #include "Accumulator.h"
-#include "constants.h"
 
 Accumulator::Accumulator() :
     recordsTaken{0}, wfmCt_{0}, numSegments_{0}, numWaveforms_{0}, recordLength_{0} {};
 
 Accumulator::Accumulator(const QDSPStream & stream, const size_t & recordLength, const size_t & numSegments, const size_t & numWaveforms) :
                          recordsTaken{0}, stream_{stream}, wfmCt_{0}, numSegments_{numSegments}, numWaveforms_{numWaveforms} {
-    recordLength_ = calc_record_length(stream, recordLength);
+    recordLength_ = stream.calc_record_length(recordLength);
     data_.assign(recordLength_*numSegments, 0);
     idx_ = data_.begin();
     if (stream.type == PHYSICAL) {
@@ -34,22 +33,6 @@ void Accumulator::reset() {
     idx2_ = data_.begin();
     wfmCt_ = 0;
     recordsTaken = 0;
-}
-
-size_t Accumulator::calc_record_length(const QDSPStream & stream, const size_t & recordLength) {
-    switch (stream.type) {
-        case PHYSICAL:
-            return recordLength / RAW_DECIMATION_FACTOR;
-            break;
-        case DEMOD:
-            return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
-            break;
-        case RESULT:
-            return 2;
-            break;
-        default:
-            return 0;
-    }
 }
 
 size_t Accumulator::get_buffer_size() {

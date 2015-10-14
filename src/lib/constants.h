@@ -8,6 +8,8 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+#include <vector>
+
 const int MAX_NUM_DEVICES = 5;
 
 //Some maximum sizes of things we can fit

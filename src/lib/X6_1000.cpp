@@ -10,6 +10,7 @@
 #include <chrono>     // std::chrono::seconds etc.
 #include <thread>     // std::this_thread
 #include <bitset>
+#include <limits>     // numeric_limits
 
 #include "X6_1000.h"
 #include "X6_errno.h"
@@ -230,6 +231,15 @@ void X6_1000::set_trigger_delay(float delay) {
     // leaving as a TODO for now
     // Something like this might work:
     // trigger_.DelayedTriggerPeriod(delay);
+}
+
+void X6_1000::set_digitizer_mode(const X6_DIGITIZER_MODE & mode) {
+    FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
+    digitizerMode_ = mode;
+}
+
+X6_DIGITIZER_MODE X6_1000::get_digitizer_mode() const {
+    return digitizerMode_;
 }
 
 void X6_1000::set_decimation(bool enabled, int factor) {
@@ -603,15 +613,25 @@ bool X6_1000::get_is_running() {
     return isRunning_;
 }
 
-bool X6_1000::get_has_new_data() {
+size_t X6_1000::get_num_new_records() {
     // determines if new data has arrived since the last call
-    size_t currentRecords = 0;
-    for (auto & kv : accumulators_) {
-        currentRecords = max(currentRecords, kv.second.recordsTaken);
+    size_t result = 0;
+    if ( digitizerMode_ == AVERAGER) {
+        size_t currentRecords = 0;
+        for (auto & kv : accumulators_) {
+            currentRecords = max(currentRecords, kv.second.recordsTaken);
+        }
+        result = currentRecords > recordsTaken_;
+        recordsTaken_ = currentRecords;
     }
-
-    bool result = (currentRecords > recordsTaken_);
-    recordsTaken_ = currentRecords;
+    else {
+        //TODO: punt on how to handle recordsTaken_
+        size_t currentRecords = std::numeric_limits<size_t>::max();
+        for (auto & kv : queues_) {
+            currentRecords = min(currentRecords, kv.second.get_buffer_size()/kv.second.recordLength);
+        }
+        result = currentRecords;
+    }
     return result;
 }
 
@@ -644,6 +664,9 @@ void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t lengt
 }
 
 void X6_1000::transfer_correlation(vector<QDSPStream> & streams, double *buffer, size_t length) {
+    if (digitizerMode_ == DIGITIZER) {
+        throw X6_MODE_ERROR;
+    }
     // check that we have the correlator
     vector<uint16_t> sids(streams.size());
     for (size_t i = 0; i < streams.size(); i++)
@@ -660,6 +683,9 @@ void X6_1000::transfer_correlation(vector<QDSPStream> & streams, double *buffer,
 }
 
 void X6_1000::transfer_correlation_variance(vector<QDSPStream> & streams, double *buffer, size_t length) {
+    if (digitizerMode_ == DIGITIZER) {
+        throw X6_MODE_ERROR;
+    }
     // check that we have the correlator
     vector<uint16_t> sids(streams.size());
     for (size_t i = 0; i < streams.size(); i++)
@@ -680,13 +706,24 @@ int X6_1000::get_buffer_size(vector<QDSPStream> & streams) {
     for (size_t i = 0; i < streams.size(); i++)
         sids[i] = streams[i].streamID;
     if (streams.size() == 1) {
-        return accumulators_[sids[0]].get_buffer_size();
+        if ( digitizerMode_ == AVERAGER) {
+            return accumulators_[sids[0]].get_buffer_size();
+        }
+        else {
+            return queues_[sids[0]].get_buffer_size();
+        }
     } else {
+        if (digitizerMode_ == DIGITIZER) {
+            throw X6_MODE_ERROR;
+        }
         return correlators_[sids].get_buffer_size();
     }
 }
 
 int X6_1000::get_variance_buffer_size(vector<QDSPStream> & streams) {
+    if (digitizerMode_ == DIGITIZER) {
+        throw X6_MODE_ERROR;
+    }
     vector<uint16_t> sids(streams.size());
     for (size_t i = 0; i < streams.size(); i++)
         sids[i] = streams[i].streamID;
@@ -825,21 +862,35 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
         case PHYSICAL:
         case DEMOD:
             FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
-            // accumulate the data in the appropriate channel
-            if (accumulators_[sid].recordsTaken < numRecords_) {
-                accumulators_[sid].accumulate(sbufferDG);
+            if ( digitizerMode_ == AVERAGER) {
+                // accumulate the data in the appropriate channel
+                if (accumulators_[sid].recordsTaken < numRecords_) {
+                    accumulators_[sid].accumulate(sbufferDG);
+                }
+            }
+            else {
+                if (queues_[sid].recordsTaken < numRecords_) {
+                    queues_[sid].push(sbufferDG);
+                }
             }
             break;
         case RESULT:
             FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
-            // accumulate the data in the appropriate channel
-            if (accumulators_[sid].recordsTaken < numRecords_) {
-                accumulators_[sid].accumulate(ibufferDG);
-                // correlate with other result channels
-                for (auto & kv : correlators_) {
-                    if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
-                        kv.second.accumulate(sid, ibufferDG);
+            if ( digitizerMode_ == AVERAGER) {
+                // accumulate the data in the appropriate channel
+                if (accumulators_[sid].recordsTaken < numRecords_) {
+                    accumulators_[sid].accumulate(ibufferDG);
+                    // correlate with other result channels
+                    for (auto & kv : correlators_) {
+                        if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
+                            kv.second.accumulate(sid, ibufferDG);
+                        }
                     }
+                }
+            }
+            else {
+                if (queues_[sid].recordsTaken < numRecords_) {
+                    queues_[sid].push(ibufferDG);
                 }
             }
             break;
@@ -847,15 +898,28 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 }
 
 bool X6_1000::check_done() {
-    for (auto & kv : accumulators_) {
-        FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
-    }
-    for (auto & kv : accumulators_) {
-            if (kv.second.recordsTaken < numRecords_) {
-            return false;
+    if ( digitizerMode_ == AVERAGER) {
+        for (auto & kv : accumulators_) {
+            FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
         }
+        for (auto & kv : accumulators_) {
+                if (kv.second.recordsTaken < numRecords_) {
+                return false;
+            }
+        }
+        return true;
     }
-    return true;
+    else {
+        for (auto & kv : queues_) {
+            FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
+        }
+        for (auto & kv : queues_) {
+                if (kv.second.recordsTaken < numRecords_) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
 
 void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
