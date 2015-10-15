@@ -41,7 +41,8 @@ classdef X6 < hgsetget
 
     properties(Constant)
         LIBRARY_PATH = '../../build/';
-        DECIM_FACTOR = 4;
+        RAW_DECIMATION_FACTOR = 4;
+        DEMOD_DECIMATION_FACTOR = 32;
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
         SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
     end
@@ -159,9 +160,18 @@ classdef X6 < hgsetget
             %Since we cannot easily pass callbacks to the C library to fire
             %on new data arriving we resort to polling on a timer
             %We also fire on stopping to catch any last data
+            recsPerRoundRobin = obj.nbrSegments*obj.nbrWaveforms;
             function do_poll(~,~)
-                if (x6_getter(obj, 'get_num_new_records'))
-                    notify(obj, 'DataReady');
+                if strcmp(obj.digitizer_mode, 'AVERAGER') 
+                    if (x6_getter(obj, 'get_num_new_records'))
+                        notify(obj, 'DataReady');
+                    end
+                else
+                    %To make life easier only fire when a complete round
+                    %robin is available in digitizer mode
+                    if x6_getter(obj, 'get_num_new_records') >= recsPerRoundRobin
+                        notify(obj, 'DataReady')
+                    end
                 end
             end
             obj.dataTimer = timer('TimerFcn', @do_poll, 'StopFcn', @(~,~) notify(obj, 'DataReady'), 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
@@ -215,13 +225,27 @@ classdef X6 < hgsetget
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 
+            %For complex data real/imag are interleaved
             if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf = wfPtr.Value;
             else
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
             end
-            if channels(1).c == 0 % non-results streams should be reshaped
-                wf = reshape(wf, length(wf)/obj.nbrSegments, obj.nbrSegments);
+            
+            %Reshape the data
+            if channels(1).b == 0 && channels(1).c == 0 % physical stream
+                streamRecLength = obj.recordLength/obj.RAW_DECIMATION_FACTOR;
+            elseif channels(1).c == 0 % demod stream
+                streamRecLength = obj.recordLength/obj.DEMOD_DECIMATION_FACTOR;
+            else
+                streamRecLength = 1;
+            end
+            if strcmp(obj.digitizer_mode, 'DIGITIZER')
+                recsPerRoundRobin = obj.nbrWaveforms*obj.nbrSegments;
+                rrsPerBuf = length(wf)/streamRecLength/recsPerRoundRobin;
+                wf = reshape(wf, streamRecLength, obj.nbrWaveforms, obj.nbrSegments, rrsPerBuf);
+            else
+                wf = reshape(wf, streamRecLength, obj.nbrSegments);
             end
         end
 
