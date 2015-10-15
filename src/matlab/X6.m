@@ -29,7 +29,7 @@ classdef X6 < hgsetget
         samplingRate = 1e9;
         triggerSource
         reference
-        digitizer_mode
+        digitizerMode
         deviceID = 0;
         enabledStreams = {} %keep track of enabled streams so we can transfer them all
         dataTimer
@@ -124,11 +124,11 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_reference');
         end
 
-        function set.digitizer_mode(obj, dig_mode)
+        function set.digitizerMode(obj, dig_mode)
             x6_call(obj, 'set_digitizer_mode', dig_mode);
         end
 
-        function val = get.digitizer_mode(obj)
+        function val = get.digitizerMode(obj)
             val = x6_getter(obj, 'get_digitizer_mode');
         end
 
@@ -162,7 +162,7 @@ classdef X6 < hgsetget
             %We also fire on stopping to catch any last data
             recsPerRoundRobin = obj.nbrSegments*obj.nbrWaveforms;
             function do_poll(~,~)
-                if strcmp(obj.digitizer_mode, 'AVERAGER') 
+                if strcmp(obj.digitizerMode, 'AVERAGER') 
                     if (x6_getter(obj, 'get_num_new_records'))
                         notify(obj, 'DataReady');
                     end
@@ -222,7 +222,7 @@ classdef X6 < hgsetget
             %In digitizer mode we want integer number of round robins
             recLength = x6_channel_getter(obj, 'get_record_length', channels);
             samplesPerRR = recLength*obj.nbrWaveforms*obj.nbrSegments;
-            if strcmp(obj.digitizer_mode, 'DIGITIZER')
+            if strcmp(obj.digitizerMode, 'DIGITIZER')
                 bufSize = samplesPerRR * floor(bufSize/samplesPerRR);
             end
             
@@ -241,7 +241,7 @@ classdef X6 < hgsetget
                 recLength = recLength/2;
             end
             
-            if strcmp(obj.digitizer_mode, 'DIGITIZER')
+            if strcmp(obj.digitizerMode, 'DIGITIZER')
                 recsPerRoundRobin = obj.nbrWaveforms*obj.nbrSegments;
                 rrsPerBuf = length(wf)/recLength/recsPerRoundRobin;
                 wf = reshape(wf, recLength, obj.nbrWaveforms, obj.nbrSegments, rrsPerBuf);

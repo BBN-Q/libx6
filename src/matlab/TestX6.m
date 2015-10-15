@@ -409,7 +409,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             set_averager_settings(testCase.x6, 5120, 64, 1, 2);
             
-            testCase.x6.digitizer_mode = 'DIGITIZER';
+            testCase.x6.digitizerMode = 'DIGITIZER';
 
             acquire(testCase.x6);
 
