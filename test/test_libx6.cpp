@@ -152,3 +152,29 @@ TEST_CASE("kernels") {
 	disconnect_x6(0);
 
 }
+
+TEST_CASE("streams", "[streams]") {
+
+	connect_x6(0);
+
+	SECTION("digitizer mode") {
+
+		enable_stream(0, 1, 0, 0);
+		enable_stream(0, 1, 1, 0);
+
+		set_nco_frequency(0, 1, 1, 11e6);
+
+		set_averager_settings(0, 5120, 64, 1, 2);
+
+		set_digitizer_mode(0, DIGITIZER);
+
+		acquire(0);
+
+		wait_for_acquisition(0, 1);
+
+		stop(0);
+	}
+
+	disconnect_x6(0);
+
+}
