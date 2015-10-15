@@ -615,7 +615,7 @@ bool X6_1000::get_has_new_data() {
     return result;
 }
 
-void X6_1000::transfer_waveform(QDSPStream stream, double * buffer, size_t length) {
+void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length) {
     //Check we have the stream
     uint16_t sid = stream.streamID;
     if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){

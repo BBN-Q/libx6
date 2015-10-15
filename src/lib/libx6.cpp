@@ -221,7 +221,7 @@ X6_STATUS stop(int deviceID) {
 	return x6_call(deviceID, &X6_1000::stop);
 }
 
-X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
+X6_STATUS transfer_stream(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
 	vector<QDSPStream> channels(numChannels);
@@ -229,7 +229,7 @@ X6_STATUS transfer_waveform(int deviceID, ChannelTuple *channelTuples, unsigned 
 		channels[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	if (numChannels == 1) {
-		return x6_call(deviceID, &X6_1000::transfer_waveform, channels[0], buffer, bufferLength);
+		return x6_call(deviceID, &X6_1000::transfer_stream, channels[0], buffer, bufferLength);
 	} else {
 		return x6_call(deviceID, &X6_1000::transfer_correlation, channels, buffer, bufferLength);
 	}

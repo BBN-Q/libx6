@@ -104,11 +104,11 @@ function wait_for_acquisition(dev::X6, timeOut::Int)
 	ccall((:wait_for_acquisition, X6_LIBRARY), Int32, (Int32, Int32), dev.id, timeOut)
 end
 
-function transfer_waveform(dev::X6, a, b, c)
+function transfer_stream(dev::X6, a, b, c)
 	channels = [Channel(a,b,c)]
 	bufSize = ccall((:get_buffer_size, X6_LIBRARY), Int32, (Int32, Ptr{Channel}, Uint32), dev.id, channels, length(channels))
 	wfs = Array(Float64, bufSize)
-	success = ccall((:transfer_waveform, X6_LIBRARY), Int32, (Int32, Ptr{Channel}, Uint32, Ptr{Float64}, Int32),
+	success = ccall((:transfer_stream, X6_LIBRARY), Int32, (Int32, Ptr{Channel}, Uint32, Ptr{Float64}, Int32),
 													dev.id, channels, length(channels), wfs, bufSize)
 	@assert success == 0 "Transferring waveforms failed!"
 	if (b == 0) # physical channel
@@ -165,9 +165,9 @@ function unittest()
 	println("Wait for acquisition returned $success")
 	stop(x6)
 
-	rawwfs = [transfer_waveform(x6, physChan, 0, 0) for physChan = 1:2]
-	demodwfs = [transfer_waveform(x6, physChan, demodChan, 0) for physChan = 1:2, demodChan = 1:2]
-	resultwfs = [transfer_waveform(x6, physChan, demodChan, 1) for physChan = 1:2, demodChan = 1:2]
+	rawwfs = [transfer_stream(x6, physChan, 0, 0) for physChan = 1:2]
+	demodwfs = [transfer_stream(x6, physChan, demodChan, 0) for physChan = 1:2, demodChan = 1:2]
+	resultwfs = [transfer_stream(x6, physChan, demodChan, 1) for physChan = 1:2, demodChan = 1:2]
 
 	disconnect!(x6)
 

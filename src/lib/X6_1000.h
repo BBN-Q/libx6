@@ -88,7 +88,7 @@ public:
 	bool get_is_running();
 	bool get_has_new_data();
 
-	void transfer_waveform(QDSPStream, double *, size_t);
+	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
 	void transfer_correlation_variance(vector<QDSPStream> &, double *, size_t);

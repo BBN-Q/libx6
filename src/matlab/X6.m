@@ -181,7 +181,7 @@ classdef X6 < hgsetget
             end
         end
 
-        function data = transfer_waveform(obj, channel)
+        function data = transfer_stream(obj, channel)
             % returns a structure of streams associated with the given
             % channel
             data = struct();
@@ -200,7 +200,7 @@ classdef X6 < hgsetget
             % when passed multiple channels, returns the correlation of the channels
             bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
-            x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
+            x6_call(obj, 'transfer_stream', channels, length(channels), wfPtr, bufSize);
 
             if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf = wfPtr.Value;

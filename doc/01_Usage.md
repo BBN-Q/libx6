@@ -189,7 +189,7 @@ seconds have elapsed.
 
 `stop(int ID)`
 
-`transfer_waveform(int ID, struct ChannelTuple *channels, int numChannels, double *buffer, unsigned bufsize)`
+`transfer_stream(int ID, struct ChannelTuple *channels, int numChannels, double *buffer, unsigned bufsize)`
 
 The `ChannelTuple` struct is defined as follows:
 ```C
@@ -212,7 +212,7 @@ point.
 
 `transfer_variance(int ID, ChannelTuple *channels, int numChannels, double *buffer, unsigned bufsize)`
 
-Like `transfer_waveform` but returns the variance of the corresponding
+Like `transfer_stream` but returns the variance of the corresponding
 stream(s). For non-physical streams, the variance has three components: real,
 imaginary, and the real-imaginary product. `buffer` is filled in triples, e.g.:
 `[d1_r, d1_i, d1_p, d2_r, d2_i, d2_p, ...]`.
