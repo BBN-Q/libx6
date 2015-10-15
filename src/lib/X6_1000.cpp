@@ -379,7 +379,8 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
 
     //Check the kernel is in range
     auto range_check = [](double val){
-        if ((val > MAX_KERNEL_VALUE) || (val < MIN_KERNEL_VALUE)){
+        const double one_bit_level = 1.0/(1 << KERNEL_FRAC_BITS);
+        if ((val > (MAX_KERNEL_VALUE + 1.5*one_bit_level )) || (val < (MIN_KERNEL_VALUE - 0.5*one_bit_level)) ) {
             FILE_LOG(logERROR) << "kernel value " << val << " is out of range";
             throw X6_KERNEL_OUT_OF_RANGE;
         }
@@ -389,6 +390,12 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
         range_check(std::real(val));
         range_check(std::imag(val));
     }
+
+    auto scale_with_clip = [](double val){
+        val = std::min(val, MAX_KERNEL_VALUE);
+        val = std::max(val, MIN_KERNEL_VALUE);
+        return val * (1 << KERNEL_FRAC_BITS);
+    };
 
     FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel with length  " << kernel.size();
 
@@ -403,8 +410,8 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
 
     //Kernel memory as address/data pairs
     for (size_t ct = 0; ct < kernel.size(); ct++) {
-        int32_t scaled_re = std::real(kernel[ct]) * (1 << 15);
-        int32_t scaled_im = std::imag(kernel[ct]) * (1 << 15);
+        int32_t scaled_re = scale_with_clip(std::real(kernel[ct]));
+        int32_t scaled_im = scale_with_clip(std::imag(kernel[ct]));
         uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
         write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), ct);
         write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1, packedval);
@@ -872,20 +879,25 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
 
     //Check and write the data
     auto range_check = [](double val){
-        const double maxVal = 1 - 1.0/(1 << 15);
-        const double minVal = -1.0;
-        if ((val > maxVal) || (val < minVal)){
+        const double one_bit_level = 1.0/(1 << WF_FRAC_BITS);
+        if ((val > (MAX_WF_VALUE + 1.5*one_bit_level)) || (val < (MIN_WF_VALUE - 0.5*one_bit_level)) ) {
             FILE_LOG(logERROR) << "waveform value out of range: " << val;
             throw X6_WF_OUT_OF_RANGE;
         }
     };
 
+    auto scale_with_clip = [](double val){
+        val = std::min(val, MAX_WF_VALUE);
+        val = std::max(val, MIN_WF_VALUE);
+        return val * (1 << WF_FRAC_BITS);
+    };
+
     //Loop through pairs, convert to 16bit integer, stack into a uint32_t
     for (size_t ct = 0; ct < wf.size(); ct+=2) {
         range_check(wf[ct]);
-        int32_t fixedValA = wf[ct]*(1<<15);
+        int32_t fixedValA = scale_with_clip(wf[ct]);
         range_check(wf[ct+1]);
-        int32_t fixedValB = wf[ct+1]*(1<<15);
+        int32_t fixedValB = scale_with_clip(wf[ct+1]);
         uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
         FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
                     wf[ct+1] << "(" << hexn<4> << fixedValB << ") as " << hexn<8> << stackedVal;

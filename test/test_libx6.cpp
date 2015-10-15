@@ -42,9 +42,9 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 		uint16_t ver;
 
 		get_firmware_version(0, BBN_X6, &ver);
-		REQUIRE( ver >= 0x0008);
+		REQUIRE( ver >= 0x0009);
 		get_firmware_version(0, BBN_QDSP, &ver);
-		REQUIRE( ver >= 0x0100);
+		REQUIRE( ver >= 0x0101);
 		get_firmware_version(0, BBN_PG, &ver);
 		REQUIRE( ver >= 0x0001);
 	}
@@ -130,7 +130,7 @@ TEST_CASE("kernels") {
 		//Kernel overrange
 		kernel.resize(512);
 		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
-		kernel[81] = 1.0;
+		kernel[81] = 1.1;
 		CHECK( write_kernel(0, 1, 1, 1, reinterpret_cast<_Complex double*>(kernel.data()), kernel.size()) == X6_KERNEL_OUT_OF_RANGE );
 
 	}

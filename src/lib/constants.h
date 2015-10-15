@@ -15,13 +15,15 @@ const int MAX_RECORD_LENGTH = 16384; // max packet size (for FIFOs) is 4096; raw
 const int MIN_RECORD_LENGTH = 128; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
 const int RECORD_LENGTH_GRANULARITY = 32; //to ensure decimated demod streams work
 
-const double MAX_KERNEL_VALUE = 1 - 1.0/(1 << 15);
+const int KERNEL_FRAC_BITS = 15;
+const double MAX_KERNEL_VALUE = 1 - 1.0/(1 << KERNEL_FRAC_BITS);
 const double MIN_KERNEL_VALUE = -1.0;
 
 const int MAX_RAW_KERNEL_LENGTH = 4096;
 const int MAX_DEMOD_KERNEL_LENGTH = 512;
 
-const double MAX_WF_VALUE = 1 - 1.0/(1 << 15);
+const int WF_FRAC_BITS = 15;
+const double MAX_WF_VALUE = 1 - 1.0/(1 << WF_FRAC_BITS);
 const double MIN_WF_VALUE = -1.0;
 
 // WishBone interface
