@@ -255,12 +255,17 @@ X6_STATUS transfer_variance(int deviceID, ChannelTuple *channelTuples, unsigned 
 	}
 }
 
-X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {
+X6_STATUS get_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, unsigned* bufferSize) {
 	vector<QDSPStream> streams(numChannels);
 	for (unsigned i = 0; i < numChannels; i++) {
 		streams[i] = QDSPStream(channelTuples[i].a, channelTuples[i].b, channelTuples[i].c);
 	}
 	return x6_getter(deviceID, &X6_1000::get_buffer_size, bufferSize, streams);
+}
+
+X6_STATUS get_record_length(int deviceID, ChannelTuple * channelTuple,  unsigned * len) {
+	QDSPStream stream(channelTuple->a, channelTuple->b, channelTuple->c);
+	return x6_getter(deviceID, &X6_1000::get_record_length, len, stream);
 }
 
 X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, int* bufferSize) {

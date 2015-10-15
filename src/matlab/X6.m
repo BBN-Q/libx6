@@ -217,7 +217,15 @@ classdef X6 < hgsetget
             % struct('a', X, 'b', Y, 'c', Z)
             % when passed a single channel struct, returns the corresponding waveform
             % when passed multiple channels, returns the correlation of the channels
+            
             bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
+            %In digitizer mode we want integer number of round robins
+            recLength = x6_channel_getter(obj, 'get_record_length', channels);
+            samplesPerRR = recLength*obj.nbrWaveforms*obj.nbrSegments;
+            if strcmp(obj.digitizer_mode, 'DIGITIZER')
+                bufSize = samplesPerRR * floor(bufSize/samplesPerRR);
+            end
+            
             if bufSize == 0
                 wf = [];
                 return
@@ -225,27 +233,20 @@ classdef X6 < hgsetget
             wfPtr = libpointer('doublePtr', zeros(bufSize, 1, 'double'));
             x6_call(obj, 'transfer_waveform', channels, length(channels), wfPtr, bufSize);
 
-            %For complex data real/imag are interleaved
             if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf = wfPtr.Value;
             else
+                %For complex data real/imag are interleaved
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
+                recLength = recLength/2;
             end
             
-            %Reshape the data
-            if channels(1).b == 0 && channels(1).c == 0 % physical stream
-                streamRecLength = obj.recordLength/obj.RAW_DECIMATION_FACTOR;
-            elseif channels(1).c == 0 % demod stream
-                streamRecLength = obj.recordLength/obj.DEMOD_DECIMATION_FACTOR;
-            else
-                streamRecLength = 1;
-            end
             if strcmp(obj.digitizer_mode, 'DIGITIZER')
                 recsPerRoundRobin = obj.nbrWaveforms*obj.nbrSegments;
-                rrsPerBuf = length(wf)/streamRecLength/recsPerRoundRobin;
-                wf = reshape(wf, streamRecLength, obj.nbrWaveforms, obj.nbrSegments, rrsPerBuf);
+                rrsPerBuf = length(wf)/recLength/recsPerRoundRobin;
+                wf = reshape(wf, recLength, obj.nbrWaveforms, obj.nbrSegments, rrsPerBuf);
             else
-                wf = reshape(wf, streamRecLength, obj.nbrSegments);
+                wf = reshape(wf, recLength, obj.nbrSegments);
             end
         end
 

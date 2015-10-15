@@ -729,6 +729,10 @@ int X6_1000::get_buffer_size(vector<QDSPStream> & streams) {
     }
 }
 
+unsigned X6_1000::get_record_length(QDSPStream & stream){
+    return stream.calc_record_length(recordLength_);
+}
+
 int X6_1000::get_variance_buffer_size(vector<QDSPStream> & streams) {
     if (digitizerMode_ == DIGITIZER) {
         throw X6_MODE_ERROR;

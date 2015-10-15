@@ -75,7 +75,8 @@ EXPORT X6_STATUS get_num_new_records(int, unsigned*);
 EXPORT X6_STATUS stop(int);
 EXPORT X6_STATUS transfer_waveform(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsigned);
-EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, int*);
+EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, unsigned*);
+EXPORT X6_STATUS get_record_length(int, ChannelTuple*, unsigned*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
 EXPORT X6_STATUS set_log(char*);

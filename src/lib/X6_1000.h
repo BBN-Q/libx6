@@ -98,6 +98,7 @@ public:
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
 	void transfer_correlation_variance(vector<QDSPStream> &, double *, size_t);
 	int get_buffer_size(vector<QDSPStream> &);
+	unsigned get_record_length(QDSPStream &);
 	int get_variance_buffer_size(vector<QDSPStream> &);
 
 	/* Pulse generator methods */
