@@ -27,6 +27,11 @@ enum X6_MODULE_FIRMWARE_VERSION {
     BBN_PG
 };
 
+enum X6_DIGITIZER_MODE {
+    DIGITIZER,
+    AVERAGER
+};
+
 struct ChannelTuple {
     int a;
     int b;

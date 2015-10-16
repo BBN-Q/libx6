@@ -16,6 +16,7 @@
 #include "QDSPStream.h"
 #include "Accumulator.h"
 #include "Correlator.h"
+#include "RecordQueue.h"
 
 // II Malibu headers
 #include <X6_1000M_Mb.h>
@@ -39,11 +40,15 @@ public:
 	void set_reference_source(X6_REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
 	X6_REFERENCE_SOURCE get_reference_source();
 
+
 	/** Set Trigger source
 	 *  \param trgSrc SOFTWARE_TRIGGER || EXTERNAL_TRIGGER
 	 */
 	void set_trigger_source(X6_TRIGGER_SOURCE trgSrc = EXTERNAL_TRIGGER);
 	X6_TRIGGER_SOURCE get_trigger_source() const;
+
+	void set_digitizer_mode(const X6_DIGITIZER_MODE &);
+	X6_DIGITIZER_MODE get_digitizer_mode() const;
 
 	void set_trigger_delay(float delay = 0.0);
 
@@ -86,13 +91,14 @@ public:
 	void wait_for_acquisition(unsigned);
 	void stop();
 	bool get_is_running();
-	bool get_has_new_data();
+	size_t get_num_new_records();
 
 	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
 	void transfer_correlation_variance(vector<QDSPStream> &, double *, size_t);
 	int get_buffer_size(vector<QDSPStream> &);
+	unsigned get_record_length(QDSPStream &);
 	int get_variance_buffer_size(vector<QDSPStream> &);
 
 	/* Pulse generator methods */
@@ -124,8 +130,10 @@ private:
 	vector<Innovative::VeloMergeParser> VMPs_; /**< Utility to convert and filter Velo stream back into VITA packets*/
 
 	X6_TRIGGER_SOURCE triggerSource_ = EXTERNAL_TRIGGER; /**< cached trigger source */
+	X6_DIGITIZER_MODE digitizerMode_ = AVERAGER;
 
 	map<uint16_t, QDSPStream> activeQDSPStreams_;
+
 	//vector to go from VMP ordering to SID's
 	vector<int> physChans_;
 	vector<int> virtChans_;
@@ -133,6 +141,7 @@ private:
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
 	map<vector<uint16_t>, Correlator> correlators_;
+	map<uint16_t, RecordQueue<int32_t>> queues_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
@@ -155,6 +164,7 @@ private:
 	bool check_done();
 
 	void initialize_accumulators();
+	void initialize_queues();
 	void initialize_correlators();
 
 	// Malibu Event handlers

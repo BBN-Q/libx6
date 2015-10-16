@@ -11,6 +11,7 @@
 
 #include <cstdint>
 using std::uint16_t;
+using std::size_t;
 
 enum STREAM_T { PHYSICAL, DEMOD, RESULT };
 
@@ -24,6 +25,7 @@ public:
 	STREAM_T type;
 
 	unsigned fixed_to_float() const;
+	size_t calc_record_length(const size_t &) const;
 };
 
 #endif // QDSPSTREAM_H_

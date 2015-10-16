@@ -32,6 +32,7 @@ typedef enum X6_STATUS X6_STATUS;
 typedef enum X6_REFERENCE_SOURCE X6_REFERENCE_SOURCE;
 typedef struct ChannelTuple ChannelTuple;
 typedef enum X6_TRIGGER_SOURCE X6_TRIGGER_SOURCE;
+typedef enum X6_DIGITIZER_MODE X6_DIGITIZER_MODE;
 typedef enum X6_MODULE_FIRMWARE_VERSION X6_MODULE_FIRMWARE_VERSION;
 
 EXPORT const char* get_error_msg(X6_STATUS);
@@ -46,6 +47,9 @@ EXPORT X6_STATUS get_firmware_version(int, X6_MODULE_FIRMWARE_VERSION, uint16_t*
 
 EXPORT X6_STATUS set_reference_source(int, X6_REFERENCE_SOURCE);
 EXPORT X6_STATUS get_reference_source(int, X6_REFERENCE_SOURCE*);
+
+EXPORT X6_STATUS set_digitizer_mode(int, X6_DIGITIZER_MODE);
+EXPORT X6_STATUS get_digitizer_mode(int, X6_DIGITIZER_MODE*);
 
 EXPORT X6_STATUS set_input_channel_enable(int, unsigned, bool);
 EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
@@ -67,11 +71,12 @@ EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double
 EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
 EXPORT X6_STATUS get_is_running(int, int*);
-EXPORT X6_STATUS get_has_new_data(int, int*);
+EXPORT X6_STATUS get_num_new_records(int, unsigned*);
 EXPORT X6_STATUS stop(int);
 EXPORT X6_STATUS transfer_stream(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsigned);
-EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, int*);
+EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, unsigned*);
+EXPORT X6_STATUS get_record_length(int, ChannelTuple*, unsigned*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
 EXPORT X6_STATUS set_log(char*);
