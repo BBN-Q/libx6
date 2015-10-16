@@ -639,7 +639,7 @@ size_t X6_1000::get_num_new_records() {
 void X6_1000::transfer_waveform(QDSPStream stream, double * buffer, size_t length) {
     //Check we have the stream
     uint16_t sid = stream.streamID;
-    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
+    if (activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -661,7 +661,7 @@ void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t lengt
     }
     //Check we have the stream
     uint16_t sid = stream.streamID;
-    if(activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()){
+    if (activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()) {
         FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
         throw X6_INVALID_CHANNEL;
     }
@@ -729,7 +729,7 @@ int X6_1000::get_buffer_size(vector<QDSPStream> & streams) {
     }
 }
 
-unsigned X6_1000::get_record_length(QDSPStream & stream){
+unsigned X6_1000::get_record_length(QDSPStream & stream) {
     return stream.calc_record_length(recordLength_);
 }
 

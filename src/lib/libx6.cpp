@@ -153,19 +153,19 @@ X6_STATUS get_digitizer_mode(int deviceID, X6_DIGITIZER_MODE* mode) {
 	return x6_getter(deviceID, &X6_1000::get_digitizer_mode, mode);
 }
 
-X6_STATUS set_input_channel_enable(int deviceID, unsigned chan, bool enable){
+X6_STATUS set_input_channel_enable(int deviceID, unsigned chan, bool enable) {
 	return x6_call(deviceID, &X6_1000::set_input_channel_enable, chan, enable);
 }
 
-X6_STATUS get_input_channel_enable(int deviceID, unsigned chan, bool* enable){
+X6_STATUS get_input_channel_enable(int deviceID, unsigned chan, bool* enable) {
 	return x6_getter(deviceID, &X6_1000::get_input_channel_enable, enable, chan);
 }
 
-X6_STATUS set_output_channel_enable(int deviceID, unsigned chan, bool enable){
+X6_STATUS set_output_channel_enable(int deviceID, unsigned chan, bool enable) {
 	return x6_call(deviceID, &X6_1000::set_output_channel_enable, chan, enable);
 }
 
-X6_STATUS get_output_channel_enable(int deviceID, unsigned chan, bool* enable){
+X6_STATUS get_output_channel_enable(int deviceID, unsigned chan, bool* enable) {
 	return x6_getter(deviceID, &X6_1000::get_output_channel_enable, enable, chan);
 }
 
@@ -277,12 +277,12 @@ X6_STATUS get_variance_buffer_size(int deviceID, ChannelTuple *channelTuples, un
 }
 
 /* Pulse generator methods */
-EXPORT X6_STATUS write_pulse_waveform(int deviceID, unsigned pg, double* wf, unsigned numPoints){
+EXPORT X6_STATUS write_pulse_waveform(int deviceID, unsigned pg, double* wf, unsigned numPoints) {
 	vector<double> wfVec(wf, wf+numPoints);
 	return x6_call(deviceID, &X6_1000::write_pulse_waveform, pg, wfVec);
 }
 
-EXPORT X6_STATUS read_pulse_waveform(int deviceID, unsigned pg, unsigned addr, double* val){
+EXPORT X6_STATUS read_pulse_waveform(int deviceID, unsigned pg, unsigned addr, double* val) {
 	return x6_getter(deviceID, &X6_1000::read_pulse_waveform, val, pg, addr);
 }
 
@@ -323,11 +323,11 @@ X6_STATUS set_logging_level(int logLevel) {
 	return X6_OK;
 }
 
-X6_STATUS read_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t* regValue){
+X6_STATUS read_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t* regValue) {
 	return x6_getter(deviceID, &X6_1000::read_wishbone_register, regValue, wbAddr, offset);
 }
 
-X6_STATUS write_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t data){
+X6_STATUS write_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t data) {
 	return x6_call(deviceID, &X6_1000::write_wishbone_register, wbAddr, offset, data);
 }
 

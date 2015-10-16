@@ -156,10 +156,10 @@ classdef X6 < hgsetget
 
         function acquire(obj)
             x6_call(obj, 'acquire');
-            pause(0.75);   %makes sure that the digitizers are ready before starting acquisition
-            %Since we cannot easily pass callbacks to the C library to fire
-            %on new data arriving we resort to polling on a timer
-            %We also fire on stopping to catch any last data
+            pause(0.75);   % makes sure that the digitizers are ready before starting acquisition
+            % Since we cannot easily pass callbacks to the C library to fire
+            % on new data arriving we resort to polling on a timer
+            % We also fire on stopping to catch any last data
             recsPerRoundRobin = obj.nbrSegments*obj.nbrWaveforms;
             function do_poll(~,~)
                 if strcmp(obj.digitizerMode, 'AVERAGER') 
@@ -167,8 +167,8 @@ classdef X6 < hgsetget
                         notify(obj, 'DataReady');
                     end
                 else
-                    %To make life easier only fire when a complete round
-                    %robin is available in digitizer mode
+                    % To make life easier only fire when a complete round
+                    % robin is available in digitizer mode
                     if x6_getter(obj, 'get_num_new_records') >= recsPerRoundRobin
                         notify(obj, 'DataReady')
                     end
@@ -219,7 +219,7 @@ classdef X6 < hgsetget
             % when passed multiple channels, returns the correlation of the channels
             
             bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
-            %In digitizer mode we want integer number of round robins
+            % In digitizer mode we want integer number of round robins
             recLength = x6_channel_getter(obj, 'get_record_length', channels);
             samplesPerRR = recLength*obj.nbrWaveforms*obj.nbrSegments;
             if strcmp(obj.digitizerMode, 'DIGITIZER')
@@ -236,7 +236,7 @@ classdef X6 < hgsetget
             if channels(1).b == 0 && channels(1).c == 0 % physical channel
                 wf = wfPtr.Value;
             else
-                %For complex data real/imag are interleaved
+                % For complex data real/imag are interleaved
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
                 recLength = recLength/2;
             end
@@ -283,13 +283,13 @@ classdef X6 < hgsetget
         end
 
         function write_spi(obj, chip, addr, data)
-            %read flag is low so just address
+            % read flag is low so just address
             val = bitshift(addr, 16) + data;
             obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
         end
 
         function val = read_spi(obj, chip, addr)
-            %read flag is high
+            % read flag is high
             val = bitshift(1, 28) + bitshift(addr, 16);
             obj.write_register(hex2dec('0800'), obj.SPI_ADDRS(chip), val);
             val = int32(obj.read_register(hex2dec('0800'), obj.SPI_ADDRS(chip)+1));
@@ -302,7 +302,7 @@ classdef X6 < hgsetget
 
         function [val, vStr] = get_firmware_version(obj, module)
             val = x6_getter(obj, 'get_firmware_version', module);
-            %Create version string
+            % Create version string
             major_ver = bitshift(val, -8);
             minor_ver = bitand(val, hex2dec('FF'));
             vStr = sprintf('v%d.%d', major_ver, minor_ver);
@@ -317,13 +317,13 @@ classdef X6 < hgsetget
         end
 
         function write_kernel(obj, a, b, c, kernel)
-            %The C library takes a double complex* but we're faking a double* so pack the data manually
+            % The C library takes a double complex* but we're faking a double* so pack the data manually
             packedKernel = [real(kernel(:))'; imag(kernel(:))'];
             x6_call(obj, 'write_kernel', a, b, c, packedKernel(:), numel(packedKernel)/2);
         end
 
         function val = read_kernel(obj, a, b, c, addr)
-            %The C library takes a double complex* but we're faking a double*
+            % The C library takes a double complex* but we're faking a double*
             ptr = libpointer('doublePtr', zeros(2));
             x6_call(obj, 'read_kernel', a, b, c, addr-1, ptr);
             val = ptr.Value(1) + 1i*ptr.Value(2);
@@ -362,7 +362,7 @@ classdef X6 < hgsetget
         end
 
 
-        %Instrument meta-setter that sets all parameters
+        % Instrument meta-setter that sets all parameters
         function setAll(obj, settings)
             fields = fieldnames(settings);
             for tmpName = fields'
@@ -440,7 +440,7 @@ classdef X6 < hgsetget
     methods (Static)
 
         function load_library()
-            %Helper functtion to load the platform dependent library
+            % Helper functtion to load the platform dependent library
             switch computer()
                 case 'PCWIN64'
                     libfname = 'libx6.dll';
