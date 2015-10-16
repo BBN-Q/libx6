@@ -41,8 +41,6 @@ classdef X6 < hgsetget
 
     properties(Constant)
         LIBRARY_PATH = '../../build/';
-        RAW_DECIMATION_FACTOR = 4;
-        DEMOD_DECIMATION_FACTOR = 32;
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
         SPI_ADDRS = containers.Map({'adc0', 'adc1', 'dac0', 'dac1'}, {16, 18, 144, 146});
     end
@@ -162,7 +160,7 @@ classdef X6 < hgsetget
             % We also fire on stopping to catch any last data
             recsPerRoundRobin = obj.nbrSegments*obj.nbrWaveforms;
             function do_poll(~,~)
-                if strcmp(obj.digitizerMode, 'AVERAGER') 
+                if strcmp(obj.digitizerMode, 'AVERAGER')
                     if (x6_getter(obj, 'get_num_new_records'))
                         notify(obj, 'DataReady');
                     end
@@ -217,7 +215,7 @@ classdef X6 < hgsetget
             % struct('a', X, 'b', Y, 'c', Z)
             % when passed a single channel struct, returns the corresponding waveform
             % when passed multiple channels, returns the correlation of the channels
-            
+
             bufSize = x6_channel_getter(obj, 'get_buffer_size', channels, length(channels));
             % In digitizer mode we want integer number of round robins
             recLength = x6_channel_getter(obj, 'get_record_length', channels);
@@ -225,7 +223,7 @@ classdef X6 < hgsetget
             if strcmp(obj.digitizerMode, 'DIGITIZER')
                 bufSize = samplesPerRR * floor(bufSize/samplesPerRR);
             end
-            
+
             if bufSize == 0
                 wf = [];
                 return
@@ -240,7 +238,7 @@ classdef X6 < hgsetget
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
                 recLength = recLength/2;
             end
-            
+
             if strcmp(obj.digitizerMode, 'DIGITIZER')
                 recsPerRoundRobin = obj.nbrWaveforms*obj.nbrSegments;
                 rrsPerBuf = length(wf)/recLength/recsPerRoundRobin;
