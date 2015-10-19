@@ -198,7 +198,7 @@ classdef X6 < hgsetget
             end
         end
 
-        function data = transfer_stream(obj, channel)
+        function data = transfer_waveform(obj, channel)
             % returns a structure of streams associated with the given
             % channel
             data = struct();
