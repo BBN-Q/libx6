@@ -10,6 +10,7 @@
 #define X6_1000_H_
 
 #include <array>
+#include <mutex>
 
 #include "X6_enums.h"
 
@@ -142,6 +143,8 @@ private:
 	map<uint16_t, Accumulator> accumulators_;
 	map<vector<uint16_t>, Correlator> correlators_;
 	map<uint16_t, RecordQueue<int32_t>> queues_;
+	// locks for reading/writing data to queues
+	map<uint16_t, std::mutex> mutexes_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */
