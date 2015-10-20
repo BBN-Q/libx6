@@ -658,7 +658,9 @@ void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length)
         accumulators_[sid].snapshot(buffer);
     }
     else {
+        mutexes_[sid].lock();
         queues_[sid].get(buffer, length);
+        mutexes_[sid].unlock();
     }
 }
 
@@ -763,6 +765,8 @@ void X6_1000::initialize_accumulators() {
 void X6_1000::initialize_queues() {
     for (auto kv : activeQDSPStreams_) {
         queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+        // mutexes_[kv.first] = std::mutex();
+        mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
     }
 }
 
@@ -897,7 +901,9 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             }
             else {
                 if (queues_[sid].recordsTaken < numRecords_) {
+                    mutexes_[sid].lock();
                     queues_[sid].push(sbufferDG);
+                    mutexes_[sid].unlock();
                 }
             }
             break;
@@ -917,7 +923,9 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
             }
             else {
                 if (queues_[sid].recordsTaken < numRecords_) {
+                    mutexes_[sid].lock();
                     queues_[sid].push(ibufferDG);
+                    mutexes_[sid].unlock();
                 }
             }
             break;

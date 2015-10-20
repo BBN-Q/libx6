@@ -45,8 +45,8 @@ template <class T>
 RecordQueue<T>::RecordQueue() {}
 
 template <class T>
-RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recordLength) {
-	recordLength = stream.calc_record_length(recordLength);
+RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) {
+	recordLength = stream.calc_record_length(recLen);
 	fixed_to_float_ = stream.fixed_to_float();
 	stream_ = stream;
 }
