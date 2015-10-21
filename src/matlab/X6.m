@@ -249,11 +249,11 @@ classdef X6 < hgsetget
                 % For complex data real/imag are interleaved
                 wf = wfPtr.Value(1:2:end) + 1i*wfPtr.Value(2:2:end);
                 recLength = recLength/2;
+                samplesPerRR = samplesPerRR/2;
             end
 
             if strcmp(obj.digitizerMode, 'DIGITIZER')
-                recsPerRoundRobin = obj.nbrWaveforms*obj.nbrSegments;
-                rrsPerBuf = length(wf)/recLength/recsPerRoundRobin;
+                rrsPerBuf = length(wf)/samplesPerRR;
                 wf = reshape(wf, recLength, obj.nbrWaveforms, obj.nbrSegments, rrsPerBuf);
             else
                 wf = reshape(wf, recLength, obj.nbrSegments);
