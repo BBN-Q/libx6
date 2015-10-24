@@ -5,7 +5,14 @@ This C/C++ shared library enables interaction with the BBN custom firmware for t
 X6-1000](http://www.innovative-dsp.com/products.php?product=X6-1000M) FPGA card
 as a data acquisition card for superconducting qubit experiments.
 
-#Building
+# Dependencies
+* Test cases use [philsquared/Catch](https://github.com/philsquared/Catch). Pull the submodule using:
+``` 
+git submodule init 
+git submodule update
+```
+
+# Building
 ----------------------
 
 N.B. This is only necessary if you wish to develop the library. BBN ships
