@@ -246,16 +246,17 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_raw_kernel_memory(testCase)
 
+            baseKernel = (-1.0 + (2-1/2^15)*rand(4097,1)) + 1i*(-1.0 + (2-1/2^15)*rand(4097,1));
             %Test kernel too long throws
-            kernel = (-1.0 + 2*rand(4097,1)) + 1i*(-1.0 + 2*rand(4097,1));
-            verifyError(testCase, @() write_kernel(testCase.x6, 1, 0, 1, kernel), 'X6:Fail');
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 0, 1, baseKernel), 'X6:Fail');
 
             %Test kernel over range throws
-            kernel(81) = 1.0;
+            kernel = baseKernel(1:4096);
+            kernel(81) = 1.0 + 1/2^14;
             verifyError(testCase, @() write_kernel(testCase.x6, 1, 0, 1, kernel), 'X6:Fail');
 
             %Check we can write/read to the raw kernel memory
-            kernel = (-1.0 + 2*rand(4096,1)) + 1i*(-1.0 + 2*rand(4096,1));
+            kernel = baseKernel(1:4096);
             write_kernel(testCase.x6, 1, 0, 1, kernel);
 
             %Now test first/last and a random selection in between
@@ -297,16 +298,18 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_demod_kernel_memory(testCase)
 
+            baseKernel = (-1.0 + (2-1/2^15)*rand(513,1)) + 1i*(-1.0 + (2-1/2^15)*rand(513,1));
+
             %Test kernel too long throws
-            kernel = (-1.0 + 2*rand(513,1)) + 1i*(-1.0 + 2*rand(513,1));
-            verifyError(testCase, @() write_kernel(testCase.x6, 1, 1, 1, kernel), 'X6:Fail');
+            verifyError(testCase, @() write_kernel(testCase.x6, 1, 1, 1, baseKernel), 'X6:Fail');
 
             %Test kernel over range throws
-            kernel(81) = 1.0;
+            kernel = baseKernel(1:512);
+            kernel(81) = 1.0 + 1/2^14;
             verifyError(testCase, @() write_kernel(testCase.x6, 1, 1, 1, kernel), 'X6:Fail');
 
             %Check we can write/read to the demod kernel memory
-            kernel = (-1.0 + 2*rand(512,1)) + 1i*(-1.0 + 2*rand(512,1));
+            kernel = baseKernel(1:512);
             write_kernel(testCase.x6, 1, 1, 1, kernel);
 
             %Now test first/last and a random selection in between
@@ -372,12 +375,12 @@ classdef TestX6 < matlab.unittest.TestCase
         function test_pg_waveform_range(testCase)
             %Test overrange
             wf = -1.0 + (2-1/2^15)*rand(128,1);
-            wf(randi(128)) = 1.0;
+            wf(randi(128)) = 1.0 + 1/2^14;
             verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
 
             %Test underrange
             wf = -1.0 + (2-1/2^15)*rand(128,1);
-            wf(randi(128)) = -(1.0+1/2^15);
+            wf(randi(128)) = -(1.0+1/2^14);
             verifyError(testCase, @() write_pulse_waveform(testCase.x6, randi([0 1]), wf), 'X6:Fail');
         end
 
@@ -408,7 +411,7 @@ classdef TestX6 < matlab.unittest.TestCase
             set_nco_frequency(testCase.x6, 1, 1, 11e6);
 
             set_averager_settings(testCase.x6, 5120, 64, 1, 2);
-            
+
             testCase.x6.digitizerMode = 'DIGITIZER';
 
             acquire(testCase.x6);
@@ -419,12 +422,12 @@ classdef TestX6 < matlab.unittest.TestCase
             success = wait_for_acquisition(testCase.x6, 1);
             stop(testCase.x6);
             assertEqual(testCase, success, 0);
-            
+
             % check the values
             wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
-    
+
             assertEqual(testCase, size(wfs), [1280,1,64,2])
-            
+
             for ct = 1:128
                 baseNCO = 1.0000020265579224e6; %from 24bit precision
                 pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
@@ -436,7 +439,7 @@ classdef TestX6 < matlab.unittest.TestCase
                 verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
             end
         end
-        
+
     end
 
 end
