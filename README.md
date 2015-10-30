@@ -65,7 +65,7 @@ other WinJungo devices like Xilinx USB JTAG cables.
 3. Put the mingw-w64 gcc 4.8.1 compiler on the path
 
   ```bash
-  export PATH=/c/Program\ Files/mingw-w64/x86_64-4.8.1-posix-seh-rt_v3_rev2/mingw64/bin:$PATH
+  export PATH=/c/Program\ Files/mingw-w64/x86_64-4.8.1-posix-seh-rt_v3-rev2/mingw64/bin:$PATH
   ```
 
 #### Building
