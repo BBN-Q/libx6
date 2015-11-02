@@ -408,27 +408,37 @@ classdef TestX6 < matlab.unittest.TestCase
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 1, 1, 0);
 
+
+            rawWFs = [];
+            demodWFs = [];
+            function catchDataReady(src,~)
+                rawWFs = cat(4, rawWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 0)));
+                demodWFs = cat(4, demodWFs, src.transfer_stream(struct('a', 1, 'b', 1, 'c', 0)));
+            end
+            el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
+      
             set_nco_frequency(testCase.x6, 1, 1, 11e6);
 
-            set_averager_settings(testCase.x6, 5120, 64, 1, 2);
+            numRRs = 100;
+            set_averager_settings(testCase.x6, 5120, 64, 1, numRRs);
 
             testCase.x6.digitizerMode = 'DIGITIZER';
-
+            
             acquire(testCase.x6);
 
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
 
-            success = wait_for_acquisition(testCase.x6, 1);
+            success = wait_for_acquisition(testCase.x6, 10);
             stop(testCase.x6);
+            delete(el);
             assertEqual(testCase, success, 0);
 
             % check the values
-            wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
 
-            assertEqual(testCase, size(wfs), [1280,1,64,2])
+            assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
 
-            for ct = 1:128
+            for ct = 1:64*numRRs
                 baseNCO = 1.0000020265579224e6; %from 24bit precision
                 pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
                 expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
@@ -436,7 +446,7 @@ classdef TestX6 < matlab.unittest.TestCase
                 if mod(ct, 64) == 1
                     expected(4:7) = 1 - 1/2048;
                 end
-                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
+                verifyEqual(testCase, rawWFs(:,ct), expected, 'AbsTol', 2/2048);
             end
         end
 
