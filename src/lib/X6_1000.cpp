@@ -59,21 +59,22 @@ void X6_1000::open(int deviceID) {
 
     //  Configure Module Event Handlers
     module_.OnBeforeStreamStart.SetEvent(this, &X6_1000::HandleBeforeStreamStart);
-    module_.OnBeforeStreamStart.Synchronize();
+    module_.OnBeforeStreamStart.Unsynchronize();
     module_.OnAfterStreamStart.SetEvent(this, &X6_1000::HandleAfterStreamStart);
-    module_.OnAfterStreamStart.Synchronize();
+    module_.OnAfterStreamStart.Unsynchronize();
     module_.OnAfterStreamStop.SetEvent(this, &X6_1000::HandleAfterStreamStop);
-    module_.OnAfterStreamStop.Synchronize();
+    module_.OnAfterStreamStop.Unsynchronize();
 
     // Stream Event Handlers
     stream_.DirectDataMode(false);
     stream_.OnVeloDataAvailable.SetEvent(this, &X6_1000::HandleDataAvailable);
+    stream_.OnVeloDataAvailable.Unsynchronize();
 
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
 
     timer_.OnElapsed.SetEvent(this, &X6_1000::HandleTimer);
-    timer_.OnElapsed.Thunk();
+    timer_.OnElapsed.Unsynchronize();
 
     // Insure BM size is a multiple of four MB and at least 4 MB
     const int RxBmSize = std::max(RxBusmasterSize/4, 1) * 4;
