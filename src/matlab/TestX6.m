@@ -160,17 +160,7 @@ classdef TestX6 < matlab.unittest.TestCase
             %Now check
             function check_raw_vals(chan)
                 wfs = transfer_stream(testCase.x6, struct('a', chan, 'b', 0, 'c', 0));
-
-                for ct = 1:64
-                    baseNCO = 1.0000020265579224e6; %from 24bit precision
-                    pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                    expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                    %catch alignment marker
-                    if ct == 1
-                        expected(4:7) = 1 - 1/2048;
-                    end
-                    verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
-                end
+                verifyEqual(testCase, wfs, TestX6.expected_raw_wfs(), 'AbsTol', 2/2048);
 
             end
 
@@ -407,10 +397,23 @@ classdef TestX6 < matlab.unittest.TestCase
             %Enable the raw (to feed into expected calculation) and one demod stream
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 1, 1, 0);
+            enable_stream(testCase.x6, 1, 0, 1);
 
+            rawWFs = [];
+            demodWFs = [];
+            resultWFs = [];
+            function catchDataReady(src,~)
+                rawWFs = cat(4, rawWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 0)));
+                demodWFs = cat(4, demodWFs, src.transfer_stream(struct('a', 1, 'b', 1, 'c', 0)));
+                resultWFs = cat(4, resultWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 1)));
+            end
+            el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
+      
             set_nco_frequency(testCase.x6, 1, 1, 11e6);
+            write_kernel(testCase.x6, 1, 0, 1, ones(5120/4, 1));
 
-            set_averager_settings(testCase.x6, 5120, 64, 1, 2);
+            numRRs = 100;
+            set_averager_settings(testCase.x6, 5120, 64, 1, numRRs);
 
             testCase.x6.digitizerMode = 'DIGITIZER';
 
@@ -419,27 +422,38 @@ classdef TestX6 < matlab.unittest.TestCase
             %enable test mode
             write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
 
-            success = wait_for_acquisition(testCase.x6, 1);
+            success = wait_for_acquisition(testCase.x6, 10);
             stop(testCase.x6);
+            delete(el);
             assertEqual(testCase, success, 0);
 
             % check the values
-            wfs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
 
-            assertEqual(testCase, size(wfs), [1280,1,64,2])
+            assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
 
-            for ct = 1:128
-                baseNCO = 1.0000020265579224e6; %from 24bit precision
-                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
-                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                %catch alignment marker
-                if mod(ct, 64) == 1
-                    expected(4:7) = 1 - 1/2048;
-                end
-                verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
+            expected_raws = TestX6.expected_raw_wfs();
+            
+            for ct = 1:numRRs
+                verifyEqual(testCase, squeeze(rawWFs(:,:,:,ct)), expected_raws, 'AbsTol', 2/2048);
             end
+            verifyEqual(testCase, resultWFs, sum(rawWFs, 1), 'AbsTol', 0.1);
         end
 
+    end
+    
+    methods(Static)
+        function expected = expected_raw_wfs()
+            expected = zeros(1280, 64);
+            for ct = 1:64
+                baseNCO = 1.0000020265579224e6; %from 24bit precision
+                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
+                expected(:,ct) = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
+                %catch alignment marker
+                if mod(ct, 64) == 1
+                    expected(4:7,ct) = 1 - 1/2048;
+                end
+            end
+        end
     end
 
 end

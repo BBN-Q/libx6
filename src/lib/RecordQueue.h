@@ -13,6 +13,7 @@
 #include "QDSPStream.h"
 
 #include <queue>
+#include <atomic>
 
 #include "logger.h"
 
@@ -31,7 +32,8 @@ public:
 	void get(double *, size_t);
 	size_t get_buffer_size();
 
-	size_t recordsTaken = 0;
+	std::atomic<size_t> recordsTaken;
+	std::atomic<size_t> availableRecords;
 	size_t recordLength;
 
 private:
@@ -42,10 +44,10 @@ private:
 
 
 template <class T>
-RecordQueue<T>::RecordQueue() {}
+RecordQueue<T>::RecordQueue() : recordsTaken{0}, availableRecords{0}  {}
 
 template <class T>
-RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) {
+RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) : recordsTaken{0}, availableRecords{0} {
 	recordLength = stream.calc_record_length(recLen);
 	fixed_to_float_ = stream.fixed_to_float();
 	stream_ = stream;
@@ -56,20 +58,29 @@ template <class T>
 template <class U>
 void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	//TODO: worry about performance, cache-friendly etc.
-	FILE_LOG(logDEBUG4) << "Buffering data...";
-	FILE_LOG(logDEBUG4) << "recordsTaken = " << recordsTaken;
-	FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
-	FILE_LOG(logDEBUG4) << "queue size is " << queue_.size();
+	FILE_LOG(logDEBUG3) << "Buffering data...";
+	FILE_LOG(logDEBUG3) << "recordsTaken = " << recordsTaken;
+	FILE_LOG(logDEBUG3) << "New buffer size is " << buffer.size();
+	FILE_LOG(logDEBUG3) << "queue size is " << queue_.size();
 
 	for (auto val : buffer) {
 		queue_.push(val);
 	}
     recordsTaken++;
+    availableRecords++;
 }
 
 template <class T>
 void RecordQueue<T>::get(double * buf, size_t numPoints) {
-	for(size_t ct=0; !queue_.empty() && (ct < numPoints); ct++) {
+	size_t initialSize = queue_.size();
+	availableRecords -= numPoints / recordLength;
+	// for(size_t ct=0; !queue_.empty() && (ct < numPoints); ct++) {
+	for(size_t ct=0; ct < numPoints; ct++) {
+		if (queue_.empty()) {
+			FILE_LOG(logERROR) << "Tried to pull " << numPoints << " from a queue of initial size " << initialSize;
+			FILE_LOG(logERROR) << "Tried to pull an empty queue.";
+			break;
+		}
 		buf[ct] = static_cast<double>(queue_.front()) / fixed_to_float_;
 		queue_.pop();
 	}
@@ -77,6 +88,6 @@ void RecordQueue<T>::get(double * buf, size_t numPoints) {
 
 template <class T>
 size_t RecordQueue<T>::get_buffer_size() {
-	return queue_.size();
+	return availableRecords * recordLength;
 }
 #endif //RECORDQUEUE_H_

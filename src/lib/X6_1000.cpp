@@ -59,21 +59,22 @@ void X6_1000::open(int deviceID) {
 
     //  Configure Module Event Handlers
     module_.OnBeforeStreamStart.SetEvent(this, &X6_1000::HandleBeforeStreamStart);
-    module_.OnBeforeStreamStart.Synchronize();
+    module_.OnBeforeStreamStart.Unsynchronize();
     module_.OnAfterStreamStart.SetEvent(this, &X6_1000::HandleAfterStreamStart);
-    module_.OnAfterStreamStart.Synchronize();
+    module_.OnAfterStreamStart.Unsynchronize();
     module_.OnAfterStreamStop.SetEvent(this, &X6_1000::HandleAfterStreamStop);
-    module_.OnAfterStreamStop.Synchronize();
+    module_.OnAfterStreamStop.Unsynchronize();
 
     // Stream Event Handlers
     stream_.DirectDataMode(false);
     stream_.OnVeloDataAvailable.SetEvent(this, &X6_1000::HandleDataAvailable);
+    stream_.OnVeloDataAvailable.Unsynchronize();
 
     stream_.RxLoadBalancing(false);
     stream_.TxLoadBalancing(false);
 
     timer_.OnElapsed.SetEvent(this, &X6_1000::HandleTimer);
-    timer_.OnElapsed.Thunk();
+    timer_.OnElapsed.Unsynchronize();
 
     // Insure BM size is a multiple of four MB and at least 4 MB
     const int RxBmSize = std::max(RxBusmasterSize/4, 1) * 4;
@@ -636,7 +637,8 @@ size_t X6_1000::get_num_new_records() {
         //TODO: punt on how to handle recordsTaken_
         size_t currentRecords = std::numeric_limits<size_t>::max();
         for (auto & kv : queues_) {
-            currentRecords = min(currentRecords, kv.second.get_buffer_size()/kv.second.recordLength);
+            size_t availableRecords = kv.second.availableRecords;
+            currentRecords = min(currentRecords, availableRecords);
         }
         result = currentRecords;
     }
@@ -764,7 +766,8 @@ void X6_1000::initialize_accumulators() {
 
 void X6_1000::initialize_queues() {
     for (auto kv : activeQDSPStreams_) {
-        queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+        // queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+        queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
         // mutexes_[kv.first] = std::mutex();
         mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
     }
@@ -900,11 +903,11 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
                 }
             }
             else {
+                mutexes_[sid].lock();
                 if (queues_[sid].recordsTaken < numRecords_) {
-                    mutexes_[sid].lock();
                     queues_[sid].push(sbufferDG);
-                    mutexes_[sid].unlock();
                 }
+                mutexes_[sid].unlock();
             }
             break;
         case RESULT:
@@ -922,11 +925,11 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
                 }
             }
             else {
+                mutexes_[sid].lock();
                 if (queues_[sid].recordsTaken < numRecords_) {
-                    mutexes_[sid].lock();
                     queues_[sid].push(ibufferDG);
-                    mutexes_[sid].unlock();
                 }
+                mutexes_[sid].unlock();
             }
             break;
     }
@@ -938,7 +941,7 @@ bool X6_1000::check_done() {
             FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
         }
         for (auto & kv : accumulators_) {
-                if (kv.second.recordsTaken < numRecords_) {
+            if (kv.second.recordsTaken < numRecords_) {
                 return false;
             }
         }
@@ -949,7 +952,7 @@ bool X6_1000::check_done() {
             FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
         }
         for (auto & kv : queues_) {
-                if (kv.second.recordsTaken < numRecords_) {
+            if (kv.second.recordsTaken < numRecords_) {
                 return false;
             }
         }
