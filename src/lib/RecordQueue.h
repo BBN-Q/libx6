@@ -57,10 +57,10 @@ template <class T>
 template <class U>
 void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	//TODO: worry about performance, cache-friendly etc.
-	FILE_LOG(logDEBUG4) << "Buffering data...";
-	FILE_LOG(logDEBUG4) << "recordsTaken = " << recordsTaken;
-	FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
-	FILE_LOG(logDEBUG4) << "queue size is " << queue_.size();
+	FILE_LOG(logDEBUG3) << "Buffering data...";
+	FILE_LOG(logDEBUG3) << "recordsTaken = " << recordsTaken;
+	FILE_LOG(logDEBUG3) << "New buffer size is " << buffer.size();
+	FILE_LOG(logDEBUG3) << "queue size is " << queue_.size();
 
 	for (auto val : buffer) {
 		queue_.push(val);
