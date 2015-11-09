@@ -160,17 +160,7 @@ classdef TestX6 < matlab.unittest.TestCase
             %Now check
             function check_raw_vals(chan)
                 wfs = transfer_stream(testCase.x6, struct('a', chan, 'b', 0, 'c', 0));
-
-                for ct = 1:64
-                    baseNCO = 1.0000020265579224e6; %from 24bit precision
-                    pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(ct-1)*baseNCO*1e-9*(8:4107));
-                    expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                    %catch alignment marker
-                    if ct == 1
-                        expected(4:7) = 1 - 1/2048;
-                    end
-                    verifyEqual(testCase, wfs(:,ct), expected, 'AbsTol', 2/2048);
-                end
+                verifyEqual(testCase, wfs, TestX6.expected_raw_wfs(), 'AbsTol', 2/2048);
 
             end
 
@@ -441,19 +431,29 @@ classdef TestX6 < matlab.unittest.TestCase
 
             assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
 
-            for ct = 1:64*numRRs
-                baseNCO = 1.0000020265579224e6; %from 24bit precision
-                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
-                expected = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
-                %catch alignment marker
-                if mod(ct, 64) == 1
-                    expected(4:7) = 1 - 1/2048;
-                end
-                verifyEqual(testCase, rawWFs(:,ct), expected, 'AbsTol', 2/2048);
+            expected_raws = TestX6.expected_raw_wfs();
+            
+            for ct = 1:numRRs
+                verifyEqual(testCase, squeeze(rawWFs(:,:,:,ct)), expected_raws, 'AbsTol', 2/2048);
             end
-            verifyEqual(testCase, resultWFs, sum(rawWFs, 1), 'AbsTol', 1/256);
+            verifyEqual(testCase, resultWFs, sum(rawWFs, 1), 'AbsTol', 0.1);
         end
 
+    end
+    
+    methods(Static)
+        function expected = expected_raw_wfs()
+            expected = zeros(1280, 64);
+            for ct = 1:64
+                baseNCO = 1.0000020265579224e6; %from 24bit precision
+                pulse = (1 - 1/128)*(1 - 1/2048)*cos(2*pi*(mod(ct-1,64))*baseNCO*1e-9*(8:4107));
+                expected(:,ct) = [zeros(23, 1); mean(reshape(pulse, 4, 1025), 1)'; zeros(232, 1)];
+                %catch alignment marker
+                if mod(ct, 64) == 1
+                    expected(4:7,ct) = 1 - 1/2048;
+                end
+            end
+        end
     end
 
 end
