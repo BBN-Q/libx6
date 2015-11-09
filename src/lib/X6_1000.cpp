@@ -765,7 +765,8 @@ void X6_1000::initialize_accumulators() {
 
 void X6_1000::initialize_queues() {
     for (auto kv : activeQDSPStreams_) {
-        queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+        // queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+        queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
         // mutexes_[kv.first] = std::mutex();
         mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
     }
@@ -939,7 +940,7 @@ bool X6_1000::check_done() {
             FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
         }
         for (auto & kv : accumulators_) {
-                if (kv.second.recordsTaken < numRecords_) {
+            if (kv.second.recordsTaken < numRecords_) {
                 return false;
             }
         }
@@ -950,7 +951,7 @@ bool X6_1000::check_done() {
             FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
         }
         for (auto & kv : queues_) {
-                if (kv.second.recordsTaken < numRecords_) {
+            if (kv.second.recordsTaken < numRecords_) {
                 return false;
             }
         }

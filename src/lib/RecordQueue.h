@@ -13,6 +13,7 @@
 #include "QDSPStream.h"
 
 #include <queue>
+#include <atomic>
 
 #include "logger.h"
 
@@ -31,7 +32,7 @@ public:
 	void get(double *, size_t);
 	size_t get_buffer_size();
 
-	size_t recordsTaken = 0;
+	std::atomic<size_t> recordsTaken;
 	size_t recordLength;
 
 private:
@@ -42,10 +43,10 @@ private:
 
 
 template <class T>
-RecordQueue<T>::RecordQueue() {}
+RecordQueue<T>::RecordQueue() : recordsTaken{0}  {}
 
 template <class T>
-RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) {
+RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) : recordsTaken{0} {
 	recordLength = stream.calc_record_length(recLen);
 	fixed_to_float_ = stream.fixed_to_float();
 	stream_ = stream;
