@@ -221,7 +221,7 @@ classdef X6 < hgsetget
             recLength = x6_channel_getter(obj, 'get_record_length', channels);
             samplesPerRR = recLength*obj.nbrWaveforms*obj.nbrSegments;
             if strcmp(obj.digitizerMode, 'DIGITIZER')
-                bufSize = samplesPerRR * floor(bufSize/samplesPerRR);
+                bufSize = samplesPerRR * idivide(bufSize, samplesPerRR);
             end
 
             if bufSize == 0

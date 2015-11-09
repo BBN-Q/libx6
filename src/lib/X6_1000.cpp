@@ -637,7 +637,8 @@ size_t X6_1000::get_num_new_records() {
         //TODO: punt on how to handle recordsTaken_
         size_t currentRecords = std::numeric_limits<size_t>::max();
         for (auto & kv : queues_) {
-            currentRecords = min(currentRecords, kv.second.get_buffer_size()/kv.second.recordLength);
+            size_t availableRecords = kv.second.availableRecords;
+            currentRecords = min(currentRecords, availableRecords);
         }
         result = currentRecords;
     }
@@ -902,11 +903,11 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
                 }
             }
             else {
+                mutexes_[sid].lock();
                 if (queues_[sid].recordsTaken < numRecords_) {
-                    mutexes_[sid].lock();
                     queues_[sid].push(sbufferDG);
-                    mutexes_[sid].unlock();
                 }
+                mutexes_[sid].unlock();
             }
             break;
         case RESULT:
@@ -924,11 +925,11 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
                 }
             }
             else {
+                mutexes_[sid].lock();
                 if (queues_[sid].recordsTaken < numRecords_) {
-                    mutexes_[sid].lock();
                     queues_[sid].push(ibufferDG);
-                    mutexes_[sid].unlock();
                 }
+                mutexes_[sid].unlock();
             }
             break;
     }
