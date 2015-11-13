@@ -115,11 +115,11 @@ classdef X6 < hgsetget
         end
 
         function set.reference(obj, ref)
-            x6_call(obj, 'set_reference', ref);
+            x6_call(obj, 'set_reference_source', ref);
         end
 
         function val = get.reference(obj)
-            val = x6_getter(obj, 'get_reference');
+            val = x6_getter(obj, 'get_reference_source');
         end
 
         function set.digitizerMode(obj, dig_mode)
@@ -391,6 +391,7 @@ classdef X6 < hgsetget
                         end
                 end
             end
+            obj.reference = 'EXTERNAL_REFERENCE';
         end
 
         function set_channel_settings(obj, label, settings)
