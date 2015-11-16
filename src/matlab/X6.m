@@ -115,6 +115,11 @@ classdef X6 < hgsetget
         end
 
         function set.reference(obj, ref)
+            %If passed simple `internal` or `external` map to enum
+            map = containers.Map({'external', 'internal'}, {'REFERENCE_EXTERNAL', 'REFERENCE_INTERNAL'})
+            if isKey(map, ref)
+                ref = map(ref)
+            end
             x6_call(obj, 'set_reference_source', ref);
         end
 
@@ -391,7 +396,6 @@ classdef X6 < hgsetget
                         end
                 end
             end
-            obj.reference = 'EXTERNAL_REFERENCE';
         end
 
         function set_channel_settings(obj, label, settings)
