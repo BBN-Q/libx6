@@ -40,6 +40,15 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, checkVal, val);
         end
 
+        function test_reference(testCase)
+            %Check that we can set/get the reference source
+            curRef = testCase.x6.reference;
+            toggle_map = containers.Map({'EXTERNAL_REFERENCE', 'INTERNAL_REFERENCE'}, {'INTERNAL_REFERENCE', 'EXTERNAL_REFERENCE'});
+            testCase.x6.reference = toggle_map(curRef);
+            assertEqual(testCase, testCase.x6.reference, toggle_map(curRef))
+            testCase.x6.reference = curRef; %Class based tests methods have effects for subsequent tests so put it back
+        end
+
         function test_stream_enable(testCase)
             %Enable a stream and then peak at the register to make sure bit is set
             stream = struct('a', randi(2), 'b', randi(4), 'c', randi([0,1]));
@@ -408,7 +417,7 @@ classdef TestX6 < matlab.unittest.TestCase
                 resultWFs = cat(4, resultWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 1)));
             end
             el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
-      
+
             set_nco_frequency(testCase.x6, 1, 1, 11e6);
             write_kernel(testCase.x6, 1, 0, 1, ones(5120/4, 1));
 
@@ -432,7 +441,7 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
 
             expected_raws = TestX6.expected_raw_wfs();
-            
+
             for ct = 1:numRRs
                 verifyEqual(testCase, squeeze(rawWFs(:,:,:,ct)), expected_raws, 'AbsTol', 2/2048);
             end
@@ -440,7 +449,7 @@ classdef TestX6 < matlab.unittest.TestCase
         end
 
     end
-    
+
     methods(Static)
         function expected = expected_raw_wfs()
             expected = zeros(1280, 64);
