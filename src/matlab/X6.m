@@ -116,9 +116,9 @@ classdef X6 < hgsetget
 
         function set.reference(obj, ref)
             %If passed simple `internal` or `external` map to enum
-            map = containers.Map({'external', 'internal'}, {'REFERENCE_EXTERNAL', 'REFERENCE_INTERNAL'})
+            map = containers.Map({'external', 'internal'}, {'REFERENCE_EXTERNAL', 'REFERENCE_INTERNAL'});
             if isKey(map, ref)
-                ref = map(ref)
+                ref = map(ref);
             end
             x6_call(obj, 'set_reference_source', ref);
         end
