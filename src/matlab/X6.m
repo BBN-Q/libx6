@@ -39,6 +39,10 @@ classdef X6 < hgsetget
         nbrRoundRobins
     end
 
+    properties(Access = private)
+        lastBufferTimeStamp
+    end
+
     properties(Constant)
         LIBRARY_PATH = '../../build/';
         DSP_WB_OFFSET = [hex2dec('2000'), hex2dec('2100')];
@@ -165,26 +169,26 @@ classdef X6 < hgsetget
             % We also fire on stopping to catch any last data
             recsPerRoundRobin = obj.nbrSegments*obj.nbrWaveforms;
             function do_poll(~,~)
-                if strcmp(obj.digitizerMode, 'AVERAGER')
-                    if (x6_getter(obj, 'get_num_new_records'))
-                        notify(obj, 'DataReady');
-                    end
-                else
-                    % To make life easier only fire when a complete round
-                    % robin is available in digitizer mode
-                    if x6_getter(obj, 'get_num_new_records') >= recsPerRoundRobin
-                        notify(obj, 'DataReady')
-                    end
+                nRecords = x6_getter(obj, 'get_num_new_records');
+                if nRecords == 0
+                    return
                 end
+                obj.lastBufferTimeStamp = tic();
+                % in digitizer mode, insist on collecting a complete round robin
+                if strcmp(obj.digitizerMode, 'DIGITIZER') && nRecords < recsPerRoundRobin
+                    return
+                end
+                notify(obj, 'DataReady');
             end
+            % grab initial timestamp for calculating timeout
+            obj.lastBufferTimeStamp = tic();
             obj.dataTimer = timer('TimerFcn', @do_poll, 'StopFcn', @(~,~) notify(obj, 'DataReady'), 'Period', 0.1, 'ExecutionMode', 'fixedSpacing');
             start(obj.dataTimer);
         end
 
         function val = wait_for_acquisition(obj, timeout)
-            t = tic;
             val = -1;
-            while toc(t) < timeout
+            while toc(obj.lastBufferTimeStamp) < timeout
                 if ~x6_getter(obj, 'get_is_running')
                     val = 0;
                     break
