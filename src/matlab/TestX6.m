@@ -399,11 +399,10 @@ classdef TestX6 < matlab.unittest.TestCase
         end
 
         function test_digitizer_mode(testCase)
-            %Test the filtered demodulated streams
+            %Test the digitizer mode can stream records
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
 
-            %Enable the raw (to feed into expected calculation) and one demod stream
             enable_stream(testCase.x6, 1, 0, 0);
             enable_stream(testCase.x6, 1, 1, 0);
             enable_stream(testCase.x6, 1, 0, 1);
@@ -437,11 +436,10 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, success, 0);
 
             % check the values
-
             assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
-
+            assertEqual(testCase, size(demodWFs), [160,1,64,numRRs])
+            assertEqual(testCase, size(resultWFs), [1,1,64,numRRs])
             expected_raws = TestX6.expected_raw_wfs();
-
             for ct = 1:numRRs
                 verifyEqual(testCase, squeeze(rawWFs(:,:,:,ct)), expected_raws, 'AbsTol', 2/2048);
             end
