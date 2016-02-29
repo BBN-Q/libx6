@@ -446,6 +446,78 @@ classdef TestX6 < matlab.unittest.TestCase
             verifyEqual(testCase, resultWFs, sum(rawWFs, 1), 'AbsTol', 0.1);
         end
 
+        function test_multiple_acquisitions(testCase)
+          %Test stopping and starting acquisition
+          disconnect(testCase.x6);
+          connect(testCase.x6, 0);
+
+          enable_stream(testCase.x6, 1, 0, 0);
+          enable_stream(testCase.x6, 1, 1, 0);
+          enable_stream(testCase.x6, 1, 0, 1);
+
+          rawWFs = [];
+          demodWFs = [];
+          resultWFs = [];
+          function catchDataReady(src,~)
+              rawWFs = cat(4, rawWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 0)));
+              demodWFs = cat(4, demodWFs, src.transfer_stream(struct('a', 1, 'b', 1, 'c', 0)));
+              resultWFs = cat(4, resultWFs, src.transfer_stream(struct('a', 1, 'b', 0, 'c', 1)));
+          end
+          el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
+
+          set_nco_frequency(testCase.x6, 1, 1, 11e6);
+          write_kernel(testCase.x6, 1, 0, 1, ones(5120/4, 1));
+
+          numRRs = 100;
+          set_averager_settings(testCase.x6, 5120, 64, 1, numRRs);
+
+          testCase.x6.digitizerMode = 'DIGITIZER';
+
+          acquire(testCase.x6);
+
+          %enable test mode
+          write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+          success = wait_for_acquisition(testCase.x6, 10);
+          stop(testCase.x6);
+          delete(el);
+          assertEqual(testCase, success, 0);
+          assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
+          assertEqual(testCase, size(demodWFs), [160,1,64,numRRs])
+          assertEqual(testCase, size(resultWFs), [1,1,64,numRRs])
+
+          % check the values
+          assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
+          expected_raws = TestX6.expected_raw_wfs();
+          for ct = 1:numRRs
+              verifyEqual(testCase, squeeze(rawWFs(:,:,:,ct)), expected_raws, 'AbsTol', 2/2048);
+          end
+          verifyEqual(testCase, resultWFs, sum(rawWFs, 1), 'AbsTol', 0.1);
+
+          %disable test mode
+          write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 0);
+
+          %restart the acquisition
+          rawWFs = [];
+          demodWFs = [];
+          resultWFs = [];
+          el = addlistener(testCase.x6, 'DataReady', @catchDataReady);
+
+          acquire(testCase.x6);
+
+          %enable test mode
+          write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+          success = wait_for_acquisition(testCase.x6, 10);
+          stop(testCase.x6);
+          delete(el);
+          assertEqual(testCase, success, 0);
+          assertEqual(testCase, size(rawWFs), [1280,1,64,numRRs])
+          assertEqual(testCase, size(demodWFs), [160,1,64,numRRs])
+          assertEqual(testCase, size(resultWFs), [1,1,64,numRRs])
+
+      end
+
     end
 
     methods(Static)
