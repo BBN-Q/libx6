@@ -29,7 +29,7 @@ INCLUDE_DIRECTORIES("../deps/Catch/include")
 if(WIN32)
 	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
 else()
-	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}//usr/Innovative/Malibu-1.8/Lib)
+	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.8/Lib)
 endif()
 
 LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc)
@@ -45,7 +45,7 @@ else()
 endif()
 
 if(UNIX)
-	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-11.8/lib)
+	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-12.1/lib)
 endif()
 
 #Some compile flags
@@ -94,7 +94,6 @@ TARGET_LINK_LIBRARIES(run_tests
 	${II_LIBS}
 	wdapi
 	pthread
-
 	x6
 )
 
