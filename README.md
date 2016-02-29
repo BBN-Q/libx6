@@ -7,8 +7,8 @@ as a data acquisition card for superconducting qubit experiments.
 
 # Dependencies
 * Test cases use [philsquared/Catch](https://github.com/philsquared/Catch). Pull the submodule using:
-``` 
-git submodule init 
+```
+git submodule init
 git submodule update
 ```
 
@@ -28,27 +28,28 @@ from II to download and install the X6-1000M - PCIe XMC Module Development Kit.
 As of September 2015 we have built against Malibu 1.8.5.
 * C++11 compliant compiler.  If using the gcc compiler stack, II has used a
 specific compiler in the Malibu libraries that libx6 links against - as of
-Malibu 1.8.5 this is TDM GCC 4.8.1. We have used
-[mingw-w64](http://mingw-w64.org/) and the mingw-builds installer to use the
-``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack which is compliant with the compiler
-II used.  It is easiest to use this with the MSYS2 environment for cmake and
-make.
-
+Malibu 1.8.5 this is TDM GCC 4.8.1 ( use `strings -a libFramework_Mb.a | grep
+GCC` to discover). We have used [mingw-w64](http://mingw-w64.org/) and the
+mingw-builds installer to use the ``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack
+which is compatible with the compiler II used.  It is easiest to use this with
+the MSYS2 environment for cmake and make.
 ### Uninstalling previous II drivers and software
 
-If you already have II software installed and want to start from scratch try the following modified from end of this [forum thread](http://www.innovative-dsp.com/forum/viewtopic.php?t=2032).
+If you already have II software installed and want to start from scratch try the
+following modified from end of this [forum
+thread](http://www.innovative-dsp.com/forum/viewtopic.php?t=2032).
 
 1. Open Device Manager and disable the WinJungo driver. Careful if you have
 other WinJungo devices like Xilinx USB JTAG cables.
 2. Open a PowerShell as administrator.
-3. Move to  ``C:\Innovative\Driver`` (not wdreg as the forum says)
-4. Run `` .\wdreg_gui.exe -inf .\windrvr6.inf uninstall``
-5. Run `` .\wdreg_gui.exe -name kp_malibu uninstall``
-6. Run `` .\wdreg_gui.exe -name memdrv uninstall``
+3. Move to  `C:\Innovative\Driver` (not wdreg as the forum says and might be "Drivers")
+4. Run ` .\wdreg_gui.exe -inf .\windrvr6.inf uninstall` (might be `IIWDrvr1190.inf`)
+5. Run ` .\wdreg_gui.exe -name kp_malibu uninstall` (may not be there)
+6. Run ` .\wdreg_gui.exe -name memdrv uninstall` (may not be there)
 7. Uninstall and remaining II Jungo drivers using Device Manager.
-8. Uses MSYS2 grep to find all files in ``C:\Windows\INF`` that contain 1303 and remove them.
-9. In the ``C:\windows\system32\drivers`` folder. Delete kp_malibu.sys, memdrv.sys, and windrvr6.sys
-10. Delete ``C:\Inovative`` folder.
+8. Uses MSYS2 grep to find all files in `C:\Windows\INF` that contain 1303 and remove them.
+9. In the `C:\windows\system32\drivers` folder. Delete kp_malibu.sys, memdrv.sys, and windrvr6.sys
+10. Delete `C:\Inovative` folder.
 11. Restart
 
 ### Instructions
