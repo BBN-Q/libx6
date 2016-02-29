@@ -759,12 +759,15 @@ int X6_1000::get_variance_buffer_size(vector<QDSPStream> & streams) {
 }
 
 void X6_1000::initialize_accumulators() {
+    accumulators_.clear();
     for (auto kv : activeQDSPStreams_) {
         accumulators_[kv.first] = Accumulator(kv.second, recordLength_, numSegments_, waveforms_);
     }
 }
 
 void X6_1000::initialize_queues() {
+    queues_.clear();
+    mutexes_.clear();
     for (auto kv : activeQDSPStreams_) {
         // queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
         queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
@@ -776,7 +779,8 @@ void X6_1000::initialize_queues() {
 void X6_1000::initialize_correlators() {
     vector<uint16_t> streamIDs = {};
     vector<QDSPStream> streams = {};
-
+    correlators_.clear();
+    
     // create all n-body correlators
     for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
         streamIDs.resize(n);
