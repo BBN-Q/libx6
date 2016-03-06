@@ -264,7 +264,7 @@ void X6_1000::set_record_length(int recordLength) {
 
     // Validate the record length
 
-    // minimum of 128 -- really just to enforce a 4 word demod vita packet - could revist of need shorter
+    // minimum of 128 -- really just to enforce a 4 word demod vita packet - could revist if we need shorter
     if (recordLength < MIN_RECORD_LENGTH) {
         FILE_LOG(logERROR) << "Record length of " << recordLength << " too short; min. 132 samples.";
         throw X6_INVALID_RECORD_LENGTH;
@@ -276,9 +276,11 @@ void X6_1000::set_record_length(int recordLength) {
         throw X6_INVALID_RECORD_LENGTH;
     }
 
-    // mulitple of 32 -- really just to enforce a valid demod stream (total decimation 32) - could revist later
+    // mulitple of 128 -- really just to enforce a valid demod stream
+    // total decimation 32 and 4 words for 128bit wide data path
+    // could revist later and only enforce when demod stream is output
     if (recordLength % RECORD_LENGTH_GRANULARITY != 0) {
-        FILE_LOG(logERROR) << "Record length of " << recordLength << " is not a mulitple of 132";
+        FILE_LOG(logERROR) << "Record length of " << recordLength << " is not a mulitple of 128";
         throw X6_INVALID_RECORD_LENGTH;
     }
 
@@ -780,7 +782,7 @@ void X6_1000::initialize_correlators() {
     vector<uint16_t> streamIDs = {};
     vector<QDSPStream> streams = {};
     correlators_.clear();
-    
+
     // create all n-body correlators
     for (int n = 2; n < MAX_N_BODY_CORRELATIONS; n++) {
         streamIDs.resize(n);

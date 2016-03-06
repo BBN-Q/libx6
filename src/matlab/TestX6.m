@@ -91,8 +91,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Max of 16384
             verifyError(testCase, @() set_averager_settings(testCase.x6, 16448, 16, 1, 1), 'X6:Fail');
 
-            %Record length should be multiple of 32
-            verifyError(testCase, @() set_averager_settings(testCase.x6, 144, 16, 1, 1), 'X6:Fail');
+            %Record length should be multiple of 128
+            verifyError(testCase, @() set_averager_settings(testCase.x6, 320, 16, 1, 1), 'X6:Fail');
         end
 
         function test_recordLength_register(testCase)
@@ -323,7 +323,7 @@ classdef TestX6 < matlab.unittest.TestCase
             disconnect(testCase.x6);
             connect(testCase.x6, 0);
 
-            %Enable the raw (to feed into expected calculation) and one kernel integrator stream
+            %Enable a demod stream (to feed into expected calculation) and one demod kernel integrator stream
             enable_stream(testCase.x6, 1, 1, 0);
             enable_stream(testCase.x6, 1, 1, 1);
 
