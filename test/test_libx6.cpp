@@ -40,8 +40,10 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 
 	SECTION("firmware version checks") {
 		uint32_t ver;
-		get_firmware_version(0, &ver);
-		REQUIRE( ver >= 0x000a);
+		uint32_t sha1 = 0xdeadbeef;;
+		get_firmware_version(0, &ver, &sha1);
+		REQUIRE( ver >= 0x0009 );
+		REQUIRE( sha1 != 0xdeadbeef );
 	}
 
 	disconnect_x6(0);

@@ -172,6 +172,10 @@ uint32_t X6_1000::get_firmware_version() {
     return read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_VERSION);
 }
 
+uint32_t X6_1000::get_firmware_git_sha1() {
+    return read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_GIT_SHA1);
+}
+
 float X6_1000::get_logic_temperature() {
     return static_cast<float>(module_.Thermal().LogicTemperature());
 }

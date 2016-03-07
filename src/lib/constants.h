@@ -32,16 +32,17 @@ const double MIN_WF_VALUE = -1.0;
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
 //Registers we read from
-const int WB_QDSP_TEST                    = 0x01;
-const int WB_QDSP_RECORD_LENGTH           = 0x02;
-const int WB_QDSP_STREAM_ENABLE           = 0x03;
-const int WB_QDSP_MODULE_FIRMWARE_VERSION = 0x04;
-const int WB_QDSP_RAW_KERNEL_LENGTH       = 0x10;
-const int WB_QDSP_DEMOD_KERNEL_LENGTH     = 0x14;
-const int WB_QDSP_RAW_KERNEL_ADDR_DATA    = 0x20;
-const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA  = 0x28;
-const int WB_QDSP_THRESHOLD               = 0x30;
-const int WB_QDSP_PHASE_INC               = 0x34;
+const int WB_QDSP_TEST                     = 0x01;
+const int WB_QDSP_RECORD_LENGTH            = 0x02;
+const int WB_QDSP_STREAM_ENABLE            = 0x03;
+const int WB_QDSP_MODULE_FIRMWARE_VERSION  = 0x04;
+const int WB_QDSP_MODULE_FIRMWARE_GIT_SHA1 = 0x05;
+const int WB_QDSP_RAW_KERNEL_LENGTH        = 0x10;
+const int WB_QDSP_DEMOD_KERNEL_LENGTH      = 0x14;
+const int WB_QDSP_RAW_KERNEL_ADDR_DATA     = 0x20;
+const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA   = 0x28;
+const int WB_QDSP_THRESHOLD                = 0x30;
+const int WB_QDSP_PHASE_INC                = 0x34;
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};
