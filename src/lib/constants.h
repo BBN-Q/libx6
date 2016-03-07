@@ -15,7 +15,7 @@ const int MAX_NUM_DEVICES = 5;
 //Some maximum sizes of things we can fit
 const int MAX_RECORD_LENGTH = 16384; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
 const int MIN_RECORD_LENGTH = 128; // max packet size (for FIFOs) is 4096; raw streams are quarter rate
-const int RECORD_LENGTH_GRANULARITY = 32; //to ensure decimated demod streams work
+const int RECORD_LENGTH_GRANULARITY = 128; //to ensure decimated demod streams work
 
 const int KERNEL_FRAC_BITS = 15;
 const double MAX_KERNEL_VALUE = 1 - 1.0/(1 << KERNEL_FRAC_BITS);

@@ -113,8 +113,8 @@ public:
 	uint32_t read_dsp_register(unsigned, uint32_t) const;
 
 	/**< Rx & Tx BusMaster size in MB */
-	const int RxBusmasterSize = 4;
-	const int TxBusmasterSize = 32;
+	const int RxBusmasterSize = 32;
+	const int TxBusmasterSize = 4;
 
 private:
 	// disable copying because some the innovative stuff it holds on to is non-copyable
