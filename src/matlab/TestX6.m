@@ -97,7 +97,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
         function test_recordLength_register(testCase)
             %Test record length register is set in both DSP modules
-            val = uint32(32*randi([4,256]));
+            val = uint32(128*randi([4,64]));
             set_averager_settings(testCase.x6, val, 1, 1, 1);
             testVal = read_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 2);
             verifyEqual(testCase, testVal, val);
