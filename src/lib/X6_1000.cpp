@@ -168,33 +168,8 @@ void X6_1000::close() {
     FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
 }
 
-uint16_t X6_1000::get_firmware_version(X6_MODULE_FIRMWARE_VERSION mod) {
-    uint32_t regVal;
-    switch (mod) {
-        case BBN_PG:
-            //Read from PG regs
-            regVal = read_wishbone_register(BASE_PG[0], WB_PG_MODULE_FIRMWARE_VERSION);
-            break;
-
-        case BBN_X6:
-        case BBN_QDSP:
-            regVal = read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_VERSION);
-            break;
-    }
-
-    uint16_t ver;
-    switch (mod) {
-        case BBN_X6:
-            ver =  static_cast<uint16_t>(regVal >> 16);
-            break;
-        case BBN_PG:
-        case BBN_QDSP:
-            ver = static_cast<uint16_t>(regVal & 0x0000ffff);
-            break;
-        default:
-            ver = 0;
-    }
-    return ver;
+uint32_t X6_1000::get_firmware_version() {
+    return read_dsp_register(0, WB_QDSP_MODULE_FIRMWARE_VERSION);
 }
 
 float X6_1000::get_logic_temperature() {

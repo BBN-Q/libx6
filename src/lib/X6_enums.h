@@ -21,12 +21,6 @@ enum X6_TRIGGER_SOURCE {
     EXTERNAL_TRIGGER         /**< External trigger */
 };
 
-enum X6_MODULE_FIRMWARE_VERSION {
-    BBN_X6,
-    BBN_QDSP,
-    BBN_PG
-};
-
 enum X6_DIGITIZER_MODE {
     DIGITIZER,
     AVERAGER

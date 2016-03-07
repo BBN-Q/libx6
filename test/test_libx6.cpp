@@ -39,14 +39,9 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 	connect_x6(0);
 
 	SECTION("firmware version checks") {
-		uint16_t ver;
-
-		get_firmware_version(0, BBN_X6, &ver);
-		REQUIRE( ver >= 0x0009);
-		get_firmware_version(0, BBN_QDSP, &ver);
-		REQUIRE( ver >= 0x0101);
-		get_firmware_version(0, BBN_PG, &ver);
-		REQUIRE( ver >= 0x0001);
+		uint32_t ver;
+		get_firmware_version(0, &ver);
+		REQUIRE( ver >= 0x000a);
 	}
 
 	disconnect_x6(0);

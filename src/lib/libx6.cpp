@@ -121,8 +121,8 @@ X6_STATUS initX6(int deviceID) {
 	return x6_call(deviceID, &X6_1000::init);
 }
 
-X6_STATUS get_firmware_version(int deviceID, X6_MODULE_FIRMWARE_VERSION module, uint16_t* version) {
-	return x6_getter(deviceID, &X6_1000::get_firmware_version, version, module);
+X6_STATUS get_firmware_version(int deviceID, uint32_t* version) {
+	return x6_getter(deviceID, &X6_1000::get_firmware_version, version);
 }
 
 X6_STATUS get_sampleRate(int deviceID, double* freq) {

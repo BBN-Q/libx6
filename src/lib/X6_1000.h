@@ -36,7 +36,7 @@ public:
 
 	float get_logic_temperature();
 
-	uint16_t get_firmware_version(X6_MODULE_FIRMWARE_VERSION);
+	uint32_t get_firmware_version();
 
 	void set_reference_source(X6_REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
 	X6_REFERENCE_SOURCE get_reference_source();
