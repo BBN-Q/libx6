@@ -355,6 +355,19 @@ double X6_1000::get_threshold(int a, int c) {
     return static_cast<double>(fixedThreshold) / (1 << 15);
 }
 
+void X6_1000::set_threshold_invert(int a, int c, bool invert){
+  //Get the current register for bit bashing
+  std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT));
+  bits[c-1] = invert;
+  write_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT, bits.to_ulong());
+}
+
+bool X6_1000::get_threshold_invert(int a, int c) {
+  std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT));
+  return bits[c-1];
+}
+
+
 void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {
 
     if ( (b == 0 && c == 0) || (b != 0 && c == 0) ) {

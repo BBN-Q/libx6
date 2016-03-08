@@ -64,6 +64,9 @@ EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
 EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS get_threshold(int, int, int, double*);
+EXPORT X6_STATUS set_threshold_invert(int, int, int, bool);
+EXPORT X6_STATUS get_threshold_invert(int, int, int, bool*);
+
 EXPORT X6_STATUS write_kernel(int, int, int, int, double _Complex*, unsigned);
 EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double _Complex*);
 
