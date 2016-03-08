@@ -471,9 +471,10 @@ complex<double> X6_1000::get_kernel_bias(int a, int b, int c) {
 	//Depending on raw or demod integrator we are enumerated by c or b
 	wb_addr += 2*(((b==0) ? c : b) - 1);
 
-	uint32_t real_reg = read_dsp_register(a-1, wb_addr);
-	uint32_t imag_reg = read_dsp_register(a-1, wb_addr+1);
+	int32_t real_reg = read_dsp_register(a-1, wb_addr);
+	int32_t imag_reg = read_dsp_register(a-1, wb_addr+1);
 
+	//Scale and convert back to complex
 	return complex<double>(static_cast<double>(real_reg) / scale, static_cast<double>(imag_reg) / scale);
 }
 
