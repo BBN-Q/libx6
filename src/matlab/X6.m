@@ -490,7 +490,7 @@ classdef X6 < hgsetget
                 end
                 obj.write_kernel(a, 0, b, settings.rawKernelBias);
             else
-                set_kernel_bias(obj, 0, b, 0)
+                set_kernel_bias(obj, a, b, 0, 0)
             end
             obj.set_threshold(a, b, settings.threshold);
             obj.set_threshold_invert(a, b, settings.thresholdInvert);
