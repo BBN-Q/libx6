@@ -468,7 +468,7 @@ classdef X6 < hgsetget
                     tmp = typecast(tmp, 'double');
                     settings.demodKernelBias = tmp(1) + 1j*tmp(2);
                 end
-                obj.write_kernel(a, b, 1, settings.demodKernelBias);
+                set_kernel_bias(a, b, 1, settings.demodKernelBias);
             else
                 set_kernel_bias(obj, a, b, 1, 0)
             end
@@ -488,7 +488,7 @@ classdef X6 < hgsetget
                     tmp = typecast(tmp, 'double');
                     settings.rawKernelBias = tmp(1) + 1j*tmp(2);
                 end
-                obj.write_kernel(a, 0, b, settings.rawKernelBias);
+                set_kernel_bias(a, 0, b, settings.rawKernelBias);
             else
                 set_kernel_bias(obj, a, b, 0, 0)
             end
