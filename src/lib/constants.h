@@ -44,6 +44,8 @@ const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA   = 0x28;
 const int WB_QDSP_THRESHOLD                = 0x30;
 const int WB_QDSP_PHASE_INC                = 0x34;
 const int WB_QDSP_THRESHOLD_INVERT         = 0x38;
+const int WB_QDSP_RAW_KERNEL_BIAS          = 0x40;
+const int WB_QDSP_DEMOD_KERNEL_BIAS        = 0x48;
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};

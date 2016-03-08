@@ -82,6 +82,10 @@ public:
 
 	void write_kernel(int, int, int, const vector<complex<double>> &);
 	complex<double> read_kernel(unsigned, unsigned, unsigned, unsigned);
+	void set_kernel_bias(int, int, int, complex<double>);
+	complex<double> get_kernel_bias(int, int, int);
+
+
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board

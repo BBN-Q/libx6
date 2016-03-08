@@ -444,7 +444,38 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
 												static_cast<double>(fixedImag) / ((1 << 15) - 1) );
 }
 
+void X6_1000::set_kernel_bias(int a, int b, int c, complex<double> bias) {
+	//Use a QDSPStream to get the scaling
+	QDSPStream stream(a,b,c);
+	unsigned scale = stream.fixed_to_float();
 
+	//get wishbone address from stream ID
+	uint32_t wb_addr = (b==0) ?	WB_QDSP_RAW_KERNEL_BIAS : WB_QDSP_DEMOD_KERNEL_BIAS;
+	//Depending on raw or demod integrator we are enumerated by c or b
+	wb_addr += 2*(((b==0) ? c : b) - 1);
+
+	uint32_t scaled_bias;
+	scaled_bias = static_cast<uint32_t>(real(bias) * scale);
+	write_dsp_register(a-1, wb_addr, scaled_bias);
+	scaled_bias = static_cast<uint32_t>(imag(bias) * scale);
+	write_dsp_register(a-1, wb_addr+1, scaled_bias);
+}
+
+complex<double> X6_1000::get_kernel_bias(int a, int b, int c) {
+	//Use a QDSPStream to get the scaling
+	QDSPStream stream(a,b,c);
+	unsigned scale = stream.fixed_to_float();
+
+	//get wishbone address from stream ID
+	uint32_t wb_addr = (b==0) ?	WB_QDSP_RAW_KERNEL_BIAS : WB_QDSP_DEMOD_KERNEL_BIAS;
+	//Depending on raw or demod integrator we are enumerated by c or b
+	wb_addr += 2*(((b==0) ? c : b) - 1);
+
+	uint32_t real_reg = read_dsp_register(a-1, wb_addr);
+	uint32_t imag_reg = read_dsp_register(a-1, wb_addr+1);
+
+	return complex<double>(static_cast<double>(real_reg) / scale, static_cast<double>(imag_reg) / scale);
+}
 
 void X6_1000::set_active_channels() {
 		module_.Output().ChannelDisableAll();
