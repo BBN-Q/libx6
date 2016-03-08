@@ -402,6 +402,16 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, get_threshold(testCase.x6, a, c), threshold, 'AbsTol', 2/2^15);
         end
 
+        function test_threshold_invert(testCase)
+            %Test setting getting threshold inverter bit
+            a = randi(2);
+            c = randi(2);
+            set_threshold_invert(testCase.x6, a, c, true);
+            assertEqual(testCase, get_threshold_invert(testCase.x6, a, c), true);
+            set_threshold_invert(testCase.x6, a, c, false);
+            assertEqual(testCase, get_threshold_invert(testCase.x6, a, c), false);
+        end
+
         function test_pg_waveform_length(testCase)
             %Test maximum waveform length is 16384
             wf = -1.0 + (2-1/2^15)*rand(16388,1);
