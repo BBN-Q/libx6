@@ -461,6 +461,17 @@ classdef X6 < hgsetget
                 end
                 obj.write_kernel(a, b, 1, settings.demodKernel);
             end
+            if ~isempty(settings.demodKernelBias)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.demodKernelBias))
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernelBias)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.demodKernelBias = tmp(1) + 1j*tmp(2);
+                end
+                obj.write_kernel(a, b, 1, settings.demodKernelBias);
+            else
+                set_kernel_bias(obj, a, b, 1, 0)
+            end
             if ~isempty(settings.rawKernel)
                 %Try to decode base64 encoded kernels
                 if (ischar(settings.rawKernel))
@@ -470,7 +481,19 @@ classdef X6 < hgsetget
                 end
                 obj.write_kernel(a, 0, b, settings.rawKernel);
             end
+            if ~isempty(settings.rawKernelBias)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.rawKernelBias))
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernelBias)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.rawKernelBias = tmp(1) + 1j*tmp(2);
+                end
+                obj.write_kernel(a, 0, b, settings.rawKernelBias);
+            else
+                set_kernel_bias(obj, 0, b, 0)
+            end
             obj.set_threshold(a, b, settings.threshold);
+            obj.set_threshold_invert(a, b, settings.thresholdInvert);
         end
     end
 
