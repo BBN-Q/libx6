@@ -466,9 +466,9 @@ classdef X6 < hgsetget
                 if (ischar(settings.demodKernelBias))
                     tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernelBias)), 'uint8');
                     tmp = typecast(tmp, 'double');
-                    settings.demodKernelBias = tmp(1) + 1j*tmp(2);
+                    settings.demodKernelBias = tmp(1) + 1j*tmp(end)*(length(tmp)>1);
                 end
-                set_kernel_bias(a, b, 1, settings.demodKernelBias);
+                set_kernel_bias(obj, a, b, 1, settings.demodKernelBias);
             else
                 set_kernel_bias(obj, a, b, 1, 0)
             end
@@ -486,11 +486,11 @@ classdef X6 < hgsetget
                 if (ischar(settings.rawKernelBias))
                     tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernelBias)), 'uint8');
                     tmp = typecast(tmp, 'double');
-                    settings.rawKernelBias = tmp(1) + 1j*tmp(2);
+                    settings.rawKernelBias = tmp(1) + 1j*tmp(end)*(length(tmp)>1);
                 end
-                set_kernel_bias(a, 0, b, settings.rawKernelBias);
+                set_kernel_bias(obj, a, 0, b, settings.rawKernelBias);
             else
-                set_kernel_bias(obj, 0, b, 0)
+                set_kernel_bias(obj, a, 0, b, 0)
             end
             obj.set_threshold(a, b, settings.threshold);
             obj.set_threshold_invert(a, b, settings.thresholdInvert);
