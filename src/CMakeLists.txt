@@ -33,7 +33,7 @@ else()
 endif()
 
 LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc)
-LINK_DIRECTORIES( ${INNOVATIVE_LIB_PATH}/Gcc/Debug)
+LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc/Debug)
 
 #Intel IPP shared libraries
 if(UNIX)
@@ -51,6 +51,12 @@ endif()
 #Some compile flags
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
 
+ADD_CUSTOM_COMMAND(
+	PRE_BUILD
+	OUTPUT ${PROJECT_SOURCE_DIR}/lib/version.hpp
+	COMMAND ${PROJECT_SOURCE_DIR}/make_version.sh
+)
+
 SET ( DLL_SRC
 	./lib/libx6.cpp
 	./lib/QDSPStream.cpp
@@ -61,7 +67,7 @@ SET ( DLL_SRC
 
 SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
-ADD_LIBRARY( x6 SHARED ${DLL_SRC} )
+ADD_LIBRARY( x6 SHARED ${DLL_SRC} ${PROJECT_SOURCE_DIR}/lib/version.hpp)
 
 ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp

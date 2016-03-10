@@ -10,6 +10,7 @@
 
 #include "libx6.h"
 #include "X6_1000.h"
+#include "version.hpp"
 
 // globals
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
@@ -29,6 +30,7 @@ void init() {
 	//Open the logging file
 	FILE* pFile = fopen("libx6.log", "a");
 	Output2FILE::Stream() = pFile;
+	FILE_LOG(logINFO) << "libx6 driver version: " << get_driver_version();
 
 	//TODO: figure out if this needs to be static
 	static Innovative::X6_1000M x6;
