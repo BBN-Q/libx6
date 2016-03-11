@@ -205,7 +205,15 @@ X6_STATUS get_threshold(int deviceID, int a, int c, double* threshold) {
 	return x6_getter(deviceID, &X6_1000::get_threshold, threshold, a, c);
 }
 
-X6_STATUS write_kernel(int deviceID, int a, int b, int c, double _Complex* kernel, unsigned length) {
+X6_STATUS set_threshold_invert(int deviceID, int a, int c, bool invert) {
+	return x6_call(deviceID, &X6_1000::set_threshold_invert, a, c, invert);
+}
+
+X6_STATUS get_threshold_invert(int deviceID, int a, int c, bool* invert) {
+	return x6_getter(deviceID, &X6_1000::get_threshold_invert, invert, a, c);
+}
+
+X6_STATUS write_kernel(int deviceID, unsigned a, unsigned b, unsigned c, double _Complex* kernel, unsigned length) {
 	vector<complex<double>> vec(kernel, kernel + length);
 	return x6_call(deviceID, &X6_1000::write_kernel, a, b, c, vec);
 }
@@ -213,8 +221,17 @@ X6_STATUS write_kernel(int deviceID, int a, int b, int c, double _Complex* kerne
 X6_STATUS read_kernel(int deviceID, unsigned a, unsigned b, unsigned c, unsigned addr, double _Complex* val) {
 	//Have to dance around to convert between C and C++ complex for some reason
 	std::complex<double>* tmpVal = reinterpret_cast<std::complex<double>*>(val);
-	X6_STATUS status = x6_getter(deviceID, &X6_1000::read_kernel, tmpVal, a, b, c, addr);
-	return status;
+	return x6_getter(deviceID, &X6_1000::read_kernel, tmpVal, a, b, c, addr);
+}
+
+X6_STATUS set_kernel_bias(int deviceID, unsigned a, unsigned b, unsigned c, double _Complex* val) {
+	std::complex<double>* tmp_val = reinterpret_cast<std::complex<double>*>(val);
+	return x6_call(deviceID, &X6_1000::set_kernel_bias, a, b, c, *tmp_val);
+}
+
+X6_STATUS get_kernel_bias(int deviceID, unsigned a, unsigned b, unsigned c, double _Complex* val) {
+	std::complex<double>* tmp_val = reinterpret_cast<std::complex<double>*>(val);
+	return x6_getter(deviceID, &X6_1000::get_kernel_bias, tmp_val, a, b, c);
 }
 
 X6_STATUS acquire(int deviceID) {

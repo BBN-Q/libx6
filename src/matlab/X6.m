@@ -345,12 +345,33 @@ classdef X6 < hgsetget
             val = ptr.Value(1) + 1i*ptr.Value(2);
         end
 
+        function set_kernel_bias(obj, a, b, c, bias)
+            % The C library takes a double complex* but we're faking a double* so pack the data manually
+            packed_bias = [real(bias); imag(bias)];
+            x6_call(obj, 'set_kernel_bias', a, b, c, packed_bias);
+        end
+
+        function val = get_kernel_bias(obj, a, b, c)
+            % The C library takes a double complex* but we're faking a double*
+            ptr = libpointer('doublePtr', zeros(2));
+            x6_call(obj, 'get_kernel_bias', a, b, c, ptr);
+            val = ptr.Value(1) + 1i*ptr.Value(2);
+        end
+
         function set_threshold(obj, a, c, threshold)
             x6_call(obj, 'set_threshold', a, c, threshold);
         end
 
         function val = get_threshold(obj, a, c)
             val = x6_getter(obj, 'get_threshold', a, c);
+        end
+
+        function set_threshold_invert(obj, a, c, invert)
+            x6_call(obj, 'set_threshold_invert', a, c, invert);
+        end
+
+        function val = get_threshold_invert(obj, a, c)
+            val = logical(x6_getter(obj, 'get_threshold_invert', a, c));
         end
 
         function write_pulse_waveform(obj, pg, waveform)
@@ -440,6 +461,17 @@ classdef X6 < hgsetget
                 end
                 obj.write_kernel(a, b, 1, settings.demodKernel);
             end
+            if ~isempty(settings.demodKernelBias)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.demodKernelBias))
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.demodKernelBias)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.demodKernelBias = tmp(1) + 1j*tmp(2);
+                end
+                set_kernel_bias(obj, a, b, 1, settings.demodKernelBias);
+            else
+                set_kernel_bias(obj, a, b, 1, 0)
+            end
             if ~isempty(settings.rawKernel)
                 %Try to decode base64 encoded kernels
                 if (ischar(settings.rawKernel))
@@ -449,7 +481,19 @@ classdef X6 < hgsetget
                 end
                 obj.write_kernel(a, 0, b, settings.rawKernel);
             end
+            if ~isempty(settings.rawKernelBias)
+                %Try to decode base64 encoded kernels
+                if (ischar(settings.rawKernelBias))
+                    tmp = typecast(org.apache.commons.codec.binary.Base64.decodeBase64(uint8(settings.rawKernelBias)), 'uint8');
+                    tmp = typecast(tmp, 'double');
+                    settings.rawKernelBias = tmp(1) + 1j*tmp(2);
+                end
+                set_kernel_bias(obj, a, 0, b, settings.rawKernelBias);
+            else
+                set_kernel_bias(obj, a, 0, b, 0)
+            end
             obj.set_threshold(a, b, settings.threshold);
+            obj.set_threshold_invert(a, b, settings.thresholdInvert);
         end
     end
 

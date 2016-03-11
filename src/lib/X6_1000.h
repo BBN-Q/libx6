@@ -77,8 +77,15 @@ public:
 	double get_nco_frequency(int, int);
 	void set_threshold(int, int, double);
 	double get_threshold(int, int);
+	void set_threshold_invert(int, int, bool);
+	bool get_threshold_invert(int, int);
+
 	void write_kernel(int, int, int, const vector<complex<double>> &);
 	complex<double> read_kernel(unsigned, unsigned, unsigned, unsigned);
+	void set_kernel_bias(int, int, int, complex<double>);
+	complex<double> get_kernel_bias(int, int, int);
+
+
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
