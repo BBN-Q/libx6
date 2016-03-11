@@ -243,6 +243,17 @@ classdef TestX6 < matlab.unittest.TestCase
             end
         end
 
+        function test_kernel_bias(testCase)
+            %Test we can set and get a kernel bias
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 0, 1, kernel_bias);
+            %arbitrary tolerance to do with sfix32_15 fixed point representation
+            assertEqual(testCase, get_kernel_bias(testCase.x6, 1, 0, 1), kernel_bias, 'AbsTol', 1/2^14);
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 1, 1, kernel_bias);
+            assertEqual(testCase, get_kernel_bias(testCase.x6, 1, 1, 1), kernel_bias, 'AbsTol', 1/2^14);
+        end
+
         function test_raw_kernel_memory(testCase)
 
             baseKernel = (-1.0 + (2-1/2^15)*rand(4097,1)) + 1i*(-1.0 + (2-1/2^15)*rand(4097,1));
@@ -277,6 +288,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Write a random kernel
             kernel = (-1.0 + 2*rand(1280,1)) + 1i*(-1.0 + 2*rand(1280,1));
             write_kernel(testCase.x6, 1, 0, 1, kernel);
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 0, 1, kernel_bias);
 
             set_averager_settings(testCase.x6, 5120, 64, 1, 1);
 
@@ -291,7 +304,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             rawWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
             KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
-            expected = sum(bsxfun(@times, kernel, rawWFs(1:length(kernel),:)), 1);
+            expected = kernel_bias + sum(bsxfun(@times, kernel, rawWFs(1:length(kernel),:)), 1);
             assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
         end
 
@@ -360,6 +373,8 @@ classdef TestX6 < matlab.unittest.TestCase
             %Write a random kernel
             kernel = (-1.0 + 2*rand(160,1)) + 1i*(-1.0 + 2*rand(160,1));
             write_kernel(testCase.x6, 1, 1, 1, kernel);
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 1, 1, kernel_bias);
 
             set_averager_settings(testCase.x6, 5120, 64, 1, 1);
 
@@ -374,7 +389,7 @@ classdef TestX6 < matlab.unittest.TestCase
 
             demodWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 0));
             KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 1, 'c', 1));
-            expected = sum(bsxfun(@times, kernel, demodWFs(1:length(kernel),:)), 1);
+            expected = kernel_bias + sum(bsxfun(@times, kernel, demodWFs(1:length(kernel),:)), 1);
             assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^10);
         end
 
@@ -385,6 +400,16 @@ classdef TestX6 < matlab.unittest.TestCase
             c = randi(2);
             set_threshold(testCase.x6, a, c, threshold);
             assertEqual(testCase, get_threshold(testCase.x6, a, c), threshold, 'AbsTol', 2/2^15);
+        end
+
+        function test_threshold_invert(testCase)
+            %Test setting getting threshold inverter bit
+            a = randi(2);
+            c = randi(2);
+            set_threshold_invert(testCase.x6, a, c, true);
+            assertEqual(testCase, get_threshold_invert(testCase.x6, a, c), true);
+            set_threshold_invert(testCase.x6, a, c, false);
+            assertEqual(testCase, get_threshold_invert(testCase.x6, a, c), false);
         end
 
         function test_pg_waveform_length(testCase)
