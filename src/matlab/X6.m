@@ -195,6 +195,9 @@ classdef X6 < hgsetget
                 end
                 pause(0.1)
             end
+            if val==-1
+                warning('X6:TIMEOUT', 'X6 timed out while waiting for acquisition');
+            end
             stop(obj);
         end
 
