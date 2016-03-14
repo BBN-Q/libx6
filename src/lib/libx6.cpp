@@ -123,13 +123,26 @@ X6_STATUS initX6(int deviceID) {
 	return x6_call(deviceID, &X6_1000::init);
 }
 
-X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sha1) {
-	X6_STATUS status;
-	status = x6_getter(deviceID, &X6_1000::get_firmware_version, version);
-	if (status != X6_OK) {
-		return status;
+X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sha1, uint32_t* build_timestamp) {
+	X6_STATUS status = X6_OK;
+	if ( version != nullptr ) {
+		status = x6_getter(deviceID, &X6_1000::get_firmware_version, version);
+		if (status != X6_OK) {
+			return status;
+		}
 	}
-	status = x6_getter(deviceID, &X6_1000::get_firmware_git_sha1, git_sha1);
+	if ( git_sha1 != nullptr ) {
+		status = x6_getter(deviceID, &X6_1000::get_firmware_git_sha1, git_sha1);
+		if (status != X6_OK) {
+			return status;
+		}
+	}
+	if ( build_timestamp != nullptr ) {
+		status = x6_getter(deviceID, &X6_1000::get_firmware_build_timestamp, build_timestamp);
+		if (status != X6_OK) {
+			return status;
+		}
+	}
 	return status;
 }
 

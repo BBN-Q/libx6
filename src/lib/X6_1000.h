@@ -38,6 +38,7 @@ public:
 
 	uint32_t get_firmware_version();
 	uint32_t get_firmware_git_sha1();
+	uint32_t get_firmware_build_timestamp();
 
 	void set_reference_source(X6_REFERENCE_SOURCE ref = INTERNAL_REFERENCE);
 	X6_REFERENCE_SOURCE get_reference_source();

@@ -40,10 +40,12 @@ TEST_CASE("firmware version", "[get_firmware_version]") {
 
 	SECTION("firmware version checks") {
 		uint32_t ver;
-		uint32_t sha1 = 0xdeadbeef;;
-		get_firmware_version(0, &ver, &sha1);
+		uint32_t sha1 = 0xdeadbeef;
+		uint32_t timestamp = 0xdeadbeef;
+		get_firmware_version(0, &ver, &sha1, &timestamp);
 		REQUIRE( ver >= 0x0009 );
 		REQUIRE( sha1 != 0xdeadbeef );
+		REQUIRE( timestamp != 0xdeadbeef );
 	}
 
 	disconnect_x6(0);
