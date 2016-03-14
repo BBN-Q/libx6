@@ -310,21 +310,9 @@ classdef X6 < hgsetget
             val = x6_getter(obj, 'get_logic_temperature');
         end
 
-        function [ver, ver_str] = get_firmware_version(obj)
-            [status, ver, git_sha1] = calllib('libx6', 'get_firmware_version', obj.deviceID, 0, 0);
+        function [ver, ver_str, git_sha1, build_timestamp] = get_firmware_version(obj)
+            [status, ver, git_sha1, build_timestamp, ver_str] = calllib('libx6', 'get_firmware_version', obj.deviceID, 0, 0. 0, '');
             X6.check_status(status);
-
-            % Create version string
-            major_ver = bitand(bitshift(ver, -8), hex2dec('ff'));
-            minor_ver = bitand(ver, hex2dec('ff'));
-            commits_since = bitand(bitshift(ver, -16), hex2dec('fff'));
-            if bitand(bitshift(ver, -28), hex2dec('f')) == hex2dec('d')
-                dirty_string = '-dirty';
-            else
-                dirty_string = '';
-            end
-
-            ver_str = sprintf('v%d.%d+%d-%x%s', major_ver, minor_ver, commits_since, git_sha1, dirty_string);
         end
 
         function set_nco_frequency(obj, a, b, freq)

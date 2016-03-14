@@ -7,6 +7,9 @@
 // Copyright 2013-2015 Raytheon BBN Technologies
 
 #include <memory> //unique_ptr
+#include <string>
+using std::string;
+#include <cstring>
 
 #include "libx6.h"
 #include "X6_1000.h"
@@ -123,25 +126,61 @@ X6_STATUS initX6(int deviceID) {
 	return x6_call(deviceID, &X6_1000::init);
 }
 
-X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sha1, uint32_t* build_timestamp) {
+X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sha1, uint32_t* build_timestamp, char* version_string) {
 	X6_STATUS status = X6_OK;
 	if ( version != nullptr ) {
 		status = x6_getter(deviceID, &X6_1000::get_firmware_version, version);
-		if (status != X6_OK) {
-			return status;
-		}
+		if (status != X6_OK) { return status; }
 	}
 	if ( git_sha1 != nullptr ) {
 		status = x6_getter(deviceID, &X6_1000::get_firmware_git_sha1, git_sha1);
-		if (status != X6_OK) {
-			return status;
-		}
+		if (status != X6_OK) { return status; }
 	}
 	if ( build_timestamp != nullptr ) {
 		status = x6_getter(deviceID, &X6_1000::get_firmware_build_timestamp, build_timestamp);
-		if (status != X6_OK) {
-			return status;
+		if (status != X6_OK) { return status; }
+	}
+	if ( version_string != nullptr ) {
+		uint32_t my_version;
+		uint32_t my_git_sha1;
+		uint32_t my_build_timestamp;
+		if ( version == nullptr ) {
+			status = x6_getter(deviceID, &X6_1000::get_firmware_version, &my_version);
+			if (status != X6_OK) { return status; }
+		} else {
+			my_version = *version;
 		}
+		if ( git_sha1 == nullptr ) {
+			status = x6_getter(deviceID, &X6_1000::get_firmware_version, &my_git_sha1);
+			if (status != X6_OK) { return status; }
+		} else {
+			my_git_sha1 = *git_sha1;
+		}
+		if ( build_timestamp == nullptr ) {
+			status = x6_getter(deviceID, &X6_1000::get_firmware_version, &my_build_timestamp);
+			if (status != X6_OK) { return status; }
+		} else {
+			my_build_timestamp = *build_timestamp;
+		}
+		//put together the version string
+		uint8_t tag_minor = my_version & 0xff;
+		uint8_t tag_major = (my_version >> 8) & 0xff;
+		uint16_t commits_since = (my_version >> 16) & 0xfff;
+		bool is_dirty = ((my_version >> 28) & 0xf) == 0xd;
+		std::ostringstream version_stream;
+		version_stream << "v" << tag_major << "." << tag_minor;
+		if ( commits_since > 0 ) {
+			version_stream << "-" << commits_since << "-g" << std::hex << git_sha1 << std::dec;
+		}
+		if (is_dirty) {
+			version_stream << "-dirty";
+		}
+		uint8_t year = (my_build_timestamp >> 24) & 0xff;
+		uint8_t month = (my_build_timestamp >> 16) & 0xff;
+		uint8_t day = (my_build_timestamp >> 8) & 0xff;
+		version_stream << " 20" << year << "-" << month << "-" << day;
+		const string tmp_string = version_stream.str();
+		std::strcpy(version_string, tmp_string.c_str());
 	}
 	return status;
 }
