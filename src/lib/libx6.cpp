@@ -163,25 +163,24 @@ X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sh
 			my_build_timestamp = *build_timestamp;
 		}
 		//put together the version string
-		uint8_t tag_minor = my_version & 0xff;
-		uint8_t tag_major = (my_version >> 8) & 0xff;
-		uint16_t commits_since = (my_version >> 16) & 0xfff;
+		unsigned tag_minor = my_version & 0xff;
+		unsigned tag_major = (my_version >> 8) & 0xff;
+		unsigned commits_since = (my_version >> 16) & 0xfff;
 		bool is_dirty = ((my_version >> 28) & 0xf) == 0xd;
 		std::ostringstream version_stream;
 		version_stream << "v" << tag_major << "." << tag_minor;
 		if ( commits_since > 0 ) {
-			version_stream << "-" << commits_since << "-g" << std::hex << git_sha1 << std::dec;
+			version_stream << "-" << commits_since << "-g" << std::hex << my_git_sha1 << std::dec;
 		}
 		if (is_dirty) {
 			version_stream << "-dirty";
 		}
-		uint8_t year = (my_build_timestamp >> 24) & 0xff;
-		uint8_t month = (my_build_timestamp >> 16) & 0xff;
-		uint8_t day = (my_build_timestamp >> 8) & 0xff;
-		version_stream << " 20" << year << "-" << month << "-" << day;
+		unsigned year = (my_build_timestamp >> 24) & 0xff;
+		unsigned month = (my_build_timestamp >> 16) & 0xff;
+		unsigned day = (my_build_timestamp >> 8) & 0xff;
+		version_stream << " 20" << std::hex << year << "-" << month << "-" << day;
 		const string tmp_string = version_stream.str();
-		std::strcpy(version_string, tmp_string.c_str());
-	}
+		std::strcpy(version_string, tmp_string.c_str());	}
 	return status;
 }
 

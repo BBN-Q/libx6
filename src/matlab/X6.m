@@ -311,7 +311,7 @@ classdef X6 < hgsetget
         end
 
         function [ver, ver_str, git_sha1, build_timestamp] = get_firmware_version(obj)
-            [status, ver, git_sha1, build_timestamp, ver_str] = calllib('libx6', 'get_firmware_version', obj.deviceID, 0, 0. 0, '');
+            [status, ver, git_sha1, build_timestamp, ver_str] = calllib('libx6', 'get_firmware_version', obj.deviceID, 0, 0, 0, blanks(64));
             X6.check_status(status);
         end
 
