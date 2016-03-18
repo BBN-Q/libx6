@@ -308,6 +308,70 @@ classdef TestX6 < matlab.unittest.TestCase
             assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
         end
 
+        function test_kernel_longer(testCase)
+            %Test that kernel longer than data does not stall
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+
+            %Enable the raw (to feed into expected calculation) and one kernel integrator stream
+            enable_stream(testCase.x6, 1, 0, 0);
+            enable_stream(testCase.x6, 1, 0, 1);
+
+            %Write a random kernel
+            kernel = (-1.0 + 2*rand(1280,1)) + 1i*(-1.0 + 2*rand(1280,1));
+            write_kernel(testCase.x6, 1, 0, 1, kernel);
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 0, 1, kernel_bias);
+
+            set_averager_settings(testCase.x6, 2560, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            stop(testCase.x6);
+            assertEqual(testCase, success, 0);
+
+            rawWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
+            KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
+            expected = kernel_bias + sum(bsxfun(@times, kernel(1:size(rawWFs,1),:), rawWFs), 1);
+            assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
+        end
+
+        function test_kernel_shorter(testCase)
+            %Test that kernel shorter than data works
+            disconnect(testCase.x6);
+            connect(testCase.x6, 0);
+
+            %Enable the raw (to feed into expected calculation) and one kernel integrator stream
+            enable_stream(testCase.x6, 1, 0, 0);
+            enable_stream(testCase.x6, 1, 0, 1);
+
+            %Write a random kernel
+            kernel = (-1.0 + 2*rand(640,1)) + 1i*(-1.0 + 2*rand(640,1));
+            write_kernel(testCase.x6, 1, 0, 1, kernel);
+            kernel_bias = 8*randn() + 1i*8*randn();
+            set_kernel_bias(testCase.x6, 1, 0, 1, kernel_bias);
+
+            set_averager_settings(testCase.x6, 5120, 64, 1, 1);
+
+            acquire(testCase.x6);
+
+            %enable test mode
+            write_register(testCase.x6, testCase.x6.DSP_WB_OFFSET(1), 1, 65536 + 25000);
+
+            success = wait_for_acquisition(testCase.x6, 1);
+            stop(testCase.x6);
+            assertEqual(testCase, success, 0);
+
+            rawWFs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 0));
+            KIs = transfer_stream(testCase.x6, struct('a', 1, 'b', 0, 'c', 1));
+            expected = kernel_bias + sum(bsxfun(@times, kernel, rawWFs(1:length(kernel),:)), 1);
+            assertEqual(testCase, KIs, expected, 'AbsTol', 1/2^8);
+        end
+
         function test_only_raw_integrator(testCase)
             %Test only the integrated raw stream
             disconnect(testCase.x6);
