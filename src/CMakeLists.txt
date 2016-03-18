@@ -51,9 +51,7 @@ endif()
 #Some compile flags
 ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
 
-ADD_CUSTOM_COMMAND(
-	PRE_BUILD
-	OUTPUT ${PROJECT_SOURCE_DIR}/lib/version.hpp
+ADD_CUSTOM_TARGET( update_version
 	COMMAND ${PROJECT_SOURCE_DIR}/make_version.sh
 )
 
@@ -67,7 +65,8 @@ SET ( DLL_SRC
 
 SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
-ADD_LIBRARY( x6 SHARED ${DLL_SRC} ${PROJECT_SOURCE_DIR}/lib/version.hpp)
+ADD_LIBRARY( x6 SHARED ${DLL_SRC} )
+ADD_DEPENDENCIES( x6 update_version )
 
 ADD_EXECUTABLE(run_tests
 	../test/run_tests.cpp
