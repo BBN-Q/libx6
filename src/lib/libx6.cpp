@@ -151,13 +151,13 @@ X6_STATUS get_firmware_version(int deviceID, uint32_t* version, uint32_t* git_sh
 			my_version = *version;
 		}
 		if ( git_sha1 == nullptr ) {
-			status = x6_getter(deviceID, &X6_1000::get_firmware_version, &my_git_sha1);
+			status = x6_getter(deviceID, &X6_1000::get_firmware_git_sha1, &my_git_sha1);
 			if (status != X6_OK) { return status; }
 		} else {
 			my_git_sha1 = *git_sha1;
 		}
 		if ( build_timestamp == nullptr ) {
-			status = x6_getter(deviceID, &X6_1000::get_firmware_version, &my_build_timestamp);
+			status = x6_getter(deviceID, &X6_1000::get_firmware_build_timestamp, &my_build_timestamp);
 			if (status != X6_OK) { return status; }
 		} else {
 			my_build_timestamp = *build_timestamp;
