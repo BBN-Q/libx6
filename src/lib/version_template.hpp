@@ -2,8 +2,9 @@
 #define VERSION_H
 
 #include <string>
+using std::string;
 
-const std::string LIBX6_VERSION = "<TOKEN>";
+const string LIBX6_VERSION = "<TOKEN>";
 string get_driver_version() {
 	return LIBX6_VERSION;
 }
