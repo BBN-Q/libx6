@@ -33,6 +33,7 @@ GCC` to discover). We have used [mingw-w64](http://mingw-w64.org/) and the
 mingw-builds installer to use the ``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack
 which is compatible with the compiler II used.  It is easiest to use this with
 the MSYS2 environment for cmake and make.
+
 ### Uninstalling previous II drivers and software
 
 If you already have II software installed and want to start from scratch try the
