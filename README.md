@@ -21,6 +21,7 @@ releases with a pre-compiled shared library.
 ## Windows
 
 ### Requirements
+
 * cmake build tool version 2.8 or higher (http://www.cmake.org/)
 * Innovative Integration development libraries. Use the [Install from
 Web](http://www.innovative-dsp.com/support/installfromwebAutomatic.htm) tool
@@ -30,14 +31,14 @@ As of September 2015 we have built against Malibu 1.8.5.
 specific compiler in the Malibu libraries that libx6 links against - as of
 Malibu 1.8.5 this is TDM GCC 4.8.1 ( use `strings -a libFramework_Mb.a | grep
 GCC` to discover). We have used [mingw-w64](http://mingw-w64.org/) and the
-mingw-builds installer to use the ``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack
-which is compatible with the compiler II used.  It is easiest to use this with
-the MSYS2 environment for cmake and make.
+mingw-builds installer to get the ``x86_64-4.8.1-posix-seh-rt_v3_rev2`` stack
+which is compatible with the compiler II used.  It is easiest to run this
+within the MSYS2 environment for access to cmake and make.
 
 ### Uninstalling previous II drivers and software
 
 If you already have II software installed and want to start from scratch try the
-following modified from end of this [forum
+following modified from the end of this [forum
 thread](http://www.innovative-dsp.com/forum/viewtopic.php?t=2032).
 
 1. Open Device Manager and disable the WinJungo driver. Careful if you have
@@ -47,10 +48,10 @@ other WinJungo devices like Xilinx USB JTAG cables.
 4. Run ` .\wdreg_gui.exe -inf .\windrvr6.inf uninstall` (might be `IIWDrvr1190.inf`)
 5. Run ` .\wdreg_gui.exe -name kp_malibu uninstall` (may not be there)
 6. Run ` .\wdreg_gui.exe -name memdrv uninstall` (may not be there)
-7. Uninstall and remaining II Jungo drivers using Device Manager.
-8. Uses MSYS2 grep to find all files in `C:\Windows\INF` that contain 1303 and remove them.
-9. In the `C:\windows\system32\drivers` folder. Delete kp_malibu.sys, memdrv.sys, and windrvr6.sys
-10. Delete `C:\Inovative` folder.
+7. Uninstall any remaining II Jungo drivers using Device Manager.
+8. Use MSYS2 grep to find all files in `C:\Windows\INF` that contain 1303 and remove them.
+9. In the `C:\windows\system32\drivers` folder, delete: kp_malibu.sys, memdrv.sys, and windrvr6.sys
+10. Delete `C:\Innovative` folder.
 11. Restart
 
 ### Instructions
