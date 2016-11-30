@@ -16,20 +16,34 @@ if "Windows" in platform.platform():
     os.environ["PATH"] += ";" + build_path
 libx6 = npct.load_library("libx6", build_path)
 
+# enums and structs
 class Channel(Structure):
     _fields_ = [("a", c_int32),
                 ("b", c_int32),
                 ("c", c_int32)]
+
+# reference source
+reference_dict = {0: "external", 1: "internal"}
+EXTERNAL = 0
+INTERNAL = 1
+
+# digitizer mode
+mode_dict = {0: "digitizer", 1: "averager"}
+DIGITIZER = 0
+AVERAGER = 1
+
+# supply argument types for libx6 methods
 
 libx6.connect_x6.argtypes              = [c_int32]
 libx6.disconnect_x6.argtypes           = [c_int32]
 libx6.get_num_devices.argtypes         = [POINTER(c_uint32)]
 libx6.get_firmware_version.argtypes    = [c_int32] + [POINTER(c_uint32)]*3 + [c_char_p]
 
-# libx6.set_reference_source.argtypes    = [c_int32, X6_REFERENCE_SOURCE]
-# libx6.get_reference_source.argtypes    = [c_int32, POINTER(X6_REFERENCE_SOURCE)]
-# libx6.set_digitizer_mode.argtypes      = [c_int32, X6_DIGITIZER_MODE]
-# libx6.get_digitizer_mode.argtypes      = [c_int32, POINTER(X6_DIGITIZER_MODE)]
+# these take an enum argument, which we will pretend is just a c_uint32
+libx6.set_reference_source.argtypes    = [c_int32, c_uint32]
+libx6.get_reference_source.argtypes    = [c_int32, POINTER(c_uint32)]
+libx6.set_digitizer_mode.argtypes      = [c_int32, c_uint32]
+libx6.get_digitizer_mode.argtypes      = [c_int32, POINTER(c_uint32)]
 
 libx6.enable_stream.argtypes           = [c_int32]*4
 libx6.disable_stream.argtypes          = [c_int32]*4
@@ -71,48 +85,8 @@ attributes = [a for a in dir(libx6) if not a.startswith('__')]
 for a in attributes:
     a.restype = c_int32
 
-# reference source
-reference_dict = {0: "internal", 1: "external"}
-
-# enum APS2_STATUS {
-X6_OK                          = 0
-X6_UNKNOWN_ERROR               = -1
-X6_NO_DEVICE_FOUND             = -2
-X6_UNCONNECTED                 = -3
-X6_INVALID_FREQUENCY           = -4
-X6_TIMEOUT                     = -5
-X6_INVALID_CHANNEL             = -6
-X6_LOGFILE_ERROR               = -7
-X6_INVALID_RECORD_LENGTH       = -8
-X6_MODULE_ERROR                = -9
-X6_INVALID_WF_LEN              = -10
-X6_WF_OUT_OF_RANGE             = -11
-X6_INVALID_KERNEL_STREAM       = -12
-X6_INVALID_KERNEL_LENGTH       = -13
-X6_KERNEL_OUT_OF_RANGE         = -14
-X6_MODULE_ERROR                = -15
-
-status_dict = {
-    0: "X6_OK",
-    -1: "X6_UNKNOWN_ERROR",
-    -2: "X6_NO_DEVICE_FOUND",
-    -3: "X6_UNCONNECTED",
-    -4: "X6_INVALID_FREQUENCY",
-    -5: "X6_TIMEOUT",
-    -6: "X6_INVALID_CHANNEL",
-    -7: "X6_LOGFILE_ERROR",
-    -8: "X6_INVALID_RECORD_LENGTH",
-    -9: "X6_MODULE_ERROR",
-    -10: "X6_INVALID_WF_LEN",
-    -11: "X6_WF_OUT_OF_RANGE",
-    -12: "X6_INVALID_KERNEL_STREAM",
-    -13: "X6_INVALID_KERNEL_LENGTH",
-    -14: "X6_KERNEL_OUT_OF_RANGE",
-    -15: "X6_MODULE_ERROR",
-}
-
-libx6.get_error_msg.restype = c_char_p
-
+libx6.get_error_msg.argtypes = [c_uint32]
+libx6.get_error_msg.restype  = c_char_p
 
 def get_error_msg(status_code):
     return libx6.get_error_msg(status_code).decode("utf-8")
@@ -121,8 +95,8 @@ def check(status_code):
     if status_code is 0:
         return
     else:
-        raise Exception("LIBX6 Error: {} - {}".format(status_dict[
-            status_code], get_error_msg(status_code)))
+        raise Exception("LIBX6 Error: {} - {}".format(status_code,
+            get_error_msg(status_code)))
 
 def get_num_devices():
     num_devices = c_uint32()
@@ -139,7 +113,6 @@ class X6(object):
     def __init__(self):
         super(APS2, self).__init__()
         self.device_id = None
-        self.digitizer_mode = 'DIGITIZER'
         self.record_length = 128
         self.waveforms = 1
         self.segments = 1
@@ -182,6 +155,20 @@ class X6(object):
         check(libx6.get_firmware_version(
             self.device_id, byref(version), byref(sha), byref(timestamp), string))
         return version.value, sha.value, timestamp.value, string.value.decode('ascii')
+
+    def set_reference_source(self, source):
+        x6_call("set_reference_source", int(source))
+
+    def get_reference_source(self):
+        source = x6_getter("get_reference_source", c_uint32)
+        return reference_dict[source]
+
+    def set_digitizer_mode(self, mode):
+        x6_call("set_digitizer_mode", int(mode))
+
+    def get_digitizer_mode(self):
+        mode = x6_getter("get_digitizer_mode", c_uint32)
+        return mode_dict[mode]
 
     def enable_stream(self, a, b, c):
         x6_call("enable_stream", a, b, c)
@@ -258,7 +245,7 @@ class X6(object):
         buffer_size = x6_getter("get_buffer_size", c_uint32, byref(ch), 1)
         # In digitizer mode, resize the buffer to get an integer number of
         # round robins
-        if self.digitizer_mode == 'DIGITIZER':
+        if self.get_digitizer_mode() == 'digitizer':
             record_length = self.get_record_length(a, b, c)
             samples_per_RR = record_length * self.waveforms * self.segments;
             buffer_size = samples_per_RR * (buffer_size // samples_per_RR)
