@@ -64,7 +64,7 @@ libx6.get_kernel_bias.argtypes         = [c_int32] + [c_uint32]*3 + [np_complex]
 
 libx6.acquire.argtypes                 = [c_int32]
 libx6.wait_for_acquisition.argtypes    = [c_int32, c_uint32]
-libx6.get_is_running                   = [c_int32, POINTER(c_bool)]
+libx6.get_is_running.argtypes          = [c_int32, POINTER(c_bool)]
 libx6.get_num_new_records.argtypes     = [c_int32, POINTER(c_uint32)]
 libx6.stop.argtypes                    = [c_int32]
 libx6.transfer_stream.argtypes         = [c_int32, POINTER(Channel), c_uint32,
@@ -81,9 +81,9 @@ libx6.set_logging_level.argtypes       = [c_int32]
 libx6.get_logic_temperature.argtypes   = [c_int32, POINTER(c_float)]
 
 # uniform restype = c_int32, so add it all at once
-attributes = [a for a in dir(libx6) if not a.startswith('__')]
+attributes = [a for a in dir(libx6) if not a.startswith('_')]
 for a in attributes:
-    a.restype = c_int32
+    getattr(libx6, a).restype = c_int32
 
 libx6.get_error_msg.argtypes = [c_uint32]
 libx6.get_error_msg.restype  = c_char_p
@@ -111,7 +111,7 @@ def set_logging_level(level):
 
 class X6(object):
     def __init__(self):
-        super(APS2, self).__init__()
+        super(X6, self).__init__()
         self.device_id = None
         self.record_length = 128
         self.waveforms = 1
@@ -125,7 +125,7 @@ class X6(object):
             pass
 
     def x6_call(self, name, *args):
-        status = getattr(libx6, name)(self.device_id)(*args)
+        status = getattr(libx6, name)(self.device_id, *args)
         check(status)
 
     def x6_getter(self, name, ctype, *args):
@@ -144,7 +144,7 @@ class X6(object):
         self.device_id = device_id
 
     def disconnect(self):
-        x6_call("disconnect_x6")
+        self.x6_call("disconnect_x6")
         self.device_id = None
 
     def get_firmware_version(self):
@@ -157,30 +157,30 @@ class X6(object):
         return version.value, sha.value, timestamp.value, string.value.decode('ascii')
 
     def set_reference_source(self, source):
-        x6_call("set_reference_source", int(source))
+        self.x6_call("set_reference_source", int(source))
 
     def get_reference_source(self):
-        source = x6_getter("get_reference_source", c_uint32)
+        source = self.x6_getter("get_reference_source", c_uint32)
         return reference_dict[source]
 
     def set_digitizer_mode(self, mode):
-        x6_call("set_digitizer_mode", int(mode))
+        self.x6_call("set_digitizer_mode", int(mode))
 
     def get_digitizer_mode(self):
-        mode = x6_getter("get_digitizer_mode", c_uint32)
+        mode = self.x6_getter("get_digitizer_mode", c_uint32)
         return mode_dict[mode]
 
     def enable_stream(self, a, b, c):
-        x6_call("enable_stream", a, b, c)
+        self.x6_call("enable_stream", a, b, c)
 
     def disable_stream(self, a, b, c):
-        x6_call("disable_stream", a, b, c)
+        self.x6_call("disable_stream", a, b, c)
 
     def set_nco_frequency(self, a, b, frequency):
-        x6_call("set_nco_frequency", a, b, frequency)
+        self.x6_call("set_nco_frequency", a, b, frequency)
 
     def get_nco_frequency(self, a, b):
-        return x6_getter("get_nco_frequency", c_double, a, b)
+        return self.x6_getter("get_nco_frequency", c_double, a, b)
 
     def get_record_length(self, a, b, c):
         """
@@ -190,69 +190,69 @@ class X6(object):
         record length because of decimation in the DSP pipeline.
         """
         ch = Channel(a, b, c)
-        return x6_getter("get_record_length", c_uint32, byref(ch))
+        return self.x6_getter("get_record_length", c_uint32, byref(ch))
 
     def set_threshold(self, a, c, threshold):
-        x6_call("set_threshold", a, c, threshold)
+        self.x6_call("set_threshold", a, c, threshold)
 
     def get_threshold(self, a, c):
-        return x6_getter("get_threshold", c_double, a, c)
+        return self.x6_getter("get_threshold", c_double, a, c)
 
     def set_threshold_invert(self, a, c, invert):
-        x6_call("set_threshold_invert", a, c, invert)
+        self.x6_call("set_threshold_invert", a, c, invert)
 
     def get_threshold_invert(self, a, c):
-        return x6_getter("get_threshold_invert", c_double, a, c)
+        return self.x6_getter("get_threshold_invert", c_double, a, c)
 
     def write_kernel(self, a, b, c, kernel):
-        x6_call("write_kernel", a, b, c, kernel, len(kernel))
+        self.x6_call("write_kernel", a, b, c, kernel, len(kernel))
 
     def read_kernel(self, a, b, c, offset):
         # for MATLAB compatibility reasons with complex data types, the underlying
         # libx6 is designed to work with an array of length 1
         point = np.zeros(1, dtype=np.complex128)
-        x6_call("read_kernel", a, b, c, offset, point)
+        self.x6_call("read_kernel", a, b, c, offset, point)
         return point[0]
 
     def set_kernel_bias(self, a, b, c, bias):
-        x6_call("set_kernel_bias", a, b, c, bias)
+        self.x6_call("set_kernel_bias", a, b, c, bias)
 
     def get_kernel_bias(self, a, b, c):
         point = np.zeros(1, dtype=np.complex128)
-        x6_call("get_kernel_bias", a, b, c, point)
+        self.x6_call("get_kernel_bias", a, b, c, point)
         return point[0]
 
     def acquire(self):
-        x6_call("set_averager_settings",
+        self.x6_call("set_averager_settings",
                 self.record_length,
                 self.segments,
                 self.waveforms,
                 self.round_robins)
-        x6_call("acquire")
+        self.x6_call("acquire")
 
     def wait_for_acquisition(self):
         # TODO
         print("not implemented")
 
     def stop(self):
-        x6_call("stop")
+        self.x6_call("stop")
 
     def data_available(self):
-        return x6_call("get_num_new_records") > 0
+        return self.x6_call("get_num_new_records") > 0
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)
-        buffer_size = x6_getter("get_buffer_size", c_uint32, byref(ch), 1)
+        buffer_size = self.x6_getter("get_buffer_size", c_uint32, byref(ch), 1)
         # In digitizer mode, resize the buffer to get an integer number of
         # round robins
         if self.get_digitizer_mode() == 'digitizer':
             record_length = self.get_record_length(a, b, c)
             samples_per_RR = record_length * self.waveforms * self.segments;
             buffer_size = samples_per_RR * (buffer_size // samples_per_RR)
-        if buffer_size == 0
+        if buffer_size == 0:
             return None
         stream = np.zeros(buffer_size, dtype=np.double)
-        x6_call("transfer_stream", byref(ch), 1, stream, len(stream))
+        self.x6_call("transfer_stream", byref(ch), 1, stream, len(stream))
 
         if b == 0 and c == 0:
             # physical channels should be returned directly
@@ -263,9 +263,9 @@ class X6(object):
 
     def transfer_variance(self, a, b, c):
         ch = Channel(a, b, c)
-        buffer_size = x6_getter("get_variance_buffer_size", c_uint32, byref(ch), 1)
+        buffer_size = self.x6_getter("get_variance_buffer_size", c_uint32, byref(ch), 1)
         stream = np.zeros(buffer_size, dtype=np.double)
-        x6_call("transfer_variance", byref(ch), 1, stream, len(stream))
+        self.x6_call("transfer_variance", byref(ch), 1, stream, len(stream))
 
         if b == 0 and c == 0:
             # physical channel
