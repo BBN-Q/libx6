@@ -265,8 +265,11 @@ class X6(object):
     def stop(self):
         self.x6_call("stop")
 
-    def data_available(self):
-        return self.x6_getter("get_num_new_records") > 0
+    def get_num_new_records(self):
+        return self.x6_getter("get_num_new_records")
+
+    def get_is_running(self):
+        return self.x6_getter("get_is_running")
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)
