@@ -138,9 +138,9 @@ class X6(object):
         super(X6, self).__init__()
         self.device_id = None
         self.record_length = 128
-        self.waveforms = 1
-        self.segments = 1
-        self.round_robins = 1
+        self.nbr_waveforms = 1
+        self.nbr_segments = 1
+        self.nbr_round_robins = 1
 
     def __del__(self):
         try:
@@ -190,12 +190,16 @@ class X6(object):
         source = self.x6_getter("get_reference_source")
         return reference_dict[source]
 
-    def set_digitizer_mode(self, mode):
+    reference = property(get_reference_source, set_reference_source)
+
+    def set_acquire_mode(self, mode):
         self.x6_call("set_digitizer_mode", int(mode))
 
-    def get_digitizer_mode(self):
+    def get_acquire_mode(self):
         mode = self.x6_getter("get_digitizer_mode")
         return mode_dict[mode]
+
+    acquire_mode = property(get_acquire_mode, set_acquire_mode)
 
     def enable_stream(self, a, b, c):
         self.x6_call("enable_stream", a, b, c)
