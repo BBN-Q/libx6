@@ -202,7 +202,7 @@ class X6(object):
         self.x6_call("set_threshold_invert", a, c, invert)
 
     def get_threshold_invert(self, a, c):
-        return self.x6_getter("get_threshold_invert", c_double, a, c)
+        return self.x6_getter("get_threshold_invert", c_bool, a, c)
 
     def write_kernel(self, a, b, c, kernel):
         self.x6_call("write_kernel", a, b, c, kernel, len(kernel))
@@ -238,7 +238,7 @@ class X6(object):
         self.x6_call("stop")
 
     def data_available(self):
-        return self.x6_call("get_num_new_records") > 0
+        return self.x6_getter("get_num_new_records", c_uint32) > 0
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)
