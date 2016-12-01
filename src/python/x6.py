@@ -242,7 +242,8 @@ class X6(object):
         return point[0]
 
     def set_kernel_bias(self, a, b, c, bias):
-        self.x6_call("set_kernel_bias", a, b, c, bias)
+        point = np.array([bias], dtype=np.complex128)
+        self.x6_call("set_kernel_bias", a, b, c, point)
 
     def get_kernel_bias(self, a, b, c):
         point = np.zeros(1, dtype=np.complex128)
