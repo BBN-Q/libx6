@@ -1,3 +1,27 @@
+# Python wrapper for the X6 driver.
+#
+# Usage notes: The channelizer creates multiple data streams per physical
+# input channel. These are indexed by a 3-parameter label (a,b,c), where a
+# is the 1-indexed physical channel, b is the 0-indexed virtual channel
+# (b=0 is the raw stream, b>1 are demodulated streams, and c indicates
+# demodulated (c=0) or demodulated and integrated (c = 1).
+
+# Original author: Blake Johnson
+# Date: December 1, 2016
+# Copyright 2016 Raytheon BBN Technologies
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 import platform
 import warnings
