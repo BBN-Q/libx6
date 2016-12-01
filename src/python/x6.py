@@ -258,9 +258,8 @@ class X6(object):
                 self.round_robins)
         self.x6_call("acquire")
 
-    def wait_for_acquisition(self):
-        # TODO
-        print("not implemented")
+    def wait_for_acquisition(self, timeout):
+        self.x6_call("wait_for_acquisition", timeout)
 
     def stop(self):
         self.x6_call("stop")
