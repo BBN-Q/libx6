@@ -152,8 +152,11 @@ class X6(object):
         status = getattr(libx6, name)(self.device_id, *args)
         check(status)
 
-    def x6_getter(self, name, ctype, *args):
-        param = ctype()
+    def x6_getter(self, name, *args):
+        # the value we are fetching is always passed as a pointer as the last
+        # argument to the method
+        pointer_type = getattr(libx6, name).argtypes[-1]
+        param = pointer_type._type_()
         self.x6_call(name, *args, byref(param))
         return param.value
 
@@ -184,14 +187,14 @@ class X6(object):
         self.x6_call("set_reference_source", int(source))
 
     def get_reference_source(self):
-        source = self.x6_getter("get_reference_source", c_uint32)
+        source = self.x6_getter("get_reference_source")
         return reference_dict[source]
 
     def set_digitizer_mode(self, mode):
         self.x6_call("set_digitizer_mode", int(mode))
 
     def get_digitizer_mode(self):
-        mode = self.x6_getter("get_digitizer_mode", c_uint32)
+        mode = self.x6_getter("get_digitizer_mode")
         return mode_dict[mode]
 
     def enable_stream(self, a, b, c):
@@ -204,7 +207,7 @@ class X6(object):
         self.x6_call("set_nco_frequency", a, b, frequency)
 
     def get_nco_frequency(self, a, b):
-        return self.x6_getter("get_nco_frequency", c_double, a, b)
+        return self.x6_getter("get_nco_frequency", a, b)
 
     def get_record_length(self, a, b, c):
         """
@@ -214,19 +217,19 @@ class X6(object):
         record length because of decimation in the DSP pipeline.
         """
         ch = Channel(a, b, c)
-        return self.x6_getter("get_record_length", c_uint32, byref(ch))
+        return self.x6_getter("get_record_length", byref(ch))
 
     def set_threshold(self, a, c, threshold):
         self.x6_call("set_threshold", a, c, threshold)
 
     def get_threshold(self, a, c):
-        return self.x6_getter("get_threshold", c_double, a, c)
+        return self.x6_getter("get_threshold", a, c)
 
     def set_threshold_invert(self, a, c, invert):
         self.x6_call("set_threshold_invert", a, c, invert)
 
     def get_threshold_invert(self, a, c):
-        return self.x6_getter("get_threshold_invert", c_bool, a, c)
+        return self.x6_getter("get_threshold_invert", a, c)
 
     def write_kernel(self, a, b, c, kernel):
         self.x6_call("write_kernel", a, b, c, kernel, len(kernel))
@@ -262,11 +265,11 @@ class X6(object):
         self.x6_call("stop")
 
     def data_available(self):
-        return self.x6_getter("get_num_new_records", c_uint32) > 0
+        return self.x6_getter("get_num_new_records") > 0
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)
-        buffer_size = self.x6_getter("get_buffer_size", c_uint32, byref(ch), 1)
+        buffer_size = self.x6_getter("get_buffer_size", byref(ch), 1)
         # In digitizer mode, resize the buffer to get an integer number of
         # round robins
         if self.get_digitizer_mode() == 'digitizer':
@@ -287,7 +290,7 @@ class X6(object):
 
     def transfer_variance(self, a, b, c):
         ch = Channel(a, b, c)
-        buffer_size = self.x6_getter("get_variance_buffer_size", c_uint32, byref(ch), 1)
+        buffer_size = self.x6_getter("get_variance_buffer_size", byref(ch), 1)
         stream = np.zeros(buffer_size, dtype=np.double)
         self.x6_call("transfer_variance", byref(ch), 1, stream, len(stream))
 
