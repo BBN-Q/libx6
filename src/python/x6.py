@@ -217,7 +217,7 @@ class X6(object):
         """
         Get the channel-specific record length (number of samples).
 
-        Note that the channel record length defers from the physical channel
+        Note that the channel record length differs from the physical channel
         record length because of decimation in the DSP pipeline.
         """
         ch = Channel(a, b, c)
