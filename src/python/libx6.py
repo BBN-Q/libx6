@@ -258,9 +258,9 @@ class X6(object):
     def acquire(self):
         self.x6_call("set_averager_settings",
                 self.record_length,
-                self.segments,
-                self.waveforms,
-                self.round_robins)
+                self.nbr_segments,
+                self.nbr_waveforms,
+                self.nbr_round_robins)
         self.x6_call("acquire")
 
     def wait_for_acquisition(self, timeout):
