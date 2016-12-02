@@ -48,11 +48,13 @@ class Channel(Structure):
 
 # reference source
 reference_dict = {0: "external", 1: "internal"}
+reference_dict_inv = {v:k for k,v in reference_dict.items()}
 EXTERNAL = 0
 INTERNAL = 1
 
 # digitizer mode
 mode_dict = {0: "digitizer", 1: "averager"}
+mode_dict_inv = {v:k for k,v in mode_dict.items()}
 DIGITIZER = 0
 AVERAGER = 1
 
@@ -185,7 +187,11 @@ class X6(object):
         return version.value, sha.value, timestamp.value, string.value.decode('ascii')
 
     def set_reference_source(self, source):
-        self.x6_call("set_reference_source", int(source))
+        if source in reference_dict_inv:
+            source_int = reference_dict_inv[source]
+        else:
+            source_int = int(source)
+        self.x6_call("set_reference_source", source_int)
 
     def get_reference_source(self):
         source = self.x6_getter("get_reference_source")
@@ -194,7 +200,11 @@ class X6(object):
     reference = property(get_reference_source, set_reference_source)
 
     def set_acquire_mode(self, mode):
-        self.x6_call("set_digitizer_mode", int(mode))
+        if mode in mode_dict_inv:
+            mode_int = mode_dict_inv[mode]
+        else:
+            mode_int = int(mode)
+        self.x6_call("set_digitizer_mode", mode_int)
 
     def get_acquire_mode(self):
         mode = self.x6_getter("get_digitizer_mode")
@@ -282,7 +292,7 @@ class X6(object):
         # round robins
         if self.get_acquire_mode() == 'digitizer':
             record_length = self.get_record_length(a, b, c)
-            samples_per_RR = record_length * self.waveforms * self.segments;
+            samples_per_RR = record_length * self.nbr_waveforms * self.nbr_segments;
             buffer_size = samples_per_RR * (buffer_size // samples_per_RR)
         if buffer_size == 0:
             return None
