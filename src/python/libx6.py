@@ -171,7 +171,8 @@ class X6(object):
         self.device_id = device_id
 
     def disconnect(self):
-        self.x6_call("disconnect_x6")
+        if self.device_id:
+            self.x6_call("disconnect_x6")
         self.device_id = None
 
     def get_firmware_version(self):
