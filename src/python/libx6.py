@@ -280,7 +280,7 @@ class X6(object):
         buffer_size = self.x6_getter("get_buffer_size", byref(ch), 1)
         # In digitizer mode, resize the buffer to get an integer number of
         # round robins
-        if self.get_digitizer_mode() == 'digitizer':
+        if self.get_acquire_mode() == 'digitizer':
             record_length = self.get_record_length(a, b, c)
             samples_per_RR = record_length * self.waveforms * self.segments;
             buffer_size = samples_per_RR * (buffer_size // samples_per_RR)
