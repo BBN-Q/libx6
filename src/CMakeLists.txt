@@ -41,7 +41,7 @@ if(UNIX)
 	SET(IPP_LIB "ipps")
 else()
 	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
-	SET(IPP_LIB "ipps-7.0")
+	SET(IPP_LIB "ipps-9.0")
 endif()
 
 if(UNIX)
