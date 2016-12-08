@@ -102,6 +102,7 @@ public:
 	void stop();
 	bool get_is_running();
 	size_t get_num_new_records();
+	bool get_data_available();
 
 	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);

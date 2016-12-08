@@ -301,6 +301,10 @@ X6_STATUS get_num_new_records(int deviceID, unsigned* hasNewData) {
 	return x6_getter(deviceID, &X6_1000::get_num_new_records, hasNewData);
 }
 
+X6_STATUS get_data_available(int deviceID, bool* dataAvailable) {
+	return x6_getter(deviceID, &X6_1000::get_data_available, dataAvailable);
+}
+
 X6_STATUS stop(int deviceID) {
 	return x6_call(deviceID, &X6_1000::stop);
 }

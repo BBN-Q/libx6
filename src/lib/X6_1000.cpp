@@ -675,6 +675,21 @@ size_t X6_1000::get_num_new_records() {
 		return result;
 }
 
+bool X6_1000::get_data_available() {
+	if (digitizerMode_ == AVERAGER) {
+		// in averager mode, it is always valid to ask for data
+		return true;
+	} else {
+		// in digitizer mode, we ask if *any* queue has data available
+		size_t availableRecords = 0;
+		for (auto & kv : queues_) {
+			size_t it = kv.second.availableRecords;
+			availableRecords = max(availableRecords, it);
+		}
+		return availableRecords > 0;
+	}
+}
+
 void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length) {
 		//Check we have the stream
 		uint16_t sid = stream.streamID;

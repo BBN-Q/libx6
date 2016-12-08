@@ -77,6 +77,7 @@ EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
 EXPORT X6_STATUS get_is_running(int, int*);
 EXPORT X6_STATUS get_num_new_records(int, unsigned*);
+EXPORT X6_STATUS get_data_available(int, bool*);
 EXPORT X6_STATUS stop(int);
 EXPORT X6_STATUS transfer_stream(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsigned);

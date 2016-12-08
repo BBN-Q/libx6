@@ -92,6 +92,7 @@ libx6.acquire.argtypes                 = [c_int32]
 libx6.wait_for_acquisition.argtypes    = [c_int32, c_uint32]
 libx6.get_is_running.argtypes          = [c_int32, POINTER(c_bool)]
 libx6.get_num_new_records.argtypes     = [c_int32, POINTER(c_uint32)]
+libx6.get_data_available.argtypes      = [c_int32, POINTER(c_bool)]
 libx6.stop.argtypes                    = [c_int32]
 libx6.transfer_stream.argtypes         = [c_int32, POINTER(Channel), c_uint32,
                                           np_double, c_int32]
@@ -281,6 +282,9 @@ class X6(object):
 
     def get_num_new_records(self):
         return self.x6_getter("get_num_new_records")
+
+    def get_data_available(self):
+        return self.x6_getter("get_data_available")
 
     def get_is_running(self):
         return self.x6_getter("get_is_running")
