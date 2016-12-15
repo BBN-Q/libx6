@@ -10,14 +10,21 @@
 #ifndef RECORDQUEUE_H_
 #define RECORDQUEUE_H_
 
-#include "QDSPStream.h"
-
 #include <queue>
 #include <atomic>
+#include <cstring>
+#include <BufferDatagrams_Mb.h>
 
+#include <unistd.h>
+#ifdef WIN32
+	#include <winsock2.h>
+#else
+	#include <sys/socket.h>
+#endif
+
+#include "QDSPStream.h"
 #include "logger.h"
 
-#include <BufferDatagrams_Mb.h>
 
 template <class T>
 class RecordQueue {
@@ -35,6 +42,7 @@ public:
 	std::atomic<size_t> recordsTaken;
 	std::atomic<size_t> availableRecords;
 	size_t recordLength;
+	int32_t socket_ = -1;
 
 private:
 	std::queue<T> queue_;
@@ -63,11 +71,35 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	FILE_LOG(logDEBUG3) << "New buffer size is " << buffer.size();
 	FILE_LOG(logDEBUG3) << "queue size is " << queue_.size();
 
-	for (auto val : buffer) {
-		queue_.push(val);
+	// if we have a socket, process the data and send it immediately
+	if (socket != -1) {
+		size_t buf_size = buffer.size() * sizeof(T);
+		if (send(socket_, reinterpret_cast<char *>(buf_size), sizeof(size_t), 0) < 0) {
+			FILE_LOG(logERROR) << "Error writing buffer size to socket,"
+			                   << " received error " << std::strerror(errno);
+			throw X6_SOCKET_ERROR;
+		}
+		char *buf_ptr = reinterpret_cast<char *>(buffer.Ptr());
+		ssize_t status = send(socket_, buf_ptr, buf_size, 0);
+		if (status < 0) {
+			FILE_LOG(logERROR) << "System error writing to socket: " << std::strerror(errno);
+			throw X6_SOCKET_ERROR;
+		} else if (status != static_cast<ssize_t>(buf_size)) {
+			FILE_LOG(logERROR) << "Error writing stream ID " << stream_.streamID
+			                   << " buffer to socket. Tried to write "
+			                   << buf_size " bytes, actually wrote "
+			                   << status << " bytes";
+			throw X6_SOCKET_ERROR;
+		}
+	} else {
+		// otherwise, store for later retrieval
+		for (auto val : buffer) {
+			queue_.push(val);
+		}
+		availableRecords++;
 	}
-    recordsTaken++;
-    availableRecords++;
+
+	recordsTaken++;
 }
 
 template <class T>

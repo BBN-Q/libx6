@@ -822,14 +822,18 @@ void X6_1000::initialize_accumulators() {
 }
 
 void X6_1000::initialize_queues() {
-		queues_.clear();
-		mutexes_.clear();
-		for (auto kv : activeQDSPStreams_) {
-				// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
-				queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
-				// mutexes_[kv.first] = std::mutex();
-				mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
+	queues_.clear();
+	mutexes_.clear();
+	for (auto kv : activeQDSPStreams_) {
+		// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+		queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
+		// mutexes_[kv.first] = std::mutex();
+		mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
+		// add the socket to the RecordQueue if we have one
+		if (sockets_.find(kv.first) != sockets_.end()) {
+			queues_[kv.first].socket_ = sockets_[kv.first];
 		}
+	}
 }
 
 void X6_1000::initialize_correlators() {
