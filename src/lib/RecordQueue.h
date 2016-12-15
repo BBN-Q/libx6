@@ -13,17 +13,18 @@
 #include <queue>
 #include <atomic>
 #include <cstring>
-#include <BufferDatagrams_Mb.h>
-
 #include <unistd.h>
-#ifdef WIN32
+
+#ifdef _WIN32
 	#include <winsock2.h>
 #else
 	#include <sys/socket.h>
 #endif
 
+#include <BufferDatagrams_Mb.h>
 #include "QDSPStream.h"
 #include "logger.h"
+#include "X6_errno.h"
 
 
 template <class T>
@@ -35,7 +36,7 @@ public:
 	RecordQueue<T>(const QDSPStream &, size_t);
 
 	template <class U>
-	void push(const Innovative::AccessDatagram<U> &);
+	void push(Innovative::AccessDatagram<U> &);
 	void get(double *, size_t);
 	size_t get_buffer_size();
 
@@ -64,7 +65,7 @@ RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) : recordsT
 
 template <class T>
 template <class U>
-void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
+void RecordQueue<T>::push(Innovative::AccessDatagram<U> & buffer) {
 	//TODO: worry about performance, cache-friendly etc.
 	FILE_LOG(logDEBUG3) << "Buffering data...";
 	FILE_LOG(logDEBUG3) << "recordsTaken = " << recordsTaken;
@@ -72,22 +73,22 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	FILE_LOG(logDEBUG3) << "queue size is " << queue_.size();
 
 	// if we have a socket, process the data and send it immediately
-	if (socket != -1) {
+	if (socket_ != -1) {
 		size_t buf_size = buffer.size() * sizeof(T);
 		if (send(socket_, reinterpret_cast<char *>(buf_size), sizeof(size_t), 0) < 0) {
 			FILE_LOG(logERROR) << "Error writing buffer size to socket,"
 			                   << " received error " << std::strerror(errno);
 			throw X6_SOCKET_ERROR;
 		}
-		char *buf_ptr = reinterpret_cast<char *>(buffer.Ptr());
-		ssize_t status = send(socket_, buf_ptr, buf_size, 0);
+
+		ssize_t status = send(socket_, buffer.Base(), buf_size, 0);
 		if (status < 0) {
 			FILE_LOG(logERROR) << "System error writing to socket: " << std::strerror(errno);
 			throw X6_SOCKET_ERROR;
 		} else if (status != static_cast<ssize_t>(buf_size)) {
 			FILE_LOG(logERROR) << "Error writing stream ID " << stream_.streamID
 			                   << " buffer to socket. Tried to write "
-			                   << buf_size " bytes, actually wrote "
+			                   << buf_size << " bytes, actually wrote "
 			                   << status << " bytes";
 			throw X6_SOCKET_ERROR;
 		}

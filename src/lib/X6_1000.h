@@ -15,9 +15,9 @@
 #include "X6_enums.h"
 
 #include "QDSPStream.h"
+#include "RecordQueue.h"
 #include "Accumulator.h"
 #include "Correlator.h"
-#include "RecordQueue.h"
 
 // II Malibu headers
 #include <X6_1000M_Mb.h>
