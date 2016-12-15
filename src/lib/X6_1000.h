@@ -104,6 +104,7 @@ public:
 	size_t get_num_new_records();
 	bool get_data_available();
 
+	void bind_socket(QDSPStream, int32_t);
 	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);
@@ -155,6 +156,8 @@ private:
 	map<uint16_t, RecordQueue<int32_t>> queues_;
 	// locks for reading/writing data to queues
 	map<uint16_t, std::mutex> mutexes_;
+	// sockets for pushing data directly to client
+	map<uint16_t, int32_t> sockets_;
 
 	// State Variables
 	bool isOpen_;				  /**< cached flag indicaing board was openned */

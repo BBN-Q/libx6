@@ -309,6 +309,11 @@ X6_STATUS stop(int deviceID) {
 	return x6_call(deviceID, &X6_1000::stop);
 }
 
+X6_STATUS bind_socket(int deviceID, ChannelTuple *channel, int32_t socket) {
+	QDSPStream stream(channel->a, channel->b, channel->c);
+	return x6_call(deviceID, &X6_1000::bind_socket, stream, socket);
+}
+
 X6_STATUS transfer_stream(int deviceID, ChannelTuple *channelTuples, unsigned numChannels, double* buffer, unsigned bufferLength) {
 	// when passed a single ChannelTuple, fills buffer with the corresponding waveform data
 	// when passed multple ChannelTuples, fills buffer with the corresponding correlation data
