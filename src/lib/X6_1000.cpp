@@ -692,12 +692,6 @@ bool X6_1000::get_data_available() {
 
 void X6_1000::bind_socket(QDSPStream stream, int32_t socket) {
 	uint16_t sid = stream.streamID;
-	// TODO this check introducing an order dependency between enable_stream()
-	// and bind_socket(). Do we want this?
-	if (activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()) {
-		FILE_LOG(logERROR) << "Tried to bind socket to a disabled stream.";
-		throw X6_INVALID_CHANNEL;
-	}
 	sockets_[sid] = socket;
 }
 
