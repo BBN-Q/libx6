@@ -75,15 +75,25 @@ void RecordQueue<T>::push(Innovative::AccessDatagram<U> & buffer) {
 	// if we have a socket, process the data and send it immediately
 	if (socket_ != -1) {
 		size_t buf_size = buffer.size() * sizeof(T);
-		if (send(socket_, reinterpret_cast<char *>(buf_size), sizeof(size_t), 0) < 0) {
+		ssize_t status = send(socket_, reinterpret_cast<char *>(&buf_size), sizeof(size_t), 0);
+		if (status < 0) {
 			FILE_LOG(logERROR) << "Error writing buffer size to socket,"
-			                   << " received error " << std::strerror(errno);
+			#ifdef _WIN32
+			                   << " received error: " << WSAGetLastError();
+			#else
+			                   << " received error: " << std::strerror(errno);
+			#endif
 			throw X6_SOCKET_ERROR;
 		}
 
-		ssize_t status = send(socket_, buffer.Base(), buf_size, 0);
+		status = send(socket_, buffer.Base(), buf_size, 0);
 		if (status < 0) {
-			FILE_LOG(logERROR) << "System error writing to socket: " << std::strerror(errno);
+			FILE_LOG(logERROR) << "System error writing to socket: "
+			#ifdef _WIN32
+			                   << WSAGetLastError();
+			#else
+			                   << std::strerror(errno);
+			#endif
 			throw X6_SOCKET_ERROR;
 		} else if (status != static_cast<ssize_t>(buf_size)) {
 			FILE_LOG(logERROR) << "Error writing stream ID " << stream_.streamID
