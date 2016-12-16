@@ -94,7 +94,7 @@ libx6.get_is_running.argtypes          = [c_int32, POINTER(c_bool)]
 libx6.get_num_new_records.argtypes     = [c_int32, POINTER(c_uint32)]
 libx6.get_data_available.argtypes      = [c_int32, POINTER(c_bool)]
 libx6.stop.argtypes                    = [c_int32]
-libx6.bind_socket.argtypes             = [c_int32, POINTER(Channel), c_int32]
+libx6.register_socket.argtypes         = [c_int32, POINTER(Channel), c_int32]
 libx6.transfer_stream.argtypes         = [c_int32, POINTER(Channel), c_uint32,
                                           np_double, c_int32]
 libx6.transfer_variance.argtypes       = [c_int32, POINTER(Channel), c_uint32,
@@ -290,9 +290,9 @@ class X6(object):
     def get_is_running(self):
         return self.x6_getter("get_is_running")
 
-    def bind_socket(self, a, b, c, sock):
+    def register_socket(self, a, b, c, sock):
         ch = Channel(a, b, c)
-        return self.x6_call("bind_socket", byref(ch), sock.fileno())
+        return self.x6_call("register_socket", byref(ch), sock.fileno())
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)

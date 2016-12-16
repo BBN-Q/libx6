@@ -79,7 +79,7 @@ EXPORT X6_STATUS get_is_running(int, int*);
 EXPORT X6_STATUS get_num_new_records(int, unsigned*);
 EXPORT X6_STATUS get_data_available(int, bool*);
 EXPORT X6_STATUS stop(int);
-EXPORT X6_STATUS bind_socket(int, ChannelTuple*, int32_t socket);
+EXPORT X6_STATUS register_socket(int, ChannelTuple*, int32_t socket);
 EXPORT X6_STATUS transfer_stream(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, unsigned*);

@@ -104,7 +104,7 @@ public:
 	size_t get_num_new_records();
 	bool get_data_available();
 
-	void bind_socket(QDSPStream, int32_t);
+	void register_socket(QDSPStream, int32_t);
 	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);

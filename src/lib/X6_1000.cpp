@@ -690,7 +690,7 @@ bool X6_1000::get_data_available() {
 	}
 }
 
-void X6_1000::bind_socket(QDSPStream stream, int32_t socket) {
+void X6_1000::register_socket(QDSPStream stream, int32_t socket) {
 	uint16_t sid = stream.streamID;
 	sockets_[sid] = socket;
 }
