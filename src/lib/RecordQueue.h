@@ -49,6 +49,10 @@ private:
 	std::queue<T> queue_;
 	QDSPStream stream_;
 	unsigned fixed_to_float_;
+
+	std::vector<double> workbuf_;
+	template <class U>
+	void convert_to_double(Innovative::AccessDatagram<U> &);
 };
 
 
@@ -74,7 +78,8 @@ void RecordQueue<T>::push(Innovative::AccessDatagram<U> & buffer) {
 
 	// if we have a socket, process the data and send it immediately
 	if (socket_ != -1) {
-		size_t buf_size = buffer.size() * sizeof(T);
+		convert_to_double(buffer);
+		size_t buf_size = buffer.size() * sizeof(double);
 		ssize_t status = send(socket_, reinterpret_cast<char *>(&buf_size), sizeof(size_t), 0);
 		if (status < 0) {
 			FILE_LOG(logERROR) << "Error writing buffer size to socket,"
@@ -86,7 +91,7 @@ void RecordQueue<T>::push(Innovative::AccessDatagram<U> & buffer) {
 			throw X6_SOCKET_ERROR;
 		}
 
-		status = send(socket_, buffer.Base(), buf_size, 0);
+		status = send(socket_, reinterpret_cast<char *>(workbuf_.data()), buf_size, 0);
 		if (status < 0) {
 			FILE_LOG(logERROR) << "System error writing to socket: "
 			#ifdef _WIN32
@@ -133,4 +138,14 @@ template <class T>
 size_t RecordQueue<T>::get_buffer_size() {
 	return availableRecords * recordLength;
 }
+
+template <class T>
+template <class U>
+void RecordQueue<T>::convert_to_double(Innovative::AccessDatagram<U> &buffer) {
+	workbuf_.reserve(buffer.size());
+	for (size_t ct = 0; ct < buffer.size(); ct++) {
+		workbuf_[ct] = static_cast<double>(buffer[ct]) / fixed_to_float_;
+	}
+}
+
 #endif //RECORDQUEUE_H_
