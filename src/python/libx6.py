@@ -292,7 +292,7 @@ class X6(object):
 
     def bind_socket(self, a, b, c, sock):
         ch = Channel(a, b, c)
-        return self.x6_call("bind_socket", byref(ch), sock)
+        return self.x6_call("bind_socket", byref(ch), sock.fileno())
 
     def transfer_stream(self, a, b, c):
         ch = Channel(a, b, c)
