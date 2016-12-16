@@ -111,5 +111,6 @@ TARGET_LINK_LIBRARIES(x6
 if(WIN32)
 	TARGET_LINK_LIBRARIES(x6
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
+		ws2_32
 	)
 endif(WIN32)

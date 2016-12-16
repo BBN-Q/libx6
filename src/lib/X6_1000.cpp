@@ -690,6 +690,11 @@ bool X6_1000::get_data_available() {
 	}
 }
 
+void X6_1000::register_socket(QDSPStream stream, int32_t socket) {
+	uint16_t sid = stream.streamID;
+	sockets_[sid] = socket;
+}
+
 void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length) {
 		//Check we have the stream
 		uint16_t sid = stream.streamID;
@@ -811,14 +816,18 @@ void X6_1000::initialize_accumulators() {
 }
 
 void X6_1000::initialize_queues() {
-		queues_.clear();
-		mutexes_.clear();
-		for (auto kv : activeQDSPStreams_) {
-				// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
-				queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
-				// mutexes_[kv.first] = std::mutex();
-				mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
+	queues_.clear();
+	mutexes_.clear();
+	for (auto kv : activeQDSPStreams_) {
+		// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
+		queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
+		// mutexes_[kv.first] = std::mutex();
+		mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
+		// add the socket to the RecordQueue if we have one
+		if (sockets_.find(kv.first) != sockets_.end()) {
+			queues_[kv.first].socket_ = sockets_[kv.first];
 		}
+	}
 }
 
 void X6_1000::initialize_correlators() {
@@ -845,7 +854,7 @@ void X6_1000::initialize_correlators() {
  * Event Handlers
  ****************************************************************************/
 
- void	X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
+void X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
 		//Seems to be called when AtConfigure is called on the trigger module
 		FILE_LOG(logDEBUG) << "X6_1000::HandleDisableTrigger";
 		module_.Input().Trigger().External(false);
@@ -853,7 +862,7 @@ void X6_1000::initialize_correlators() {
 }
 
 
-void	X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
+void X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
 		//This is called when ``AtStreamStart`` is called on the trigger manager module
 		// and external trigger has been set with ExternalTrigger(true) being called on the trigger module
 		FILE_LOG(logDEBUG) << "X6_1000::HandleExternalTrigger";
@@ -862,7 +871,7 @@ void	X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
 }
 
 
-void	X6_1000::HandleSoftwareTrigger(OpenWire::NotifyEvent & /*Event*/) {
+void X6_1000::HandleSoftwareTrigger(OpenWire::NotifyEvent & /*Event*/) {
 		FILE_LOG(logDEBUG) << "X6_1000::HandleSoftwareTrigger";
 }
 
@@ -918,70 +927,70 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
 }
 
 void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T streamType) {
-		if (!isRunning_) {
-				return;
-		}
-		// StreamID is now encoded in the PeripheralID of the VMP Vita buffer
-		// PeripheralID is just the order of the streamID in the filter
-		PacketBufferHeader header(Event.Data);
-		uint16_t sid;
+	if (!isRunning_) {
+		return;
+	}
+	// StreamID is now encoded in the PeripheralID of the VMP Vita buffer
+	// PeripheralID is just the order of the streamID in the filter
+	PacketBufferHeader header(Event.Data);
+	uint16_t sid;
 
-		switch (streamType) {
-				case PHYSICAL:
-						sid = physChans_[header.PeripheralId()];
-						break;
-				case DEMOD:
-						sid = virtChans_[header.PeripheralId()];
-						break;
-				case RESULT:
-						sid = resultChans_[header.PeripheralId()];
-						break;
-		}
+	switch (streamType) {
+	case PHYSICAL:
+		sid = physChans_[header.PeripheralId()];
+		break;
+	case DEMOD:
+		sid = virtChans_[header.PeripheralId()];
+		break;
+	case RESULT:
+		sid = resultChans_[header.PeripheralId()];
+		break;
+	}
 
-		// interpret the data as 16 or 32-bit integers depending on the channel type
-		ShortDG sbufferDG(Event.Data);
-		IntegerDG ibufferDG(Event.Data);
-		switch (streamType) {
-				case PHYSICAL:
-				case DEMOD:
-						FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
-						if ( digitizerMode_ == AVERAGER) {
-								// accumulate the data in the appropriate channel
-								if (accumulators_[sid].recordsTaken < numRecords_) {
-										accumulators_[sid].accumulate(sbufferDG);
-								}
-						}
-						else {
-								mutexes_[sid].lock();
-								if (queues_[sid].recordsTaken < numRecords_) {
-										queues_[sid].push(sbufferDG);
-								}
-								mutexes_[sid].unlock();
-						}
-						break;
-				case RESULT:
-						FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
-						if ( digitizerMode_ == AVERAGER) {
-								// accumulate the data in the appropriate channel
-								if (accumulators_[sid].recordsTaken < numRecords_) {
-										accumulators_[sid].accumulate(ibufferDG);
-										// correlate with other result channels
-										for (auto & kv : correlators_) {
-												if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
-														kv.second.accumulate(sid, ibufferDG);
-												}
-										}
-								}
-						}
-						else {
-								mutexes_[sid].lock();
-								if (queues_[sid].recordsTaken < numRecords_) {
-										queues_[sid].push(ibufferDG);
-								}
-								mutexes_[sid].unlock();
-						}
-						break;
+	// interpret the data as 16 or 32-bit integers depending on the channel type
+	ShortDG sbufferDG(Event.Data);
+	IntegerDG ibufferDG(Event.Data);
+	switch (streamType) {
+	case PHYSICAL:
+	case DEMOD:
+		FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
+		if ( digitizerMode_ == AVERAGER) {
+			// accumulate the data in the appropriate channel
+			if (accumulators_[sid].recordsTaken < numRecords_) {
+				accumulators_[sid].accumulate(sbufferDG);
+			}
 		}
+		else {
+			mutexes_[sid].lock();
+			if (queues_[sid].recordsTaken < numRecords_) {
+				queues_[sid].push(sbufferDG);
+			}
+			mutexes_[sid].unlock();
+		}
+		break;
+	case RESULT:
+		FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
+		if ( digitizerMode_ == AVERAGER) {
+			// accumulate the data in the appropriate channel
+			if (accumulators_[sid].recordsTaken < numRecords_) {
+				accumulators_[sid].accumulate(ibufferDG);
+				// correlate with other result channels
+				for (auto & kv : correlators_) {
+					if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
+						kv.second.accumulate(sid, ibufferDG);
+					}
+				}
+			}
+		}
+		else {
+			mutexes_[sid].lock();
+			if (queues_[sid].recordsTaken < numRecords_) {
+				queues_[sid].push(ibufferDG);
+			}
+			mutexes_[sid].unlock();
+		}
+		break;
+	}
 }
 
 bool X6_1000::check_done() {
