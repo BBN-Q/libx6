@@ -2,7 +2,7 @@
 # mkdir build
 # cd build
 # cmake -G "MSYS Makefiles" -DINNOVATIVE_PATH="C:\\Innovative" ../src/  # for Windows
-# cmake -DINNOVATIVE_PATH=/home/cryan/Downloads/II ../src   # for Linux
+# cmake -DINNOVATIVE_PATH=/usr/Innovative   # for Linux
 # make
 
 
@@ -13,11 +13,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 SET ( CMAKE_BUILD_TYPE Debug )
 
 #include Malibu headers
-if(WIN32)
-	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
-else()
-	INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.8/Malibu)
-endif()
+INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
 
 #and our own library headers
 INCLUDE_DIRECTORIES("./lib/")
@@ -25,27 +21,16 @@ INCLUDE_DIRECTORIES("./lib/")
 #Catch unit-testing
 INCLUDE_DIRECTORIES("../deps/Catch/include")
 
-#Malibu shared libraries
-if(WIN32)
-	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/Lib)
-else()
-	SET(INNOVATIVE_LIB_PATH ${INNOVATIVE_PATH}/usr/Innovative/Malibu-1.8/Lib)
-endif()
-
-LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc)
-LINK_DIRECTORIES(${INNOVATIVE_LIB_PATH}/Gcc/Debug)
+#Innovative shipped shared libraries
+LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc)
+LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Release)
 
 #Intel IPP shared libraries
 if(UNIX)
-	LINK_DIRECTORIES(${INNOVATIVE_PATH}/opt/intel/composer_xe_2011_sp1.9.293/ipp/lib/intel64)
-	SET(IPP_LIB "ipps")
+	SET(IPP_LIB "ipps" "ippcore")
 else()
 	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
 	SET(IPP_LIB "ipps-9.0")
-endif()
-
-if(UNIX)
-	LINK_DIRECTORIES( ${INNOVATIVE_PATH}/usr/Innovative/WinDriver-12.1/lib)
 endif()
 
 #Some compile flags
@@ -104,7 +89,8 @@ TARGET_LINK_LIBRARIES(run_tests
 
 TARGET_LINK_LIBRARIES(x6
 	${II_LIBS}
-	wdapi # WinDriver library in Innovative\lib\gcc
+	wdapi # WinDriver library
+	dl
 	${IPP_LIB} # in Intel IPP directory listed above
 )
 
