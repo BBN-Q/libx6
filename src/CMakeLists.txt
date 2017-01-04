@@ -1,9 +1,9 @@
-PROJECT( libx6 )
+project( libx6 )
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+cmake_minimum_required(VERSION 3.1)
 
 # Make sure we have C++11 support
-set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 
 # find where Innovative is installed
 if(UNIX)
@@ -14,40 +14,40 @@ endif()
 message("Using ${INNOVATIVE_PATH} as Innovative install directory")
 
 #include Malibu headers
-INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
+include_directories(${INNOVATIVE_PATH}/Malibu)
 
 #and our own library headers
-INCLUDE_DIRECTORIES("./lib/")
+include_directories("./lib/")
 
 #Catch unit-testing
-INCLUDE_DIRECTORIES("../deps/Catch/include")
+include_directories("../deps/Catch/include")
 
 #Innovative shipped shared libraries
-LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc)
+link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
 if(CMAKE_BUILD_TYPE MATCHES Debug)
 	message("Building and linking Debug")
-	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+	link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
 else()
 	message("Building and linking Release")
-	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Release)
+	link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Release)
 endif()
 
 #Intel IPP shared libraries
 if(UNIX)
-	SET(IPP_LIB ipps ippcore)
+	set(IPP_LIB ipps ippcore)
 else()
-	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
-	SET(IPP_LIB ipps-9.0)
+	link_directories(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
+	set(IPP_LIB ipps-9.0)
 endif()
 
 # warn all for better code
-ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-Wall")
+add_definitions(${CMAKE_CXX_FLAGS} "-Wall")
 
-ADD_CUSTOM_TARGET( update_version
+add_custom_target( update_version
 	COMMAND ${PROJECT_SOURCE_DIR}/make_version.sh
 )
 
-SET ( DLL_SRC
+set ( DLL_SRC
 	./lib/libx6.cpp
 	./lib/QDSPStream.cpp
 	./lib/Accumulator.cpp
@@ -55,12 +55,12 @@ SET ( DLL_SRC
 	./lib/X6_1000.cpp
 )
 
-SET_SOURCE_FILES_PROPERTIES( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
+set_source_files_properties( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
-ADD_LIBRARY( x6 SHARED ${DLL_SRC} )
-ADD_DEPENDENCIES( x6 update_version )
+add_library( x6 SHARED ${DLL_SRC} )
+add_dependencies( x6 update_version )
 
-ADD_EXECUTABLE(run_tests
+add_executable(run_tests
 	../test/run_tests.cpp
 	../test/test_Sanity.cpp
 	../test/test_Accumulator.cpp
@@ -71,7 +71,7 @@ ADD_EXECUTABLE(run_tests
 	./lib/Correlator.cpp
 )
 
-SET ( II_LIBS
+set ( II_LIBS
 	-Wl,--start-group
 	Os_Mb
 	Application_Mb
@@ -87,14 +87,14 @@ SET ( II_LIBS
 	-Wl,--end-group
 )
 
-TARGET_LINK_LIBRARIES(run_tests
+target_link_libraries(run_tests
 	${II_LIBS}
 	wdapi
 	pthread
 	x6
 )
 
-TARGET_LINK_LIBRARIES(x6
+target_link_libraries(x6
 	${II_LIBS}
 	wdapi # WinDriver library
 	dl
@@ -102,7 +102,7 @@ TARGET_LINK_LIBRARIES(x6
 )
 
 if(WIN32)
-	TARGET_LINK_LIBRARIES(x6
+	target_link_libraries(x6
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
 		ws2_32
 	)
