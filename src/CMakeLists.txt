@@ -1,16 +1,15 @@
-# build using
-# mkdir build
-# cd build
-# cmake -G "MSYS Makefiles" -DINNOVATIVE_PATH="C:\\Innovative" ../src/  # for Windows
-# cmake -DINNOVATIVE_PATH=/usr/Innovative   # for Linux
-# make
-
-
 PROJECT( libx6 )
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
 SET ( CMAKE_BUILD_TYPE Debug )
+# find where Innovative is installed
+if(UNIX)
+	set(INNOVATIVE_PATH /usr/Innovative CACHE FILEPATH "location of Innovative install")
+else()
+	set(INNOVATIVE_PATH $ENV{InnovativeCommon} CACHE FILEPATH "location of Innovative install")
+endif()
+message("Using ${INNOVATIVE_PATH} as Innovative install directory")
 
 #include Malibu headers
 INCLUDE_DIRECTORIES(${INNOVATIVE_PATH}/Malibu)
