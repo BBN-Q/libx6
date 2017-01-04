@@ -70,11 +70,11 @@ void Accumulator::accumulate(const Innovative::AccessDatagram<T> & buffer) {
         // data is complex: real/imaginary are interleaved every other point
         // form a complex vector from the input buffer
         vector<std::complex<int64_t>> cvec(recordLength_/2);
-        for (int i = 0; i < recordLength_/2; i++) {
+        for (size_t i = 0; i < recordLength_/2; i++) {
             cvec[i] = std::complex<int64_t>(buffer[2*i], buffer[2*i+1]);
         }
         // calculate 3-component correlations into a triple of successive points
-        for (int i = 0; i < cvec.size(); i++) {
+        for (size_t i = 0; i < cvec.size(); i++) {
             idx2_[3*i] += cvec[i].real() * cvec[i].real();
             idx2_[3*i+1] += cvec[i].imag() * cvec[i].imag();
             idx2_[3*i+2] += cvec[i].real() * cvec[i].imag();
