@@ -107,3 +107,6 @@ if(WIN32)
 		ws2_32
 	)
 endif(WIN32)
+
+install(TARGETS x6 DESTINATION lib)
+install(FILES "${PROJECT_SOURCE_DIR}/lib/libx6.h" DESTINATION include)
