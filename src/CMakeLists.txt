@@ -2,7 +2,6 @@ PROJECT( libx6 )
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-SET ( CMAKE_BUILD_TYPE Debug )
 # find where Innovative is installed
 if(UNIX)
 	set(INNOVATIVE_PATH /usr/Innovative CACHE FILEPATH "location of Innovative install")
@@ -22,7 +21,13 @@ INCLUDE_DIRECTORIES("../deps/Catch/include")
 
 #Innovative shipped shared libraries
 LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc)
-LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Release)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	message("Building and linking Debug")
+	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+else()
+	message("Building and linking Release")
+	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Gcc/Release)
+endif()
 
 #Intel IPP shared libraries
 if(UNIX)
