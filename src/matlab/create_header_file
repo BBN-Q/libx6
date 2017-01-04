@@ -14,7 +14,6 @@ cp ../lib/libx6.h libx6.matlab.h
 #Remove stdbool header and change bool types to int
 
 sed -i '
-/.*attribute.*/d
 s/^#include "X6/#include "..\/lib\/X6/g
 s/uint32_t/unsigned/g
 s/uint16_t/unsigned short/g

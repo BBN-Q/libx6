@@ -11,6 +11,8 @@
 using std::string;
 #include <cstring>
 
+#include "logger.h"
+
 #include "libx6.h"
 #include "X6_1000.h"
 #include "version.hpp"
@@ -19,33 +21,35 @@ using std::string;
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
 unsigned numDevices_ = 0;
 
+// stub class to open/close the logger file handle
+class InitAndCleanUp {
+public:
+  InitAndCleanUp();
+  ~InitAndCleanUp();
+};
+
+InitAndCleanUp::InitAndCleanUp() {
+	//Open the logging file
+	FILE* pFile = fopen("libx6.log", "a");
+	Output2FILE::Stream() = pFile;
+	FILE_LOG(logINFO) << "libx6 driver version: " << get_driver_version();
+}
+
+InitAndCleanUp::~InitAndCleanUp() {
+	FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading." << endl;
+	if (Output2FILE::Stream()) {
+		fclose(Output2FILE::Stream());
+	}
+}
+
+static InitAndCleanUp initandcleanup_;
+
 const char* get_error_msg(X6_STATUS err) {
 	if (errorsMsgs.count(err)) {
 		return errorsMsgs[err].c_str();
 	}
 	else {
 		return "No error message for this status number.";
-	}
-}
-
-// initialize the library --contructor hook in header
-void init() {
-	//Open the logging file
-	FILE* pFile = fopen("libx6.log", "a");
-	Output2FILE::Stream() = pFile;
-	FILE_LOG(logINFO) << "libx6 driver version: " << get_driver_version();
-
-	//TODO: figure out if this needs to be static
-	static Innovative::X6_1000M x6;
-	numDevices_ = static_cast<unsigned int>(x6.BoardCount());
-	FILE_LOG(logINFO) << "Initializing BBN libx6 with " << numDevices_ << " device" << (numDevices_ > 1 ? "s" : "") << " found.";
-}
-
-//cleanup on driver unload --destructor hook in header
-void cleanup(){
-	FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading." << endl;
-	if (Output2FILE::Stream()) {
-		fclose(Output2FILE::Stream());
 	}
 }
 
@@ -100,13 +104,26 @@ X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr, Args... args){
 extern "C" {
 #endif
 
+void update_num_devices() {
+	// TODO: figure out if this needs to be static
+	static Innovative::X6_1000M x6;
+	numDevices_ = static_cast<unsigned int>(x6.BoardCount());
+	FILE_LOG(logINFO) << numDevices_ << " X6 device" << (numDevices_ > 1 ? "s" : "") << " found.";
+}
+
 X6_STATUS get_num_devices(unsigned* numDevices) {
+	update_num_devices();
 	*numDevices = numDevices_;
 	return X6_OK;
 }
 
 X6_STATUS connect_x6(int deviceID) {
-	if (deviceID >= static_cast<int>(numDevices_)) return X6_NO_DEVICE_FOUND;
+	if (deviceID >= static_cast<int>(numDevices_)) {
+		update_num_devices();
+		if (deviceID >= static_cast<int>(numDevices_)) {
+			return X6_NO_DEVICE_FOUND;
+		}
+	}
 	if (X6s_.find(deviceID) == X6s_.end()){
 		X6s_[deviceID] = std::unique_ptr<X6_1000>(new X6_1000()); //turn-into make_unique when we can go to gcc 4.9
 	}

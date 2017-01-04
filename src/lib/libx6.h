@@ -36,9 +36,6 @@ typedef enum X6_DIGITIZER_MODE X6_DIGITIZER_MODE;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 
-void init() __attribute__((constructor));
-void cleanup() __attribute__((destructor));
-
 EXPORT X6_STATUS connect_x6(int);
 EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
