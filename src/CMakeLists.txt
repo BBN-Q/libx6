@@ -1,6 +1,9 @@
 PROJECT( libx6 )
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+
+# Make sure we have C++11 support
+set (CMAKE_CXX_STANDARD 11)
 
 # find where Innovative is installed
 if(UNIX)
@@ -31,14 +34,14 @@ endif()
 
 #Intel IPP shared libraries
 if(UNIX)
-	SET(IPP_LIB "ipps" "ippcore")
+	SET(IPP_LIB ipps ippcore)
 else()
 	LINK_DIRECTORIES(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
-	SET(IPP_LIB "ipps-9.0")
+	SET(IPP_LIB ipps-9.0)
 endif()
 
-#Some compile flags
-ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-std=c++11 -Wall")
+# warn all for better code
+ADD_DEFINITIONS(${CMAKE_CXX_FLAGS} "-Wall")
 
 ADD_CUSTOM_TARGET( update_version
 	COMMAND ${PROJECT_SOURCE_DIR}/make_version.sh
