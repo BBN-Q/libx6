@@ -71,7 +71,7 @@ TEST_CASE("record length") {
 		for (size_t ct = 0; ct < 2; ct++) {
 			uint32_t val;
 			read_register(0, BASE_DSP[ct], WB_QDSP_RECORD_LENGTH, &val);
-			CHECK( val = 256);
+			CHECK( val == 256);
 		}
 
 	}
