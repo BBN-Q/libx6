@@ -5,12 +5,6 @@ This C/C++ shared library enables interaction with the BBN custom firmware for t
 X6-1000](http://www.innovative-dsp.com/products.php?product=X6-1000M) FPGA card
 as a data acquisition card for superconducting qubit experiments.
 
-# Dependencies
-* Test cases use [philsquared/Catch](https://github.com/philsquared/Catch). Pull the submodule using:
-```
-git submodule init
-git submodule update
-```
 
 # Building
 ----------------------
@@ -18,11 +12,18 @@ git submodule update
 N.B. This is only necessary if you wish to develop the library. BBN ships
 releases with a pre-compiled shared library.
 
+## Dependencies
+
+1. C++11 compliant compiler
+2. Test cases use [Catch](https://github.com/philsquared/Catch) as a
+git submodule.
+3. [CMake](https://cmake.org/) >= 3.2
+4. Innovative Integration libraries.
+
 ## Windows
 
 ### Requirements
 
-* cmake build tool version 2.8 or higher (http://www.cmake.org/)
 * Innovative Integration development libraries. Use the [Install from
 Web](http://www.innovative-dsp.com/support/installfromwebAutomatic.htm) tool
 from II to download and install the X6-1000M - PCIe XMC Module Development Kit.
@@ -82,47 +83,52 @@ make
 
 ## Linux
 
-It is possible to develop on Linux as well.  Download the following rpm's from
-the Innovative website by searching for
-[Malibu](http://www.innovative-dsp.com/cgi-bin/dlLinux64.cgi?product=64Malibu)
-and
-[MalibuRED](http://www.innovative-dsp.com/cgi-bin/dlLinux64.cgi?product=64MalibuRed).
-As of September 2015 we have used
+### Innovative Integration Setup
 
-* 64Malibu-LinuxRed-1.3-4.x86_64.rpm
-* 64Malibu-LinuxPeriphLib-1.8-1b.x86_64.rpm
-* 64WinDriver-11.5-0.x86_64.rpm
-* intel-ipp-sp1-293-7.0-6.x86_64.rpm
+1. download all files for II-X6 by going to Support->Software Downloads then Linux - 64bit - X6-1000M
+or http://www.innovative-dsp.com/cgi-bin/dlLinux64.cgi?product=64X6-1000M. The current file list is:
+    1. 64Malibu-LinuxPeriphLib-1.9-1f.tar.gz
+    1. 64Malibu-LinuxRed-1.4-0.tar.gz
+    1. 64WinDriver-12.1-0.x86_64.tar.gz
+    1. 64X6-1000M-LinuxPeriphLib-1.2-5c.tar.gz
+    1. Ipp9_redist.tar
+    1. LinuxNotes.pdf
+    1. Make_All.pro
+    1. Setup_Debian.sh
+    1. Setup.sh
+    1. X6-1000M_Firmware.zip
+2. copy all files above to `/usr/Innovative`
+3. link kernel source in `/usr/src`: `sudo ln -s kernels/3.10.0-514.2.2.el7.x86_64 linux`
+4. run the Innovative `Setup.sh` script
+5. setup links for Ipp
+    ```shell
+    cd /usr/Innovative/Lib/Gcc
+    sudo ln -s libippcore-9.0.a libippcore.a
+    sudo ln -s libipps-9.0.a libipps.a
+    ```
+6. copy the X6-1000M folder from `/usr/Innovative` to some user folder
+7. install `qt5-qtbase-devel`
+8. rebuild the Finder and VsProm applets but first modify the `.pro` files to add `LIBS += -ldl`
+    ```shell
+    cd /path/to/X6-1000M/Applets/Finder/Qt
+    qmake-qt5 Finder.pro
+    make
+    ./Release/Finder
+    ```
+9. Program the latest QDSP firmware using the VsProm applets
+10. Reboot the computer with a full power down.
 
-The LinuxNotes.pdf is also a useful reference.
+### Building libx6
 
-Move all the rpms to an ``INNOVATIVE_PATH`` folder and then use ``rpm2cpio`` and
-``cpio`` to extract the files. E.g
-
-```shell
-rpm2cpio 64WinDriver-11.5-0.x86_64.rpm | cpio -idmv
-```
-
-Then we just need to let cmake know where all the shared libraries are by
-specifying the folder we unarchived everything in as INNOVATIVE_PATH.  On Linux
-Mint 17.1 I also needed to install the Intel version of OpenMP with ``sudo
-apt-get install libiomp-dev``.
-
-Finally to get the WinDriver shared library to link we need to make a symbolic
-link to the latest version
-
-```shell
-cd /INNOVATIVE_PATH/usr/Innovative/WinDriver-11.5/lib
-ln -s libwdapi1150.so libwdapi.so
-```
-
-If you actually have the X6 card in a Linux machine and need to build the
-WinDriver kernel module then this configure worked on Linux Mint 17.1:
-
-```shell
-./configure --with-kernel-source=/usr/src/linux-headers-3.13.0-24-generic --disable-usb-support
-```
-
+    ```shell
+    git clone --recursive https://github.com/BBN-Q/libx6.git
+    cd libx6
+    mkdir build
+    cd build
+    cmake ../src
+    make -j4
+    ./run_tests
+    ```
 
 # License
 
