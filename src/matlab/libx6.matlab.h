@@ -33,7 +33,6 @@ typedef enum X6_DIGITIZER_MODE X6_DIGITIZER_MODE;
 
 EXPORT const char* get_error_msg(X6_STATUS);
 
-
 EXPORT X6_STATUS connect_x6(int);
 EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
@@ -72,7 +71,9 @@ EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
 EXPORT X6_STATUS get_is_running(int, int*);
 EXPORT X6_STATUS get_num_new_records(int, unsigned*);
+EXPORT X6_STATUS get_data_available(int, int*);
 EXPORT X6_STATUS stop(int);
+EXPORT X6_STATUS register_socket(int, ChannelTuple*, int32_t);
 EXPORT X6_STATUS transfer_stream(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS transfer_variance(int, ChannelTuple*, unsigned, double*, unsigned);
 EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, unsigned*);
