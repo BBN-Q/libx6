@@ -116,6 +116,20 @@ or http://www.innovative-dsp.com/cgi-bin/dlLinux64.cgi?product=64X6-1000M. The c
     ./Release/Finder
     ```
 9. Program the latest QDSP firmware using the VsProm applets
+10. Load the kernel driver on boot
+    1. Add a file to `/etc/systemd/system` called `iix6.service`
+
+        [Unit]
+        Description=Load Kernel driver for II X6
+
+        [Service]
+        Type=oneshot
+        ExecStart=/bin/sh -c "/usr/Innovative/WinDriver/util/wdreg windrvr1221;chmod 666 /dev/windrvr1221;insmod /usr/Innovative/KerPlug/linux/LINUX*/kp_malibu_module.ko"
+
+        [Install]
+        WantedBy=multi-user.target
+
+    2. Enable the service `sudo systemctl enable iix6.service`
 10. Reboot the computer with a full power down.
 
 ### Building libx6
