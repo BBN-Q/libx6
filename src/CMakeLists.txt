@@ -23,13 +23,17 @@ include_directories("./lib/")
 include_directories("../deps/Catch/include")
 
 #Innovative shipped shared libraries
-link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
-if(CMAKE_BUILD_TYPE MATCHES Debug)
-	message("Building and linking Debug")
-	link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+if(MSVC)
+	link_directories(${INNOVATIVE_PATH}/Lib/Vc14_x64)
 else()
-	message("Building and linking Release")
-	link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Release)
+	link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
+	if(CMAKE_BUILD_TYPE MATCHES Debug)
+		message("Building and linking Debug")
+		link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+	else()
+		message("Building and linking Release")
+		link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Release)
+	endif()
 endif()
 
 #Intel IPP shared libraries
