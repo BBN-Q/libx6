@@ -28,17 +28,23 @@ import platform
 import warnings
 import numpy as np
 import numpy.ctypeslib as npct
-from ctypes import c_int32, c_uint32, c_float, c_double, c_char_p, c_bool, create_string_buffer, byref, POINTER, Structure
+from ctypes import c_int32, c_uint32, c_float, c_double, c_char_p, c_bool, create_string_buffer, byref, POINTER, Structure, CDLL
 from ctypes.util import find_library
 
 np_double = npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
 np_complex = npct.ndpointer(dtype=np.complex128, ndim=1, flags='CONTIGUOUS')
 
 # load the shared library
-libpath = find_library("libx6")
+# try with and without "lib" prefix
+libpath = find_library("x6")
+if libpath is None:
+    libpath = find_library("libx6")
+# if we still can't find it, then look in python prefix (where conda stores binaries)
 if libpath is None:
     libpath = sys.prefix + '/lib'
-libx6 = npct.load_library("libx6", libpath)
+    libx6 = npct.load_library("libx6", libpath)
+else:
+    libx6 = CDLL(libpath)
 
 # enums and structs
 class Channel(Structure):
