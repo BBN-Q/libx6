@@ -194,6 +194,9 @@ class X6(object):
             self.device_id, byref(version), byref(sha), byref(timestamp), string))
         return version.value, sha.value, timestamp.value, string.value.decode('ascii')
 
+    def get_logic_temperature(self):
+        return self.x6_getter("get_logic_temperature")
+
     def set_reference_source(self, source):
         if source in reference_dict_inv:
             source_int = reference_dict_inv[source]
