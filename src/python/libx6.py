@@ -276,12 +276,14 @@ class X6(object):
         self.x6_call("get_kernel_bias", a, b, c, point)
         return point[0]
 
-    def acquire(self):
+    def set_averager_settings(self):
         self.x6_call("set_averager_settings",
                 self.record_length,
                 self.nbr_segments,
                 self.nbr_waveforms,
                 self.nbr_round_robins)
+
+    def acquire(self):
         self.x6_call("acquire")
 
     def wait_for_acquisition(self, timeout):
