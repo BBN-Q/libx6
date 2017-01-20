@@ -64,12 +64,19 @@ mode_dict_inv = {v:k for k,v in mode_dict.items()}
 DIGITIZER = 0
 AVERAGER = 1
 
+# wishbone offsets to QDSP modules
+QDSP_WB_OFFSET = [0x2000, 0x2100]
+
+
 # supply argument types for libx6 methods
 
 libx6.connect_x6.argtypes              = [c_int32]
 libx6.disconnect_x6.argtypes           = [c_int32]
 libx6.get_num_devices.argtypes         = [POINTER(c_uint32)]
 libx6.get_firmware_version.argtypes    = [c_int32] + [POINTER(c_uint32)]*3 + [c_char_p]
+
+libx6.read_register.argtypes           = [c_int32, c_uint32, c_uint32, POINTER(c_uint32)]
+libx6.write_register.argtypes          = [c_int32, c_uint32, c_uint32, c_uint32]
 
 # these take an enum argument, which we will pretend is just a c_uint32
 libx6.set_reference_source.argtypes    = [c_int32, c_uint32]
@@ -338,3 +345,9 @@ class X6(object):
         else:
             # interleaved real/imag/prod
             return stream[::3], stream[1::3], stream[2::3]
+
+    def write_register(self, addr, offset, data):
+        self.x6_call("write_register", addr, offset, data)
+
+    def read_register(self, addr, offset):
+        return self.x6_getter("read_register", addr, offset)
