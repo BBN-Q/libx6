@@ -181,7 +181,7 @@ class X6(object):
         self.device_id = device_id
 
     def disconnect(self):
-        if self.device_id:
+        if self.device_id is not None:
             self.x6_call("disconnect_x6")
         self.device_id = None
 
