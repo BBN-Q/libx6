@@ -4,22 +4,13 @@
 
 cp ../lib/libx6.h libx6.matlab.h
 
-#Strip out the contstructor/destructor attributes Matlab can't handle
 #Change the path to the includes
-#Change uint32_t to unsigned
-#Change uint16_t to unsigned short
 #Remove unexported update_log function
-#For non-C99 compliant compilers that pre 2015b Matlab likes
 #Remove complex header and _Complex types
-#Remove stdbool header and change bool types to int
 
 sed -i '
 s/^#include "X6/#include "..\/lib\/X6/g
-s/uint32_t/unsigned/g
-s/uint16_t/unsigned short/g
 /^#include <complex.h>/d
 /^#undef I/d
 s/_Complex//g
-/^#include <stdbool.h>/d
-s/bool/int/g
 /^X6_STATUS update_log/d' libx6.matlab.h
