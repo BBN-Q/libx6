@@ -67,7 +67,6 @@ AVERAGER = 1
 # wishbone offsets to QDSP modules
 QDSP_WB_OFFSET = [0x2000, 0x2100]
 
-
 # supply argument types for libx6 methods
 
 libx6.connect_x6.argtypes              = [c_int32]
@@ -291,6 +290,7 @@ class X6(object):
                 self.nbr_round_robins)
 
     def acquire(self):
+        self.set_averager_settings()
         self.x6_call("acquire")
 
     def wait_for_acquisition(self, timeout):
