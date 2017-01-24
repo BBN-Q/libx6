@@ -16,6 +16,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdint.h>
 #include <complex.h>
 #undef I //used in Malibu code
 #include <stdbool.h>

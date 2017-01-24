@@ -64,12 +64,18 @@ mode_dict_inv = {v:k for k,v in mode_dict.items()}
 DIGITIZER = 0
 AVERAGER = 1
 
+# wishbone offsets to QDSP modules
+QDSP_WB_OFFSET = [0x2000, 0x2100]
+
 # supply argument types for libx6 methods
 
 libx6.connect_x6.argtypes              = [c_int32]
 libx6.disconnect_x6.argtypes           = [c_int32]
 libx6.get_num_devices.argtypes         = [POINTER(c_uint32)]
 libx6.get_firmware_version.argtypes    = [c_int32] + [POINTER(c_uint32)]*3 + [c_char_p]
+
+libx6.read_register.argtypes           = [c_int32, c_uint32, c_uint32, POINTER(c_uint32)]
+libx6.write_register.argtypes          = [c_int32, c_uint32, c_uint32, c_uint32]
 
 # these take an enum argument, which we will pretend is just a c_uint32
 libx6.set_reference_source.argtypes    = [c_int32, c_uint32]
@@ -181,7 +187,7 @@ class X6(object):
         self.device_id = device_id
 
     def disconnect(self):
-        if self.device_id:
+        if self.device_id is not None:
             self.x6_call("disconnect_x6")
         self.device_id = None
 
@@ -193,6 +199,9 @@ class X6(object):
         check(libx6.get_firmware_version(
             self.device_id, byref(version), byref(sha), byref(timestamp), string))
         return version.value, sha.value, timestamp.value, string.value.decode('ascii')
+
+    def get_logic_temperature(self):
+        return self.x6_getter("get_logic_temperature")
 
     def set_reference_source(self, source):
         if source in reference_dict_inv:
@@ -273,12 +282,15 @@ class X6(object):
         self.x6_call("get_kernel_bias", a, b, c, point)
         return point[0]
 
-    def acquire(self):
+    def set_averager_settings(self):
         self.x6_call("set_averager_settings",
                 self.record_length,
                 self.nbr_segments,
                 self.nbr_waveforms,
                 self.nbr_round_robins)
+
+    def acquire(self):
+        self.set_averager_settings()
         self.x6_call("acquire")
 
     def wait_for_acquisition(self, timeout):
@@ -333,3 +345,9 @@ class X6(object):
         else:
             # interleaved real/imag/prod
             return stream[::3], stream[1::3], stream[2::3]
+
+    def write_register(self, addr, offset, data):
+        self.x6_call("write_register", addr, offset, data)
+
+    def read_register(self, addr, offset):
+        return self.x6_getter("read_register", addr, offset)

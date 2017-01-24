@@ -101,9 +101,13 @@ target_link_libraries(run_tests
 target_link_libraries(x6
 	${II_LIBS}
 	wdapi # WinDriver library
-	dl
 	${IPP_LIB} # in Intel IPP directory listed above
 )
+
+# on Linux wdapi needs dl to dynamically load
+if(UNIX)
+	target_link_libraries(x6 dl)
+endif()
 
 if(WIN32)
 	target_link_libraries(x6

@@ -16,6 +16,8 @@
 #endif
 
 #include <stdio.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #include "../lib/X6_errno.h"
 #include "../lib/X6_enums.h"
@@ -36,7 +38,7 @@ EXPORT const char* get_error_msg(X6_STATUS);
 EXPORT X6_STATUS connect_x6(int);
 EXPORT X6_STATUS disconnect_x6(int);
 EXPORT X6_STATUS get_num_devices(unsigned*);
-EXPORT X6_STATUS get_firmware_version(int, unsigned*, unsigned*, unsigned*, char*);
+EXPORT X6_STATUS get_firmware_version(int, uint32_t*, uint32_t*, uint32_t*, char*);
 
 EXPORT X6_STATUS set_reference_source(int, X6_REFERENCE_SOURCE);
 EXPORT X6_STATUS get_reference_source(int, X6_REFERENCE_SOURCE*);
@@ -44,10 +46,10 @@ EXPORT X6_STATUS get_reference_source(int, X6_REFERENCE_SOURCE*);
 EXPORT X6_STATUS set_digitizer_mode(int, X6_DIGITIZER_MODE);
 EXPORT X6_STATUS get_digitizer_mode(int, X6_DIGITIZER_MODE*);
 
-EXPORT X6_STATUS set_input_channel_enable(int, unsigned, int);
-EXPORT X6_STATUS get_input_channel_enable(int, unsigned, int*);
-EXPORT X6_STATUS set_output_channel_enable(int, unsigned, int);
-EXPORT X6_STATUS get_output_channel_enable(int, unsigned, int*);
+EXPORT X6_STATUS set_input_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
+EXPORT X6_STATUS set_output_channel_enable(int, unsigned, bool);
+EXPORT X6_STATUS get_output_channel_enable(int, unsigned, bool*);
 
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
@@ -58,8 +60,8 @@ EXPORT X6_STATUS get_nco_frequency(int, int, int, double*);
 EXPORT X6_STATUS set_averager_settings(int, int, int, int, int);
 EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS get_threshold(int, int, int, double*);
-EXPORT X6_STATUS set_threshold_invert(int, int, int, int);
-EXPORT X6_STATUS get_threshold_invert(int, int, int, int*);
+EXPORT X6_STATUS set_threshold_invert(int, int, int, bool);
+EXPORT X6_STATUS get_threshold_invert(int, int, int, bool*);
 
 EXPORT X6_STATUS write_kernel(int, unsigned, unsigned, unsigned, double *, unsigned);
 EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double *);
@@ -71,7 +73,7 @@ EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
 EXPORT X6_STATUS get_is_running(int, int*);
 EXPORT X6_STATUS get_num_new_records(int, unsigned*);
-EXPORT X6_STATUS get_data_available(int, int*);
+EXPORT X6_STATUS get_data_available(int, bool*);
 EXPORT X6_STATUS stop(int);
 EXPORT X6_STATUS register_socket(int, ChannelTuple*, int32_t);
 EXPORT X6_STATUS transfer_stream(int, ChannelTuple*, unsigned, double*, unsigned);
@@ -94,8 +96,8 @@ EXPORT X6_STATUS write_pulse_waveform(int, unsigned, double*, unsigned);
 EXPORT X6_STATUS read_pulse_waveform(int, unsigned, unsigned, double*);
 
 /* debug methods */
-EXPORT X6_STATUS read_register(int, unsigned, unsigned, unsigned*);
-EXPORT X6_STATUS write_register(int, unsigned, unsigned, unsigned);
+EXPORT X6_STATUS read_register(int, uint32_t, uint32_t, uint32_t*);
+EXPORT X6_STATUS write_register(int, uint32_t, uint32_t, uint32_t);
 
 // II X6-1000M Test Interface
 EXPORT X6_STATUS get_logic_temperature(int, float*);

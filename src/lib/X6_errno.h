@@ -34,7 +34,7 @@ static std::map<X6_STATUS, std::string> errorsMsgs = {
 {X6_TIMEOUT, "Insufficient number of records were taken before timeout was hit."},
 {X6_INVALID_CHANNEL, "API call attempted on invalid channel tuple."},
 {X6_LOGFILE_ERROR, "Failed to open log file."},
-{X6_INVALID_RECORD_LENGTH, "Invalid record length: must be greater than 128 points; less than 16384 and a mulitple of 32."},
+{X6_INVALID_RECORD_LENGTH, "Invalid record length: must be greater than 128 points; less than 16384 and a mulitple of 128."},
 {X6_MODULE_ERROR, "Failed to open X6 card using Malibu."},
 {X6_INVALID_WF_LEN, "Pulse generator waveform must be multiple of 4."},
 {X6_WF_OUT_OF_RANGE, "Pulse generator waveform values must be between -1.0 and (1-1/2^15)."},
