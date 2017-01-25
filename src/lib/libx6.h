@@ -64,9 +64,10 @@ EXPORT X6_STATUS get_threshold(int, int, int, double*);
 EXPORT X6_STATUS set_threshold_invert(int, int, int, bool);
 EXPORT X6_STATUS get_threshold_invert(int, int, int, bool*);
 
+// although the kernel function signatures show double* they are really C99 double _Complex*
+// we use double* becuase of poor C99 complex support in Visual C and Matlab
 EXPORT X6_STATUS write_kernel(int, unsigned, unsigned, unsigned, double*, unsigned);
 EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double*);
-//use pointer in `set_kernel_bias` for compatibility with Matlab because it doesn't support C99
 EXPORT X6_STATUS set_kernel_bias(int, unsigned, unsigned, unsigned, double*);
 EXPORT X6_STATUS get_kernel_bias(int, unsigned, unsigned, unsigned, double*);
 
