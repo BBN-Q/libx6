@@ -9,6 +9,7 @@
 #ifndef QDSPSTREAM_H_
 #define QDSPSTREAM_H_
 
+#include <cstddef>
 #include <cstdint>
 using std::uint16_t;
 using std::size_t;
