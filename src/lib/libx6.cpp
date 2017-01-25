@@ -282,7 +282,8 @@ X6_STATUS get_threshold_invert(int deviceID, int a, int c, bool* invert) {
 }
 
 X6_STATUS write_kernel(int deviceID, unsigned a, unsigned b, unsigned c, double* kernel, unsigned length) {
-	vector<complex<double>> vec(kernel, kernel + length);
+  complex<double>* kernel_cmplx = reinterpret_cast<std::complex<double>*>(kernel);
+	vector<complex<double>> vec(kernel_cmplx, kernel_cmplx + length);
 	return x6_call(deviceID, &X6_1000::write_kernel, a, b, c, vec);
 }
 
