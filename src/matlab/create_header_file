@@ -10,7 +10,5 @@ cp ../lib/libx6.h libx6.matlab.h
 
 sed -i '
 s/^#include "X6/#include "..\/lib\/X6/g
-/^#include <complex.h>/d
 /^#undef I/d
-s/_Complex//g
 /^X6_STATUS update_log/d' libx6.matlab.h
