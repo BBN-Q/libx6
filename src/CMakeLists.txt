@@ -154,7 +154,6 @@ endif()
 
 target_link_libraries(run_tests
 	x6
-	pthread
 )
 
 install(TARGETS x6 DESTINATION lib)
