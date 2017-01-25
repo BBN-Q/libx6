@@ -13,7 +13,6 @@
 #include <queue>
 #include <atomic>
 #include <cstring>
-#include <unistd.h>
 
 #ifdef _WIN32
 	#include <winsock2.h>
