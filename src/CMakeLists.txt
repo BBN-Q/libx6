@@ -92,10 +92,8 @@ set ( II_LIBS
 )
 
 target_link_libraries(run_tests
-	${II_LIBS}
-	wdapi
-	pthread
 	x6
+	pthread
 )
 
 target_link_libraries(x6
