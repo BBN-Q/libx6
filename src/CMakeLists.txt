@@ -44,7 +44,20 @@ else()
 	set(IPP_LIB ipps-9.0)
 endif()
 
-# warn all for better code
+
+# don't let windows.h clobber std::min and std::max
+if(MSVC)
+    add_definitions(-DNOMINMAX)
+endif()
+
+# warn all for better code but disable some Visual Studio ones for now
+# warning C4244: 'initializing': conversion from 'unsigned int' to 'unsigned short', possible loss of data
+# warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+# warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead.
+#     however can't use "_s" safe versions with glibc
+if(MSVC)
+	add_definitions(${CMAKE_CXX_FLAGS} "/W3 /wd4244 /wd4267 /wd4996")
+else()
 add_definitions(${CMAKE_CXX_FLAGS} "-Wall")
 
 add_custom_target( update_version
