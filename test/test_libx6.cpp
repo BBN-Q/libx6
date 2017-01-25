@@ -6,6 +6,7 @@ using std::complex;
 using std::vector;
 #include <random>
 #include <algorithm>
+#include <functional> // std::bind
 
 #include "libx6.h"
 #include "constants.h"
