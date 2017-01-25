@@ -76,7 +76,6 @@ add_executable(run_tests
 )
 
 set ( II_LIBS
-	-Wl,--start-group
 	Os_Mb
 	Application_Mb
 	Analysis_Mb
@@ -88,31 +87,33 @@ set ( II_LIBS
 	Ficl_Mb
 	Poco_Foundation_Mb
 	Poco_Net_Mb
-	-Wl,--end-group
 )
+
+if(UNIX)
+	target_link_libraries( x6
+		wdapi
+		${IPP_LIB} # in Intel IPP directory listed above
+		-Wl,--start-group
+		${II_LIBS}
+		-Wl,--end-group
+		dl # on Linux wdapi needs dl to dynamically load
+	)
+endif()
+
+if(WIN32)
+	target_link_libraries(x6
+		${II_LIBS}
+		${IPP_LIB}
+		wdapi
+		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
+		ws2_32
+	)
+endif(WIN32)
 
 target_link_libraries(run_tests
 	x6
 	pthread
 )
-
-target_link_libraries(x6
-	${II_LIBS}
-	wdapi # WinDriver library
-	${IPP_LIB} # in Intel IPP directory listed above
-)
-
-# on Linux wdapi needs dl to dynamically load
-if(UNIX)
-	target_link_libraries(x6 dl)
-endif()
-
-if(WIN32)
-	target_link_libraries(x6
-		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
-		ws2_32
-	)
-endif(WIN32)
 
 install(TARGETS x6 DESTINATION lib)
 install(FILES "${PROJECT_SOURCE_DIR}/lib/libx6.h" DESTINATION include)
