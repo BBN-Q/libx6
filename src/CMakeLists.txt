@@ -23,25 +23,34 @@ include_directories("./lib/")
 include_directories("../deps/Catch/include")
 
 #Innovative shipped shared libraries
-if(MSVC)
-	link_directories(${INNOVATIVE_PATH}/Lib/Vc14_x64)
-else()
-	link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
-	if(CMAKE_BUILD_TYPE MATCHES Debug)
-		message("Building and linking Debug")
-		link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	message("Building and linking Debug")
+	if(MSVC)
+		link_directories(${INNOVATIVE_PATH}/Lib/Vc14_x64)
+		set(II_MSVC_LIB_SUFFIX _DLL_Debug)
 	else()
-		message("Building and linking Release")
+		link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
+		link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Debug)
+	endif()
+else()
+	message("Building and linking Release")
+	if(MSVC)
+		link_directories(${INNOVATIVE_PATH}/Lib/Vc14_x64)
+		set(II_MSVC_LIB_SUFFIX _DLL)
+	else()
+		link_directories(${INNOVATIVE_PATH}/Lib/Gcc)
 		link_directories(${INNOVATIVE_PATH}/Lib/Gcc/Release)
 	endif()
 endif()
 
 #Intel IPP shared libraries
-if(UNIX)
-	set(IPP_LIB ipps ippcore)
-else()
-	link_directories(${INNOVATIVE_PATH}/Lib/Ipp/Win64)
+if(WIN32 AND NOT MSVC)
 	set(IPP_LIB ipps-9.0)
+else()
+	set(IPP_LIB ippcore ipps)
+endif()
+if(MSVC)
+	link_directories(${INNOVATIVE_PATH}/Lib/Vc_Ipp_x64)
 endif()
 
 
@@ -59,6 +68,7 @@ if(MSVC)
 	add_definitions(${CMAKE_CXX_FLAGS} "/W3 /wd4244 /wd4267 /wd4996")
 else()
 add_definitions(${CMAKE_CXX_FLAGS} "-Wall")
+endif()
 
 add_custom_target( update_version
 	COMMAND ${PROJECT_SOURCE_DIR}/make_version.sh
@@ -75,6 +85,9 @@ set ( DLL_SRC
 set_source_files_properties( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
 
 add_library( x6 SHARED ${DLL_SRC} )
+# force lib prefix even on Windows
+set_target_properties(x6 PROPERTIES PREFIX "lib")
+
 add_dependencies( x6 update_version )
 
 add_executable(run_tests
@@ -102,26 +115,42 @@ set ( II_LIBS
 	Poco_Net_Mb
 )
 
-if(UNIX)
+# linux and mingw-64
+if(NOT MSVC)
 	target_link_libraries( x6
-		wdapi
 		${IPP_LIB} # in Intel IPP directory listed above
 		-Wl,--start-group
 		${II_LIBS}
 		-Wl,--end-group
-		dl # on Linux wdapi needs dl to dynamically load
+		wdapi
+	)
+	# on Linux wdapi needs dl to dynamically load
+	if(UNIX)
+		target_link_libraries(x6 dl)
+	endif()
+endif()
+
+if(MSVC)
+	list(APPEND II_LIBS Framework_Win)
+
+	target_link_libraries(x6 Kernel_Mb)
+
+	foreach(lib ${II_LIBS})
+		target_link_libraries(x6 ${lib}${II_MSVC_LIB_SUFFIX})
+	endforeach()
+
+	target_link_libraries(x6
+		${IPP_LIB}
+		wdapi
 	)
 endif()
 
 if(WIN32)
 	target_link_libraries(x6
-		${II_LIBS}
-		${IPP_LIB}
-		wdapi
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
 		ws2_32
 	)
-endif(WIN32)
+endif()
 
 target_link_libraries(run_tests
 	x6
