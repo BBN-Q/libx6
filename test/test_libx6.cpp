@@ -81,7 +81,7 @@ TEST_CASE("record length") {
 
 void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & kernel, size_t numChecks) {
 
-	write_kernel(0, 1, 0, 1, reinterpret_cast<_Complex double*>(kernel.data()), kernel.size());
+	write_kernel(0, 1, 0, 1, reinterpret_cast<double*>(kernel.data()), kernel.size());
 
 	//Check first/last and random selection in between (too slow to do all)
 	vector<unsigned> checkIdx(numChecks);
@@ -94,7 +94,7 @@ void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & 
 
 	for (size_t ct = 0; ct < checkIdx.size(); ct++) {
 		complex<double> val;
-		read_kernel(0, 1, 0, 1, checkIdx[ct], reinterpret_cast<_Complex double*>(&val));
+		read_kernel(0, 1, 0, 1, checkIdx[ct], reinterpret_cast<double*>(&val));
 		INFO( "Read back: " << val << " ; expected: " << kernel[checkIdx[ct]] );
 		CHECK( std::real(val) == Approx( std::real(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
 		CHECK( std::imag(val) == Approx( std::imag(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
@@ -120,17 +120,17 @@ TEST_CASE("kernels") {
 
 		//raw kernel less than 4096
 		kernel.resize(4097);
-		CHECK( write_kernel(0, 1, 0, 1, reinterpret_cast<_Complex double*>(kernel.data()), kernel.size()) == X6_INVALID_KERNEL_LENGTH );
+		CHECK( write_kernel(0, 1, 0, 1, reinterpret_cast<double*>(kernel.data()), kernel.size()) == X6_INVALID_KERNEL_LENGTH );
 
 		//demod kernel less than 512
 		kernel.resize(513);
-		CHECK( write_kernel(0, 1, 1, 1, reinterpret_cast<_Complex double*>(kernel.data()), kernel.size()) == X6_INVALID_KERNEL_LENGTH );
+		CHECK( write_kernel(0, 1, 1, 1, reinterpret_cast<double*>(kernel.data()), kernel.size()) == X6_INVALID_KERNEL_LENGTH );
 
 		//Kernel overrange
 		kernel.resize(512);
 		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
 		kernel[81] = 1.1;
-		CHECK( write_kernel(0, 1, 1, 1, reinterpret_cast<_Complex double*>(kernel.data()), kernel.size()) == X6_KERNEL_OUT_OF_RANGE );
+		CHECK( write_kernel(0, 1, 1, 1, reinterpret_cast<double*>(kernel.data()), kernel.size()) == X6_KERNEL_OUT_OF_RANGE );
 
 	}
 

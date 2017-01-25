@@ -17,7 +17,6 @@
 
 #include <stdio.h>
 #include <stdint.h>
-#include <complex.h>
 #undef I //used in Malibu code
 #include <stdbool.h>
 
@@ -65,11 +64,11 @@ EXPORT X6_STATUS get_threshold(int, int, int, double*);
 EXPORT X6_STATUS set_threshold_invert(int, int, int, bool);
 EXPORT X6_STATUS get_threshold_invert(int, int, int, bool*);
 
-EXPORT X6_STATUS write_kernel(int, unsigned, unsigned, unsigned, double _Complex*, unsigned);
-EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double _Complex*);
-//use pointer in `set_kernel_bias` for compatibility with Matlab because it doesn't support C99 _Complex
-EXPORT X6_STATUS set_kernel_bias(int, unsigned, unsigned, unsigned, double _Complex*);
-EXPORT X6_STATUS get_kernel_bias(int, unsigned, unsigned, unsigned, double _Complex*);
+EXPORT X6_STATUS write_kernel(int, unsigned, unsigned, unsigned, double*, unsigned);
+EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double*);
+//use pointer in `set_kernel_bias` for compatibility with Matlab because it doesn't support C99
+EXPORT X6_STATUS set_kernel_bias(int, unsigned, unsigned, unsigned, double*);
+EXPORT X6_STATUS get_kernel_bias(int, unsigned, unsigned, unsigned, double*);
 
 EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);
