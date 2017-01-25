@@ -13,9 +13,12 @@
 #include <queue>
 #include <atomic>
 #include <cstring>
-#include <unistd.h>
 
 #ifdef _WIN32
+	#if defined(_MSC_VER)
+		#include <BaseTsd.h>
+		typedef SSIZE_T ssize_t;
+	#endif
 	#include <winsock2.h>
 #else
 	#include <sys/socket.h>
