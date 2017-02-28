@@ -10,6 +10,7 @@
 #include <string>
 using std::string;
 #include <cstring>
+#include <iostream>
 
 #include "logger.h"
 
