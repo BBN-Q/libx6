@@ -145,7 +145,7 @@ size_t RecordQueue<T>::get_buffer_size() {
 template <class T>
 template <class U>
 std::vector<double>& RecordQueue<T>::convert_to_double(const Innovative::AccessDatagram<U> &buffer) {
-	workbuf_.reserve(buffer.size());
+	workbuf_.resize(buffer.size());
 	for (size_t ct = 0; ct < buffer.size(); ct++) {
 		workbuf_[ct] = static_cast<double>(buffer[ct]) / fixed_to_float_;
 	}
