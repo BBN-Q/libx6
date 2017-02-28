@@ -524,65 +524,6 @@ classdef X6 < hgsetget
             calllib('libx6', 'set_logging_level', level);
         end
 
-        function UnitTest()
-
-            fprintf('BBN X6-1000 Test Executable\n')
-
-            x6 = X6();
-
-            x6.set_debug_level(4);
-
-            x6.connect(0);
-
-            x6.init();
-
-            fprintf('current logic temperature = %.1f\n', x6.get_logic_temperature());
-
-            fprintf('current PLL frequency = %.2f GHz\n', x6.samplingRate/1e9);
-            fprintf('Setting clock reference to external\n');
-            % x6.reference = 'EXTERNAL_REFERENCE';
-
-            fprintf('Enabling streams\n');
-            numDemodChan = 1;
-            numMatchFilters = 2; % 4
-            for phys = 1:2
-                x6.enable_stream(phys, 0, 0); % the raw stream
-                x6.enable_stream(phys, 1, 0); % the demod stream
-                for demod = 1:numMatchFilters
-                    x6.enable_stream(phys, demod, 1);
-                end
-            end
-
-            fprintf('Setting NCO phase increments\n');
-            x6.set_nco_frequency(1, 1, 10e6);
-            x6.set_nco_frequency(2, 1, 20e6);
-
-            fprintf('setting averager parameters to record 16 segments of 2048 samples\n');
-            x6.set_averager_settings(2048, 64, 1, 20);
-
-            % write a waveform into transmitter memory
-            x6.write_pulse_waveform(0, linspace(0,0.99,2000));
-            x6.set_output_channel_enable(1, true);
-            x6.set_output_channel_enable(2, true);
-
-            %DAC trigger window
-            fprintf('Acquiring\n');
-            x6.acquire();
-
-            pause(0.5);
-            dec2hex(x6.read_register(hex2dec('800'), hex2dec('98')), 8)
-
-            success = x6.wait_for_acquisition(20);
-            fprintf('Wait for acquisition returned %d\n', success);
-
-            fprintf('Stopping\n');
-            x6.stop();
-
-            x6.disconnect();
-
-            unloadlibrary('libx6')
-        end
-
     end
 
 end
