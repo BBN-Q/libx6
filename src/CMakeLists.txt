@@ -156,5 +156,5 @@ target_link_libraries(run_tests
 	x6
 )
 
-install(TARGETS x6 DESTINATION lib)
+install(TARGETS x6 LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 install(FILES "${PROJECT_SOURCE_DIR}/lib/libx6.h" DESTINATION include)
