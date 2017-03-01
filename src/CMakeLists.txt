@@ -123,11 +123,11 @@ set ( II_LIBS
 # linux and mingw-64
 if(NOT MSVC)
 	target_link_libraries( x6
-		${IPP_LIB} # in Intel IPP directory listed above
 		-Wl,--start-group
 		${II_LIBS}
 		-Wl,--end-group
 		wdapi
+		${IPP_LIB} # in Intel IPP directory listed above
 	)
 	# on Linux wdapi needs dl to dynamically load
 	if(UNIX)
