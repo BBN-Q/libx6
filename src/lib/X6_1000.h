@@ -105,6 +105,7 @@ public:
 	bool get_data_available();
 
 	void register_socket(QDSPStream, int32_t);
+	void unregister_sockets();
 	void transfer_stream(QDSPStream, double *, size_t);
 	void transfer_variance(QDSPStream, double *, size_t);
 	void transfer_correlation(vector<QDSPStream> &, double *, size_t);

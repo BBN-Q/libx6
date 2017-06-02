@@ -163,6 +163,7 @@ void X6_1000::init() {
 void X6_1000::close() {
 		stream_.Disconnect();
 		module_.Close();
+		unregister_sockets();
 
 		isOpen_ = false;
 		FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
@@ -693,6 +694,10 @@ bool X6_1000::get_data_available() {
 void X6_1000::register_socket(QDSPStream stream, int32_t socket) {
 	uint16_t sid = stream.streamID;
 	sockets_[sid] = socket;
+}
+
+void X6_1000::unregister_sockets() {
+	sockets_.clear();
 }
 
 void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length) {
