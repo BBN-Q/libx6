@@ -36,7 +36,7 @@ class RecordQueue {
 public:
 
 	RecordQueue<T>();
-	RecordQueue<T>(const QDSPStream &, size_t);
+	RecordQueue<T>(const QDSPStream &, size_t, size_t);
 
 	template <class U>
 	void push(const Innovative::AccessDatagram<U> &);
@@ -45,6 +45,7 @@ public:
 
 	std::atomic<size_t> recordsTaken;
 	std::atomic<size_t> availableRecords;
+	size_t expectedRecords = 0;
 	size_t recordLength;
 	int32_t socket_ = -1;
 
@@ -63,7 +64,10 @@ template <class T>
 RecordQueue<T>::RecordQueue() : recordsTaken{0}, availableRecords{0}  {}
 
 template <class T>
-RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) : recordsTaken{0}, availableRecords{0} {
+RecordQueue<T>::RecordQueue(const QDSPStream & stream,
+	                        size_t recLen,
+	                        size_t expectedRecords) :
+	    recordsTaken{0}, availableRecords{0}, expectedRecords{expectedRecords} {
 	recordLength = stream.calc_record_length(recLen);
 	fixed_to_float_ = stream.fixed_to_float();
 	stream_ = stream;
@@ -73,6 +77,10 @@ RecordQueue<T>::RecordQueue(const QDSPStream & stream, size_t recLen) : recordsT
 template <class T>
 template <class U>
 void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
+	if (recordsTaken >= expectedRecords) {
+		FILE_LOG(logDEBUG1) << "Already received expected number of records; dropping buffer";
+		return;
+	}
 	//TODO: worry about performance, cache-friendly etc.
 	FILE_LOG(logDEBUG3) << "Buffering data...";
 	FILE_LOG(logDEBUG3) << "recordsTaken = " << recordsTaken;

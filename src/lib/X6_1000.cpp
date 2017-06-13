@@ -824,8 +824,12 @@ void X6_1000::initialize_queues() {
 	queues_.clear();
 	mutexes_.clear();
 	for (auto kv : activeQDSPStreams_) {
-		// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_);
-		queues_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple(kv.second, recordLength_));
+		// effectively:
+		// queues_[kv.first] = RecordQueue<int32_t>(kv.second, recordLength_, numRecords_);
+		// but avoids issues with std::atomics not being movable/copyable
+		queues_.emplace(std::piecewise_construct,
+			            std::forward_as_tuple(kv.first),
+			            std::forward_as_tuple(kv.second, recordLength_, numRecords_));
 		// mutexes_[kv.first] = std::mutex();
 		mutexes_.emplace(std::piecewise_construct, std::forward_as_tuple(kv.first), std::forward_as_tuple());
 		// add the socket to the RecordQueue if we have one
