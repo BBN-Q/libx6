@@ -36,7 +36,7 @@ class RecordQueue {
 public:
 
 	RecordQueue<T>();
-	RecordQueue<T>(const QDSPStream &, size_t);
+	RecordQueue<T>(const QDSPStream &, size_t, size_t);
 
 	template <class U>
 	void push(const Innovative::AccessDatagram<U> &);
