@@ -1,10 +1,29 @@
 # libx6
 
-This C/C++ shared library enables interaction with the BBN custom firmware for the
-[Innovative Integration
-X6-1000](http://www.innovative-dsp.com/products.php?product=X6-1000M) FPGA card
-as a data acquisition card for superconducting qubit experiments.
+This C/C++ shared library enables interaction with the [BBN QDSP firmware](https://github.com/BBN-Q/BBN-QDSP-X6)
+for the [Innovative Integration X6-1000](http://www.innovative-dsp.com/products.php?product=X6-1000M)
+FPGA card as a data acquisition card for superconducting qubit experiments.
 
+# Installation
+
+The libx6 shared library binaries are available for windows and linux in BBN's
+[conda](https://www.continuum.io/downloads) channel. These libraries depend
+on Innovative Integration's Malibu library, which must be obtained directly
+from the vendor. After following the Malibu installation instructions below, you
+can install libx6 by simply executing:
+```
+conda install -c bbn-q libx6
+```
+
+This command installs the shared libraries, header files, and python `libx6`
+module into your Anaconda environment folder. To use libx6 from C++, MATLAB, or
+Julia you must add `~/anaconda3/lib` to `LD_LIBRARY_PATH` on linux/mac, or add
+`HOMEDIR/Anaconda3/Library/bin` to the `PATH` on windows. The MATLAB and Julia
+wrappers can be obtained by cloning the source repository:
+```
+git clone --recursive https://github.com/BBN-Q/libx6.git
+```
+or downloading and unzipping the most recent release.
 
 # Building
 ----------------------
