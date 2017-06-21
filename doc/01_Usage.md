@@ -216,9 +216,9 @@ seconds have elapsed.
 The `ChannelTuple` struct is defined as follows:
 ```C
 struct ChannelTuple {
-	int a;
-	int b;
-	int c;
+  int a;
+  int b;
+  int c;
 }
 ```
 
