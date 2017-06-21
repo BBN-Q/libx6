@@ -11,23 +11,31 @@ from the digital downconverter (demod stream), and the kernel integrated data
 from the decision engine prior to thresholding (result stream). We introduce a
 channel tuple `(a,b,c)` to identify each of these streams. In this tuple, the
 first index represents the physical channel (`a = 1` for channel 1, `a = 2` for
-channel 2). The second index represents the demodulated virtual channel (`b = 0`
-is the raw stream, `b = 1` and higher for the demodulated channels). The last
-index selects between the demodulated data and the integrated data. Some example channel tuples:
+channel 2). The second and third index together select a stream from the
+physical channel. When `b = 0` and `c = 0`, you get the "raw data" (decimated by
+4) from the physical channel. When `b = 1` and `c = 0` you get the demodulated
+data (decimated by 32). When `b = 1` and `c = 1`, you get demodulated and
+integrated data. However, this last stream has sufficiently large latency to not
+be very useful in feedback scenarios. Consequently, when `b = 0` and `c = 1` or
+`c = 2` you select kernel integrators that bypass the demodulator. The complete
+set of streams for physical channel 1 provided by the current firmware are:
 
-* (1,0,0) - raw data from physical channel 1
-* (1,2,0) - demodulated data from virtual channel 2 on physical channel 1
-* (1,2,1) - result data from virtual channel 2 on physical channel 1
+* (1,0,0) - raw data
+* (1,1,0) - demodulated data from DSP channel 1
+* (1,1,1) - result data from demodulator + kernel integrator on DSP channel 1
+* (1,0,1) - result data without demodulator from DSP channel 1 kernel integrator
+* (1,0,2) - result data without demodulator from DSP channel 2 kernel integrator
 
-The current firmware provides two DDCs per physical channel. Therefore, there
-are 10 available streams (2 raw physical, 4 demod, and 4 result).
+These last two streams are connected to the digital I/O pins after thresholding
+to enable fast feedback experiments. Physical channel 2 provides an equivalent
+set of streams with `a = 2`. Future firmware versions will likely add more
+result streams to allow for a great degree of multiplexing.
 
 Do these things to acquire data with the card:
 
-* Set the averager settings just like you would with an Acquiris or Alazar
-  digitizer
+* Set the capture settings just like you would with an Alazar digitizer
 * Enable the streams that you want to capture with the host PC
-* Set the NCO frequency (IF frequency) for each enabled virtual stream
+* Set the NCO frequency (IF frequency) for each enabled demodulator stream
 * Provide an integration kernel for each *result* stream
 * Optionally set integration thresholds for hard-decisions on fast digital lines
 
@@ -38,10 +46,19 @@ Do these things to acquire data with the card:
   too large for the VITA mover to handle, so after sending the first packet or
   two, no data will be sent to the computer unless you disable raw streams.
 
-* Result streams require a kernel with a length shorter than the demod stream.
-  The BBN firmware runs with a fixed decimation factor of 16. So, for a record
-  length of 1024, you must provide a kernel with length < 64.
+* The kernel integrators with and without the demodulator operate on data with
+  different decimation factors (the demodulator decimates by 8). A `(1,0,1)`
+  stream kernel has a max length of `record_length / 4`, while a `(1,1,1)`
+  stream kernel has a max length of `record_length / 32`.
 
+* The `(1,0,1)` and `(1,0,2)` kernel integrators act on a real data stream.
+  Therefore, the output of these channels will be purely-real if the kernel is
+  purely-real. The `(1,1,1)` kernel acts on a complex data stream from the
+  demodulator; consequently, this stream typically contains both real and
+  imaginary components regardless of the kernel.
+
+* The socket API only works when the card is in `digitizer` mode. In `averager`
+  mode, no data will be sent over the socket.
 
 ## MATLAB usage
 
@@ -57,33 +74,36 @@ x6.reference = 'external';
 
 % enable all streams
 for phys = 1:2
-	x6.enable_stream(phys, 0, 0); % the raw stream
-	for demod = 1:2
-		for result = 0:1
-			x6.enable_stream(phys, demod, result);
-		end
-	end
+  % the raw stream
+  x6.enable_stream(phys, 0, 0);
+  % demod stream
+  x6.enable_stream(phys, 1, 0);
+  % demod + integrator stream
+  x6.enable_stream(phys, 1, 1);
+  % integrators without demod streams
+  x6.enable_stream(phys, 0, 1);
+  x6.enable_stream(phys, 0, 2);
 end
 
 % set NCO frequencies
 x6.set_nco_frequency(1, 1, 10e6); % for channels (1,1,0) and (1,1,1)
-x6.set_nco_frequency(1, 2, 30e6);
-x6.set_nco_frequency(2, 1, 20e6);
-x6.set_nco_frequency(2, 2, 40e6);
+x6.set_nco_frequency(2, 1, 20e6); % for channels (2,1,0) and (2,1,1)
 
 % write integration kernels
-x6.write_kernel(1, 1, ones(100,1)); % for channel (1,1,1)
-x6.write_kernel(1, 2, ones(100,1));
-x6.write_kernel(2, 1, ones(100,1));
-x6.write_kernel(2, 2, ones(100,1));
+x6.write_kernel(1, 1, 1, ones(64,1));  % max length of 2048 / 32 = 64
+x6.write_kernel(1, 0, 1, ones(512,1)); % max length of 2048 / 4 = 512
+x6.write_kernel(1, 0, 2, ones(512,1));
+x6.write_kernel(2, 1, 1, ones(64,1));
+x6.write_kernel(2, 0, 1, ones(512,1));
+x6.write_kernel(2, 0, 2, ones(512,1));
 
 % write decision thresholds
-x6.set_threshold(1, 1, 0.5);
-x6.set_threshold(1, 2, 0.5);
+x6.set_threshold(1, 1, 0.5); % for stream (1,0,1)
+x6.set_threshold(1, 2, 0.5); % for stream (1,0,2)
 x6.set_threshold(2, 1, 0.5);
 x6.set_threshold(2, 2, 0.5);
 
-% set averager settings (2048 record length x 10 segments x 1 waveform x 1000 round robins)
+% set capture settings (2048 record length x 10 segments x 1 waveform x 1000 round robins)
 x6.set_averager_settings(2048, 10, 1, 1000);
 
 % then later...
@@ -117,15 +137,17 @@ settings = struct(
 		's11', struct(
 			'IFfreq', 10e6,
 			'enableDemodStream', true,
-			'enableResultStream', true,
-			'kernel', ones(100,1), % may alternatively supply a base64 encoded string of kernel
+			'enableDemodResultStream', false,
+			'enableRawResultStream', true,
+			'rawKernel', ones(100,1), % may alternatively supply a base64 encoded string of kernel
 			'threshold', 0.5
 		),
 		's21', struct(
 			'IFfreq', 10e6,
 			'enableDemodStream', true,
-			'enableResultStream', true,
-			'kernel', ones(100,1),
+      'enableDemodResultStream', false,
+			'enableRawResultStream', true,
+			'rawKernel', ones(100,1),
 			'threshold', 0.5
 		)
 		% and so on for other channels...
@@ -171,14 +193,14 @@ Disable stream (a,b,c).
 
 Set the NCO/IF frequency for channels (a,b,0) and (a,b,1).
 
-`write_kernel(int ID, int a, int b, double *kernel, unsigned bufsize)`
+`write_kernel(int ID, int a, int b, int c, double *kernel, unsigned bufsize)`
 
-Transfer integration kernel for channel (a,b,1) to the X6. `kernel` is expected
+Transfer integration kernel for channel (a,b,c) to the X6. `kernel` is expected
 to have interleaved real and imaginary data in the range [-1, 1].
 
-`set_threshold(int ID, int a, int b, double threshold)`
+`set_threshold(int ID, int a, int c, double threshold)`
 
-Sets the decision engine threshold for channel (a,b,1).
+Sets the decision engine threshold for channel (a,0,c).
 
 `acquire(int ID)`
 
@@ -216,3 +238,25 @@ Like `transfer_stream` but returns the variance of the corresponding
 stream(s). For non-physical streams, the variance has three components: real,
 imaginary, and the real-imaginary product. `buffer` is filled in triples, e.g.:
 `[d1_r, d1_i, d1_p, d2_r, d2_i, d2_p, ...]`.
+
+`register_socket(int ID, ChannelTuple *channel, int32_t socket)`
+
+Registers file descriptor / handle `socket` to send data for the stream
+indicated by `channel`.
+
+## Transferring data
+
+libx6 provides two different methods for transferring data off of the card. The
+first is a polling mechanism via the `get_num_new_records()` API call which
+returns a non-zero result when new data has arrived. The caller may subsequently
+use `transfer_stream()` get fetch that new data. This approach is used in our
+MATLAB wrapper to trigger a `DataReady` event when data arrives.
+
+The second approach is to provide libx6 with one half of a locally connected
+socket pair for each enabled stream. On posix systems, you can create such
+sockets using the system `socketpair()` method from `sys/socket.h`. No such
+native method exists on windows; however both cygwin and python gloss over this
+difference, allowing users to ignore posix/windows differences. You pass one of
+these sockets to libx6 with `register_socket()`. Then captured data is sent over
+the socket via a simple `[msg_size data]` wire protocol, where `msg_size` is a
+`uint64_t` indicating the data size in bytes.

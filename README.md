@@ -29,7 +29,7 @@ or downloading and unzipping the most recent release.
 ----------------------
 
 N.B. This is only necessary if you wish to develop the library. BBN ships
-releases with a pre-compiled shared library.
+a pre-compiled shared library via our [conda channel](https://anaconda.org/bbn-q/).
 
 ## Dependencies
 
