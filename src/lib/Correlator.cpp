@@ -10,6 +10,7 @@
 #include "Correlator.h"
 
 #include <algorithm> //std::transform
+using std::max;
 
 Correlator::Correlator() :
     recordsTaken{0}, wfmCt_{0}, recordLength_{2}, numSegments_{0}, numWaveforms_{0} {};

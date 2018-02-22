@@ -13,10 +13,14 @@
 #include "QDSPStream.h"
 
 #include <algorithm> //std::transform
+#include <vector>
+using std::vector;
+using std::max;
 
 #include "logger.h"
 
 #include <BufferDatagrams_Mb.h>
+
 
 class Accumulator{
 
