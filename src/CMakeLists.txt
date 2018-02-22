@@ -15,6 +15,7 @@ message("Using ${INNOVATIVE_PATH} as Innovative install directory")
 
 #include Malibu headers
 include_directories(${INNOVATIVE_PATH}/Malibu)
+include_directories(${INNOVATIVE_PATH}/Malibu/Poco/Foundation/include)
 
 #and our own library headers
 include_directories("./lib/")
@@ -118,6 +119,7 @@ set ( II_LIBS
 	Ficl_Mb
 	Poco_Foundation_Mb
 	Poco_Net_Mb
+	Vpx_Mb
 )
 
 # linux and mingw-64
