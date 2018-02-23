@@ -113,13 +113,14 @@ set ( II_LIBS
 	Analysis_Mb
 	Framework_Con
 	Framework_Mb
+	Framework_Win
+	Framework_Qt
 	Utility_Mb
 	Hardware_Mb
 	Pci_Mb
 	Ficl_Mb
 	Poco_Foundation_Mb
 	Poco_Net_Mb
-	Vpx_Mb
 )
 
 # linux and mingw-64
@@ -128,7 +129,6 @@ if(NOT MSVC)
 		-Wl,--start-group
 		${II_LIBS}
 		-Wl,--end-group
-		wdapi
 		${IPP_LIB} # in Intel IPP directory listed above
 	)
 	# on Linux wdapi needs dl to dynamically load
@@ -148,12 +148,13 @@ if(MSVC)
 
 	target_link_libraries(x6
 		${IPP_LIB}
-		wdapi
+		#wdapi
 	)
 endif()
 
 if(WIN32)
 	target_link_libraries(x6
+		setupapi
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
 		ws2_32
 	)
