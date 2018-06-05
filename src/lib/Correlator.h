@@ -12,8 +12,6 @@
 
 #include <vector>
 using std::vector;
-#include <map>
-using std::map;
 #include <cstddef>
 
 #include "QDSPStream.h"
