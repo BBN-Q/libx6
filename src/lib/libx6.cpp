@@ -63,7 +63,7 @@ X6_STATUS x6_call(const unsigned deviceID, F func, Args... args){
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
-	catch (std::out_of_range e) {
+	catch (std::out_of_range& e) {
 		if (X6s_.find(deviceID) == X6s_.end()) {
 			return X6_UNCONNECTED;
 		} else {
@@ -86,7 +86,7 @@ X6_STATUS x6_getter(const unsigned deviceID, F func, R* resPtr, Args... args){
 		//Nothing thrown then assume OK
 		return X6_OK;
 	}
-	catch (std::out_of_range e) {
+	catch (std::out_of_range& e) {
 		if (X6s_.find(deviceID) == X6s_.end()) {
 			return X6_UNCONNECTED;
 		} else {

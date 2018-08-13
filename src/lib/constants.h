@@ -32,21 +32,23 @@ const double MIN_WF_VALUE = -1.0;
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
 //Registers we read from
-const int WB_QDSP_TEST                            = 0x01;
-const int WB_QDSP_RECORD_LENGTH                   = 0x02;
-const int WB_QDSP_STREAM_ENABLE                   = 0x03;
-const int WB_QDSP_MODULE_FIRMWARE_VERSION         = 0x04;
-const int WB_QDSP_MODULE_FIRMWARE_GIT_SHA1        = 0x05;
-const int WB_QDSP_MODULE_FIRMWARE_BUILD_TIMESTAMP = 0x06;
-const int WB_QDSP_RAW_KERNEL_LENGTH               = 0x10;
-const int WB_QDSP_DEMOD_KERNEL_LENGTH             = 0x14;
-const int WB_QDSP_RAW_KERNEL_ADDR_DATA            = 0x20;
-const int WB_QDSP_DEMOD_KERNEL_ADDR_DATA          = 0x28;
-const int WB_QDSP_THRESHOLD                       = 0x30;
-const int WB_QDSP_PHASE_INC                       = 0x34;
-const int WB_QDSP_THRESHOLD_INVERT                = 0x38;
-const int WB_QDSP_RAW_KERNEL_BIAS                 = 0x40;
-const int WB_QDSP_DEMOD_KERNEL_BIAS               = 0x48;
+#define WB_QDSP_TEST							0x01
+#define WB_QDSP_RECORD_LENGTH					0x02
+#define WB_QDSP_STREAM_ENABLE                   0x03
+#define WB_QDSP_MODULE_FIRMWARE_VERSION			0x04
+#define WB_QDSP_MODULE_FIRMWARE_GIT_SHA1		0x05
+#define WB_QDSP_MODULE_FIRMWARE_BUILD_TIMESTAMP	0x06
+#define WB_QDSP_NUM_RAW_KI						0x07
+#define WB_QDSP_NUM_DEMOD						0x08
+#define WB_QDSP_RAW_KERNEL_LENGTH				0x10
+#define WB_QDSP_DEMOD_KERNEL_LENGTH				(WB_QDSP_RAW_KERNEL_LENGTH + numRawKi_)
+#define WB_QDSP_RAW_KERNEL_ADDR_DATA			(WB_QDSP_DEMOD_KERNEL_LENGTH + numDemod_)
+#define WB_QDSP_DEMOD_KERNEL_ADDR_DATA			(WB_QDSP_RAW_KERNEL_ADDR_DATA + 2*numRawKi_)
+#define WB_QDSP_THRESHOLD						(WB_QDSP_DEMOD_KERNEL_ADDR_DATA + 2*numDemod_)
+#define WB_QDSP_PHASE_INC						(WB_QDSP_THRESHOLD + numRawKi_)
+#define WB_QDSP_THRESHOLD_INVERT				(WB_QDSP_PHASE_INC + numRawKi_ + numDemod_)
+#define WB_QDSP_RAW_KERNEL_BIAS					(WB_QDSP_THRESHOLD_INVERT + 1)
+#define WB_QDSP_DEMOD_KERNEL_BIAS				(WB_QDSP_RAW_KERNEL_BIAS + 2*numRawKi_)
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};

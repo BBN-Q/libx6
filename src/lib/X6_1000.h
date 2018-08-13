@@ -171,6 +171,9 @@ private:
 	unsigned waveforms_;
 	unsigned roundRobins_;
 	unsigned recordsTaken_;
+	unsigned numRawKi_ = 2; // Number of raw integrated streams
+	unsigned numDemod_ = 2; // Number of demodulated streams
+	
 
 	std::array<bool, 2> activeInputChannels_;
 	std::array<bool, 4> activeOutputChannels_;

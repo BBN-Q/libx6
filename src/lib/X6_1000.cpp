@@ -282,7 +282,7 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 
 	// set the appropriate bit in stream_enable register
 	int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
-	int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
+	int bit = (b==0) ? c : (numRawKi_ + 1 + b + (c == 0 ? 0 : numDemod_ + c));
 	reg |= 1 << bit;
 	FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
@@ -295,7 +295,7 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
 	// clear the appropriate bit in stream_enable register
 	int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
-	int bit = (b==0) ? c : 15 + b + (c & 0x1)*4;
+	int bit = (b==0) ? c : (numRawKi_ + 1 + b + (c == 0 ? 0 : numDemod_ + c));
 	reg &= ~(1 << bit);
 	FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
