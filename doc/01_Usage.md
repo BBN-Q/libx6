@@ -46,6 +46,8 @@ Do these things to acquire data with the card:
 
 ## Gotchas, limitations, etc.
 
+* Requires the X6 to be programmed with QDSP >20180828 (accessible in Z:\X6\bitfiles)
+
 * For record lengths > 4000, you must disable the raw streams. These packets are
   too large for the VITA mover to handle, so after sending the first packet or
   two, no data will be sent to the computer unless you disable raw streams.
