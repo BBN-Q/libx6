@@ -1,3 +1,8 @@
+# Version 0.10
+
+## Features
+* Support for additional streams and state streams
+
 # Version 0.9
 
 ## Features

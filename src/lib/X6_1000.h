@@ -66,6 +66,9 @@ public:
 	void set_averager_settings(const int & recordLength, const int & numSegments, const int & waveforms,  const int & roundRobins);
 	void set_record_length(int recordLength);
 
+	int get_number_of_integrators(unsigned); 
+	int get_number_of_demodulators(unsigned);
+	
 	void enable_stream(unsigned, unsigned, unsigned);
 	void disable_stream(unsigned, unsigned, unsigned);
 

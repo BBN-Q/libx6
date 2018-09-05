@@ -16,20 +16,24 @@ physical channel. When `b = 0` and `c = 0`, you get the "raw data" (decimated by
 4) from the physical channel. When `b = 1` and `c = 0` you get the demodulated
 data (decimated by 32). When `b = 1` and `c = 1`, you get demodulated and
 integrated data. However, this last stream has sufficiently large latency to not
-be very useful in feedback scenarios. Consequently, when `b = 0` and `c = 1` or
-`c = 2` you select kernel integrators that bypass the demodulator. The complete
-set of streams for physical channel 1 provided by the current firmware are:
+be very useful in feedback scenarios. When `b = 0` and `c = [1..n]` for `n`
+available integrated streams, you select kernel integrators that bypass the 
+demodulator. When `b = 0` and `c = [n+1..2n]`, you select a stream of 
+thresholded state outputs, where the output is always `1` or `0` and matches the
+state as written to the digital outputs on the card. Some examples of streams 
+(assuming the card was programmed with 5 integrated streams and 2 demodulated):
 
 * (1,0,0) - raw data
 * (1,1,0) - demodulated data from DSP channel 1
 * (1,1,1) - result data from demodulator + kernel integrator on DSP channel 1
 * (1,0,1) - result data without demodulator from DSP channel 1 kernel integrator
 * (1,0,2) - result data without demodulator from DSP channel 2 kernel integrator
+* (1,0,6) - thresholded state data from integrated stream 1
+* (1,0,7) - thresholded state data from integrated stream 2
 
-These last two streams are connected to the digital I/O pins after thresholding
-to enable fast feedback experiments. Physical channel 2 provides an equivalent
-set of streams with `a = 2`. Future firmware versions will likely add more
-result streams to allow for a great degree of multiplexing.
+The first two integrated streams are connected to the digital I/O pins after 
+thresholding to enable fast feedback experiments. Physical channel 2 provides 
+an equivalent set of streams with `a = 2`.
 
 Do these things to acquire data with the card:
 

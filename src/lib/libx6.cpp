@@ -246,6 +246,14 @@ X6_STATUS get_output_channel_enable(int deviceID, unsigned chan, bool* enable) {
 	return x6_getter(deviceID, &X6_1000::get_output_channel_enable, enable, chan);
 }
 
+X6_STATUS get_number_of_integrators(int deviceID, int a, int* num) {
+	return x6_getter(deviceID, &X6_1000::get_number_of_integrators, num, a);
+}
+
+X6_STATUS get_number_of_demodulators(int deviceID, int a, int* num) {
+	return x6_getter(deviceID, &X6_1000::get_number_of_demodulators, num, a);
+}
+
 X6_STATUS enable_stream(int deviceID, int a, int b, int c) {
 	return x6_call(deviceID, &X6_1000::enable_stream, a, b, c);
 }

@@ -277,17 +277,25 @@ void X6_1000::set_record_length(int recordLength) {
 	}
 }
 
+int X6_1000::get_number_of_integrators(unsigned a) {
+	return read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
+}
+
+int X6_1000::get_number_of_demodulators(unsigned a) {
+	return read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+}
+
 void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 	FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
 
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	// set the appropriate bit in stream_enable register
 	int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
-	int bit = (b==0) ? c : (numRawKi + b + (c == 0 ? 0 : numDemod));
+	int bit = (b==0) ? (c > numRawKi ? (c+2*numDemod) : c) : (numRawKi + b + (c == 0 ? 0 : numDemod));
 	reg |= 1 << bit;
 	FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
@@ -301,13 +309,13 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
 	FILE_LOG(logINFO) << "Disable stream " << a << "." << b << "." << c;
 	
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	// clear the appropriate bit in stream_enable register
 	int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
-	int bit = (b==0) ? c : (numRawKi + b + (c == 0 ? 0 : numDemod));
+	int bit = (b==0) ? (c > numRawKi ? (c+2*numDemod) : c) : (numRawKi + b + (c == 0 ? 0 : numDemod));
 	reg &= ~(1 << bit);
 	FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
@@ -347,8 +355,8 @@ bool X6_1000::get_output_channel_enable(unsigned channel) {
 
 void X6_1000::set_nco_frequency(int a, int b, double freq) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	// NCO runs at quarter rate
@@ -360,8 +368,8 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
 
 double X6_1000::get_nco_frequency(int a, int b) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	uint32_t phaseInc = read_dsp_register(a-1, WB_QDSP_PHASE_INC(numRawKi,numDemod) + (b-1));
@@ -371,8 +379,8 @@ double X6_1000::get_nco_frequency(int a, int b) {
 
 void X6_1000::set_threshold(int a, int c, double threshold) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	// Results are sfix32_15, so scale threshold by 2^15.
@@ -383,8 +391,8 @@ void X6_1000::set_threshold(int a, int c, double threshold) {
 
 double X6_1000::get_threshold(int a, int c) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	
@@ -395,8 +403,8 @@ double X6_1000::get_threshold(int a, int c) {
 
 void X6_1000::set_threshold_invert(int a, int c, bool invert){
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Get the current register for bit bashing
@@ -407,8 +415,8 @@ void X6_1000::set_threshold_invert(int a, int c, bool invert){
 
 bool X6_1000::get_threshold_invert(int a, int c) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)));
@@ -450,27 +458,27 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
 	};
 
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel with length	" << kernel.size();
 
 	//Depending on raw or demod integrator we are enumerated by c or b
-	int KI = (b==0) ? c : b;
+	int channel = (b==0) ? c : b;
 	uint32_t wbLengthReg = (b==0) ?	WB_QDSP_RAW_KERNEL_LENGTH : WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod);
 	uint32_t wbAddrDataReg = (b==0) ?	WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod) : WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod);
 
 	//Write the length register
-	write_dsp_register(a-1, wbLengthReg + (KI-1), kernel.size());
+	write_dsp_register(a-1, wbLengthReg + (channel-1), kernel.size());
 
 	//Kernel memory as address/data pairs
 	for (size_t ct = 0; ct < kernel.size(); ct++) {
 		int32_t scaled_re = scale_with_clip(std::real(kernel[ct]));
 		int32_t scaled_im = scale_with_clip(std::imag(kernel[ct]));
 		uint32_t packedval = (scaled_im << 16) | (scaled_re & 0xffff);
-		write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1), ct);
-		write_dsp_register(a-1, wbAddrDataReg + 2*(KI-1) + 1, packedval);
+		write_dsp_register(a-1, wbAddrDataReg + 2*(channel-1), ct);
+		write_dsp_register(a-1, wbAddrDataReg + 2*(channel-1) + 1, packedval);
 	}
 }
 
@@ -478,8 +486,8 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
 	//Read kernel memory at the specified address
 
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Depending on raw or demod integrator we are enumerated by c or b
@@ -504,8 +512,8 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
 
 void X6_1000::set_kernel_bias(int a, int b, int c, complex<double> bias) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Use a QDSPStream to get the scaling
@@ -526,8 +534,8 @@ void X6_1000::set_kernel_bias(int a, int b, int c, complex<double> bias) {
 
 complex<double> X6_1000::get_kernel_bias(int a, int b, int c) {
 	// Read the DSP stream counts
-	uint32_t numRawKi = read_dsp_register(a-1, WB_QDSP_NUM_RAW_KI);
-	uint32_t numDemod = read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Use a QDSPStream to get the scaling
