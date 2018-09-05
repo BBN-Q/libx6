@@ -52,6 +52,9 @@ EXPORT X6_STATUS get_input_channel_enable(int, unsigned, bool*);
 EXPORT X6_STATUS set_output_channel_enable(int, unsigned, bool);
 EXPORT X6_STATUS get_output_channel_enable(int, unsigned, bool*);
 
+EXPORT X6_STATUS get_number_of_integrators(int, int, int*);
+EXPORT X6_STATUS get_number_of_demodulators(int, int, int*);
+
 EXPORT X6_STATUS enable_stream(int, int, int, int);
 EXPORT X6_STATUS disable_stream(int, int, int, int);
 

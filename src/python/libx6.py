@@ -83,8 +83,8 @@ libx6.get_reference_source.argtypes    = [c_int32, POINTER(c_uint32)]
 libx6.set_digitizer_mode.argtypes      = [c_int32, c_uint32]
 libx6.get_digitizer_mode.argtypes      = [c_int32, POINTER(c_uint32)]
 
-libx6.get_number_of_integrators.argtypes  = [c_int32]*2
-libx6.get_number_of_demodulators.argtypes = [c_int32]*2
+libx6.get_number_of_integrators.argtypes  = [c_int32]*2 + [POINTER(c_int32)]
+libx6.get_number_of_demodulators.argtypes = [c_int32]*2 + [POINTER(c_int32)]
 
 libx6.enable_stream.argtypes           = [c_int32]*4
 libx6.disable_stream.argtypes          = [c_int32]*4
