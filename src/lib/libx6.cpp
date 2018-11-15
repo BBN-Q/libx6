@@ -311,6 +311,27 @@ X6_STATUS get_kernel_bias(int deviceID, unsigned a, unsigned b, unsigned c, doub
 	return x6_getter(deviceID, &X6_1000::get_kernel_bias, tmp_val, a, b, c);
 }
 
+X6_STATUS get_correlator_size(int deviceID, int a, uint32_t* val) {
+	return x6_getter(deviceID, &X6_1000::get_correlator_size, val, a);
+}
+
+X6_STATUS write_correlator_matrix(int deviceID, unsigned a, double* matrix, unsigned length) {
+	vector<double> vec(matrix, matrix + length);
+	return x6_call(deviceID, &X6_1000::write_correlator_matrix, a, vec);
+}
+
+X6_STATUS read_correlator_matrix(int deviceID, int a, int addr, double* val) {
+	return x6_getter(deviceID, &X6_1000::read_correlator_matrix, val, a, addr);
+}
+
+X6_STATUS set_correlator_input(int deviceID, int a, int input_num, int sel) {
+	return x6_call(deviceID, &X6_1000::set_correlator_input, a, input_num, sel);
+}
+
+X6_STATUS get_correlator_input(int deviceID, int a, int addr, uint32_t* val) {
+	return x6_getter(deviceID, &X6_1000::get_correlator_input, val, a, addr);
+}
+
 X6_STATUS acquire(int deviceID) {
 	return x6_call(deviceID, &X6_1000::acquire);
 }

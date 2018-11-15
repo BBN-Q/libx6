@@ -28,6 +28,10 @@ const int WF_FRAC_BITS = 15;
 const double MAX_WF_VALUE = 1 - 1.0/(1 << WF_FRAC_BITS);
 const double MIN_WF_VALUE = -1.0;
 
+const int CORRELATOR_FRAC_BITS = 14;
+const double MAX_CORRELATOR_VALUE = 1.0;
+const double MIN_CORRELATOR_VALUE = -1.0;
+
 // WishBone interface
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
@@ -41,14 +45,18 @@ const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 #define WB_QDSP_NUM_RAW_KI						0x07
 #define WB_QDSP_NUM_DEMOD						0x08
 #define WB_QDSP_RAW_KERNEL_LENGTH				0x10
-#define WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod)				(WB_QDSP_RAW_KERNEL_LENGTH + numRawKi)
-#define WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod)			(WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod) + numDemod)
-#define WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod)			(WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numRawKi)
-#define WB_QDSP_THRESHOLD(numRawKi,numDemod)						(WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numDemod)
-#define WB_QDSP_PHASE_INC(numRawKi,numDemod)						(WB_QDSP_THRESHOLD(numRawKi,numDemod) + numRawKi)
-#define WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)			(WB_QDSP_PHASE_INC(numRawKi,numDemod) + numRawKi + numDemod)
-#define WB_QDSP_RAW_KERNEL_BIAS(numRawKi,numDemod)				(WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod) + 1)
-#define WB_QDSP_DEMOD_KERNEL_BIAS(numRawKi,numDemod)			(WB_QDSP_RAW_KERNEL_BIAS(numRawKi,numDemod) + 2*numRawKi)
+#define WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod)    (WB_QDSP_RAW_KERNEL_LENGTH + numRawKi)
+#define WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod)   (WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod) + numDemod)
+#define WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod) (WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numRawKi)
+#define WB_QDSP_THRESHOLD(numRawKi,numDemod)              (WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numDemod)
+#define WB_QDSP_PHASE_INC(numRawKi,numDemod)              (WB_QDSP_THRESHOLD(numRawKi,numDemod) + numRawKi)
+#define WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)       (WB_QDSP_PHASE_INC(numRawKi,numDemod) + numRawKi + numDemod)
+#define WB_QDSP_RAW_KERNEL_BIAS(numRawKi,numDemod)        (WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod) + 1)
+#define WB_QDSP_DEMOD_KERNEL_BIAS(numRawKi,numDemod)      (WB_QDSP_RAW_KERNEL_BIAS(numRawKi,numDemod) + 2*numRawKi)
+#define WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod)        (WB_QDSP_DEMOD_KERNEL_BIAS(numRawKi,numDemod) + 2*numDemod)
+#define WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod)      (WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod)+1)
+#define WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod)      (WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod)+1)
+#define WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod)         (WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod)+1)
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};

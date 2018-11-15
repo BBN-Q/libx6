@@ -88,8 +88,12 @@ public:
 	complex<double> read_kernel(unsigned, unsigned, unsigned, unsigned);
 	void set_kernel_bias(int, int, int, complex<double>);
 	complex<double> get_kernel_bias(int, int, int);
-
-
+	
+	uint32_t get_correlator_size(int);
+	void write_correlator_matrix(int, const vector<double> &);
+	double read_correlator_matrix(int, unsigned);
+	void set_correlator_input(int, uint32_t, uint32_t);
+	uint32_t get_correlator_input(int, uint32_t);
 
 	/** retrieve PLL frequnecy
 	 *  \returns Actual PLL frequnecy (in MHz) returned from board
@@ -154,6 +158,8 @@ private:
 	vector<int> physChans_;
 	vector<int> virtChans_;
 	vector<int> resultChans_;
+	vector<int> stateChans_;
+	vector<int> correlatedChans_;
 	//Some auxiliary accumlator data
 	map<uint16_t, Accumulator> accumulators_;
 	map<vector<uint16_t>, Correlator> correlators_;
@@ -199,15 +205,25 @@ private:
 
 	void HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event);
 	void VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event, STREAM_T);
+	
 	void HandlePhysicalStream(Innovative::VeloMergeParserDataAvailable & Event) {
 		VMPDataAvailable(Event, PHYSICAL);
 	};
+	
 	void HandleVirtualStream(Innovative::VeloMergeParserDataAvailable & Event) {
 		VMPDataAvailable(Event, DEMOD);
 	};
 
 	void HandleResultStream(Innovative::VeloMergeParserDataAvailable & Event) {
 		VMPDataAvailable(Event, RESULT);
+	};
+	
+	void HandleStateStream(Innovative::VeloMergeParserDataAvailable & Event) {
+		VMPDataAvailable(Event, STATE);
+	};
+	
+	void HandleCorrelatedStream(Innovative::VeloMergeParserDataAvailable & Event) {
+		VMPDataAvailable(Event, CORRELATED);
 	};
 
 	void HandleTimer(OpenWire::NotifyEvent & Event);

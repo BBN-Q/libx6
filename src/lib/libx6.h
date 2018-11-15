@@ -2,7 +2,7 @@
 //
 // Provides C shared library interface to BBN's custom firmware for the II X6-1000 card
 //
-// Original authors: Brian Donnovan, Colm Ryan and Blake Johnson
+// Original authors: Brian Donnovan, Colm Ryan, Blake Johnson, William Kalfus
 //
 // Copyright 2013-2015 Raytheon BBN Technologies
 
@@ -73,6 +73,12 @@ EXPORT X6_STATUS write_kernel(int, unsigned, unsigned, unsigned, double*, unsign
 EXPORT X6_STATUS read_kernel(int, unsigned, unsigned, unsigned, unsigned, double*);
 EXPORT X6_STATUS set_kernel_bias(int, unsigned, unsigned, unsigned, double*);
 EXPORT X6_STATUS get_kernel_bias(int, unsigned, unsigned, unsigned, double*);
+
+EXPORT X6_STATUS get_correlator_size(int, int, uint32_t*);
+EXPORT X6_STATUS write_correlator_matrix(int, unsigned, double*, unsigned);
+EXPORT X6_STATUS read_correlator_matrix(int, int, int, double*);
+EXPORT X6_STATUS set_correlator_input(int, int, int, int);
+EXPORT X6_STATUS get_correlator_input(int, int, int, uint32_t*);
 
 EXPORT X6_STATUS acquire(int);
 EXPORT X6_STATUS wait_for_acquisition(int, unsigned);

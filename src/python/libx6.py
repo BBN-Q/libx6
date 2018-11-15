@@ -103,6 +103,12 @@ libx6.read_kernel.argtypes             = [c_int32] + [c_uint32]*4 + [np_complex]
 libx6.set_kernel_bias.argtypes         = [c_int32] + [c_uint32]*3 + [np_complex]
 libx6.get_kernel_bias.argtypes         = [c_int32] + [c_uint32]*3 + [np_complex]
 
+libx6.get_correlator_size.argtypes     = [c_int32, c_int32]
+libx6.write_correlator_matrix.argtypes = [c_int32, c_int32] + [c_double, c_uint32]
+libx6.read_correlator_matrix.argtypes  = [c_int32, c_int32, c_uint32]
+libx6.set_correlator_input.argytpes    = [c_int32, c_int32, c_uint32, c_uint32]	
+libx6.get_correlator_input.argtypes    = [c_int32, c_int32, c_uint32]
+
 libx6.acquire.argtypes                 = [c_int32]
 libx6.wait_for_acquisition.argtypes    = [c_int32, c_uint32]
 libx6.get_is_running.argtypes          = [c_int32, POINTER(c_bool)]
@@ -297,6 +303,21 @@ class X6(object):
                 self.nbr_segments,
                 self.nbr_waveforms,
                 self.nbr_round_robins)
+                
+    def get_correlator_size(self, a):
+        return self.x6_getter("get_correlator_size", a)
+        
+	def write_correlator_matrix(self, a, matrix):
+        self.x6_call("write_correlator_matrix", a, matrix, len(matrix))
+        
+	def read_correlator_matrix(self, a, addr):
+        return self.x6_getter("read_correlator_matrix", a, addr)
+        
+	def set_correlator_input(self, a, input_num, sel):
+        self.x6_call("set_correlator_input", a, input_num, sel)
+        
+    def get_correlator_input(self, a, input_num):
+        return self.x6_getter("get_correlator_input", a, input_num)
 
     def acquire(self):
         self.set_averager_settings()

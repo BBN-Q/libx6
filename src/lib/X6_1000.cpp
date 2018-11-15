@@ -300,7 +300,7 @@ void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
 	FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
-	QDSPStream stream = QDSPStream(a, b, c);
+	QDSPStream stream = QDSPStream(a, b, c, numRawKi);
 	FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << hexn<4> << stream.streamID;
 	activeQDSPStreams_[stream.streamID] = stream;
 }
@@ -321,7 +321,7 @@ void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
 	write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
 	//Find the channel
-	uint16_t streamID = QDSPStream(a,b,c).streamID;
+	uint16_t streamID = QDSPStream(a, b, c, numRawKi).streamID;
 	if (activeQDSPStreams_.count(streamID)) {
 		activeQDSPStreams_.erase(streamID);
 		FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
@@ -517,7 +517,7 @@ void X6_1000::set_kernel_bias(int a, int b, int c, complex<double> bias) {
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Use a QDSPStream to get the scaling
-	QDSPStream stream(a,b,c);
+	QDSPStream stream(a,b,c,numRawKi);
 	unsigned scale = stream.fixed_to_float();
 
 	//get wishbone address from stream ID
@@ -539,7 +539,7 @@ complex<double> X6_1000::get_kernel_bias(int a, int b, int c) {
 	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 	
 	//Use a QDSPStream to get the scaling
-	QDSPStream stream(a,b,c);
+	QDSPStream stream(a,b,c,numRawKi);
 	unsigned scale = stream.fixed_to_float();
 
 	//get wishbone address from stream ID
@@ -567,6 +567,95 @@ void X6_1000::set_active_channels() {
 		FILE_LOG(logINFO) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
 		module_.Output().ChannelEnabled(ct, activeOutputChannels_[ct]);
 	}
+}
+
+uint32_t X6_1000::get_correlator_size(int a) {
+	// Read the DSP stream counts
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
+	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+	
+	return read_dsp_register(a-1, WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod));
+}
+
+void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
+
+	int32_t correlator_size = get_correlator_size(a);
+	if(matrix.size() != correlator_size*correlator_size) {
+		FILE_LOG(logERROR) << "Incorrect number of correlator matrix elements; have " << matrix.size() << ", expecting " << (correlator_size*correlator_size) << ".";
+		return;
+	}
+	
+	//Check the matrix elements are in range
+	for(int i = 0; i < correlator_size; i++) {
+		float sum = 0;
+		for(int j = 0; j < correlator_size; j++) {
+			sum += matrix.at(i*correlator_size + j);
+		}
+		
+		if(fabs(sum) > 1) {
+			FILE_LOG(logERROR) << "Correlation matrix elements in row " << i << " sum to " << sum << "; behavior not guaranteed.";
+		}
+	}
+
+	// Read the DSP stream counts
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
+	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+		
+	auto scale_with_clip = [](double val){
+		val = std::min(val, MAX_CORRELATOR_VALUE);
+		val = std::max(val, MIN_CORRELATOR_VALUE);
+		return val * (1 << CORRELATOR_FRAC_BITS);
+	};
+		
+	//Matrix memory as address/data pairs
+	for (size_t ct = 0; ct < matrix.size(); ct++) {
+		int16_t scaled = scale_with_clip(matrix[ct]);
+		uint32_t conv = scaled;
+		write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod), ct);
+		write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod), conv);
+	}
+}
+
+double X6_1000::read_correlator_matrix(int a, unsigned addr) {
+	//Read correlator matrix memory at the specified address
+
+	// Read the DSP stream counts
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
+	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+
+	//Write the address register
+	write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod), addr);
+
+	//Read the data
+	uint32_t val = read_dsp_register(a-1, WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod));
+
+	//Scale and convert back to complex
+	//The conversion from unsigned to signed is not guaranteed to keep the bit pattern
+	//However for gcc using two's complement it does
+	//See http://stacko;verflow.com/a/4219558 and http://stackoverflow.com/q/13150449
+	int16_t fixedReal = val & 0xffff;
+	return static_cast<double>(fixedReal) / (1 << CORRELATOR_FRAC_BITS);
+}
+
+void X6_1000::set_correlator_input(int a, uint32_t input_num, uint32_t sel) {
+	// Read the DSP stream counts
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
+	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+	
+	write_dsp_register(a-1, WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod) + input_num, sel);
+}
+
+uint32_t X6_1000::get_correlator_input(int a, uint32_t input_num) {
+	// Read the DSP stream counts
+	uint32_t numRawKi = get_number_of_integrators(a);
+	uint32_t numDemod = get_number_of_demodulators(a);
+	FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+	
+	return read_dsp_register(a-1, WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod) + input_num);
 }
 
 void X6_1000::log_card_info() {
@@ -609,11 +698,13 @@ void X6_1000::acquire() {
 
 	// Initialize VeloMergeParsers with stream IDs
 	VMPs_.clear();
-	VMPs_.resize(3);
+	VMPs_.resize(5);
 
 	physChans_.clear();
 	virtChans_.clear();
 	resultChans_.clear();
+	stateChans_.clear();
+	correlatedChans_.clear();
 
 	for (auto kv : activeQDSPStreams_){
 		switch (kv.second.type) {
@@ -628,6 +719,12 @@ void X6_1000::acquire() {
 		case RESULT:
 			resultChans_.push_back(kv.first);
 			FILE_LOG(logDEBUG) << "ADC result stream ID: " << hexn<4> << kv.first;
+		case STATE:
+			stateChans_.push_back(kv.first);
+			FILE_LOG(logDEBUG) << "Thresholded state stream ID: " << hexn<4> << kv.first;
+		case CORRELATED:
+			correlatedChans_.push_back(kv.first);
+			FILE_LOG(logDEBUG) << "Correlation stream ID: " << hexn<4> << kv.first;
 		}
 	}
 	initialize_accumulators();
@@ -642,6 +739,12 @@ void X6_1000::acquire() {
 
 	VMPs_[2].Init(resultChans_);
 	VMPs_[2].OnDataAvailable.SetEvent(this, &X6_1000::HandleResultStream);
+	
+	VMPs_[3].Init(stateChans_);
+	VMPs_[3].OnDataAvailable.SetEvent(this, &X6_1000::HandleStateStream);
+	
+	VMPs_[4].Init(correlatedChans_);
+	VMPs_[4].OnDataAvailable.SetEvent(this, &X6_1000::HandleCorrelatedStream);
 
 	//Now set the buffers sizes to fire when a full record length is in
 	int samplesPerWord = module_.Input().Info().SamplesPerWord();
@@ -663,7 +766,20 @@ void X6_1000::acquire() {
 	FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
 	VMPs_[2].Resize(packetSize);
 	VMPs_[2].Clear();
-
+	
+	// State channels are technically just binary but they send in the same manner as result streams
+	packetSize = 2;
+	FILE_LOG(logDEBUG) << "State channel packetSize = " << packetSize;
+	VMPs_[3].Resize(packetSize);
+	VMPs_[3].Clear();
+	
+	// Correlated channels have the same width as result streams
+	//Result channels are complex 32bit integers
+	packetSize = 2;
+	FILE_LOG(logDEBUG) << "Correlated channel packetSize = " << packetSize;
+	VMPs_[4].Resize(packetSize);
+	VMPs_[4].Clear();
+	
 	recordsTaken_ = 0;
 
 	module_.Velo().LoadAll_VeloDataSize(0x4000);
@@ -971,6 +1087,8 @@ void X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
 	VMPs_[0].Flush();
 	VMPs_[1].Flush();
 	VMPs_[2].Flush();
+	VMPs_[3].Flush();
+	VMPs_[4].Flush();
 }
 
 void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event) {
@@ -1016,15 +1134,21 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 	uint16_t sid;
 
 	switch (streamType) {
-	case PHYSICAL:
-		sid = physChans_[header.PeripheralId()];
-		break;
-	case DEMOD:
-		sid = virtChans_[header.PeripheralId()];
-		break;
-	case RESULT:
-		sid = resultChans_[header.PeripheralId()];
-		break;
+		case PHYSICAL:
+			sid = physChans_[header.PeripheralId()];
+			break;
+		case DEMOD:
+			sid = virtChans_[header.PeripheralId()];
+			break;
+		case RESULT:
+			sid = resultChans_[header.PeripheralId()];
+			break;
+		case STATE:
+			sid = stateChans_[header.PeripheralId()];
+			break;
+		case CORRELATED:
+			sid = correlatedChans_[header.PeripheralId()];
+			break;
 	}
 
 	// interpret the data as 16 or 32-bit integers depending on the channel type
@@ -1033,6 +1157,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 	switch (streamType) {
 	case PHYSICAL:
 	case DEMOD:
+	case STATE:
 		FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
 		if ( digitizerMode_ == AVERAGER) {
 			// accumulate the data in the appropriate channel
@@ -1049,6 +1174,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 		}
 		break;
 	case RESULT:
+	case CORRELATED:
 		FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
 		if ( digitizerMode_ == AVERAGER) {
 			// accumulate the data in the appropriate channel
