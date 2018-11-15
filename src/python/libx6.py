@@ -40,6 +40,9 @@ libpath = find_library("x6")
 if libpath is None:
     libpath = find_library("libx6")
 # if we still can't find it, then look in python prefix (where conda stores binaries)
+
+libpath = os.path.join(os.path.dirname(__file__), '../../build/libx6.dll')
+
 if libpath is None:
     libpath = sys.prefix + '/lib'
     libx6 = npct.load_library("libx6", libpath)
