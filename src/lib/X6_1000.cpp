@@ -580,16 +580,16 @@ uint32_t X6_1000::get_correlator_size(int a) {
 
 void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
 
-  int32_t correlator_size = get_correlator_size(a);
+  uint32_t correlator_size = (uint32_t)get_correlator_size(a);
   if(matrix.size() != correlator_size*correlator_size) {
     FILE_LOG(logERROR) << "Incorrect number of correlator matrix elements; have " << matrix.size() << ", expecting " << (correlator_size*correlator_size) << ".";
     return;
   }
 
   //Check the matrix elements are in range
-  for(int i = 0; i < correlator_size; i++) {
+  for(uint32_t i = 0; i < correlator_size; i++) {
     float sum = 0;
-    for(int j = 0; j < correlator_size; j++) {
+    for(uint32_t j = 0; j < correlator_size; j++) {
       sum += matrix.at(i*correlator_size + j);
     }
 
@@ -1136,6 +1136,8 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
   PacketBufferHeader header(Event.Data);
   uint16_t sid;
 
+  FILE_LOG(logDEBUG3) << "[VMPDataAvailable] called for stream with header peripheralID " << std::dec << header.PeripheralId();
+
   switch (streamType) {
     case PHYSICAL:
       sid = physChans_[header.PeripheralId()];
@@ -1153,6 +1155,8 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
       sid = correlatedChans_[header.PeripheralId()];
       break;
   }
+
+  FILE_LOG(logDEBUG3) << "[VMPDataAvailable] SID for stream with header peripheralID " << std::dec << header.PeripheralId() << " determined to be " << hexn<4> << sid;
 
   // interpret the data as 16 or 32-bit integers depending on the channel type
   ShortDG sbufferDG(Event.Data);
