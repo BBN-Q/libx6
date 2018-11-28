@@ -613,6 +613,7 @@ void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
   for (size_t ct = 0; ct < matrix.size(); ct++) {
     int16_t scaled = scale_with_clip(matrix[ct]);
     uint32_t conv = scaled;
+    FILE_LOG(logINFO) << "Writing " << hexn<4> << conv << " to addr " << ct;
     write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod), ct);
     write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod), conv);
   }
@@ -646,6 +647,7 @@ void X6_1000::set_correlator_input(int a, uint32_t input_num, uint32_t sel) {
   uint32_t numDemod = get_number_of_demodulators(a);
   FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
+  FILE_LOG(logINFO) << "Setting input " << input_num << " to " << sel;
   write_dsp_register(a-1, WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod) + input_num, sel);
 }
 
