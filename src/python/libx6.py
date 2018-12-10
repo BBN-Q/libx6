@@ -245,7 +245,7 @@ class X6(object):
         return self.x6_getter("get_number_of_integrators", a)
 
     def get_number_of_demodulators(self, a):
-        return self.x6_getter("get_number_of_integrators", a)
+        return self.x6_getter("get_number_of_demodulators", a)
 
     def enable_stream(self, a, b, c):
         self.x6_call("enable_stream", a, b, c)

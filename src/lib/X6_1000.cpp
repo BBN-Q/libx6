@@ -1163,48 +1163,49 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
   // interpret the data as 16 or 32-bit integers depending on the channel type
   ShortDG sbufferDG(Event.Data);
   IntegerDG ibufferDG(Event.Data);
+
   switch (streamType) {
-  case PHYSICAL:
-  case DEMOD:
-  case STATE:
-    FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
-    if ( digitizerMode_ == AVERAGER) {
-      // accumulate the data in the appropriate channel
-      if (accumulators_[sid].recordsTaken < numRecords_) {
-        accumulators_[sid].accumulate(sbufferDG);
+    case PHYSICAL:
+    case DEMOD:
+      FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
+      if ( digitizerMode_ == AVERAGER) {
+        // accumulate the data in the appropriate channel
+        if (accumulators_[sid].recordsTaken < numRecords_) {
+          accumulators_[sid].accumulate(sbufferDG);
+        }
       }
-    }
-    else {
-      mutexes_[sid].lock();
-      if (queues_[sid].recordsTaken < numRecords_) {
-        queues_[sid].push(sbufferDG);
+      else {
+        mutexes_[sid].lock();
+        if (queues_[sid].recordsTaken < numRecords_) {
+          queues_[sid].push(sbufferDG);
+        }
+        mutexes_[sid].unlock();
       }
-      mutexes_[sid].unlock();
-    }
-    break;
-  case RESULT:
-  case CORRELATED:
-    FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
-    if ( digitizerMode_ == AVERAGER) {
-      // accumulate the data in the appropriate channel
-      if (accumulators_[sid].recordsTaken < numRecords_) {
-        accumulators_[sid].accumulate(ibufferDG);
-        // correlate with other result channels
-        for (auto & kv : correlators_) {
-          if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
-            kv.second.accumulate(sid, ibufferDG);
+      break;
+    case RESULT:
+    case CORRELATED:
+    case STATE:
+      FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
+      if ( digitizerMode_ == AVERAGER) {
+        // accumulate the data in the appropriate channel
+        if (accumulators_[sid].recordsTaken < numRecords_) {
+          accumulators_[sid].accumulate(ibufferDG);
+          // correlate with other result channels
+          for (auto & kv : correlators_) {
+            if (std::find(kv.first.begin(), kv.first.end(), sid) != kv.first.end()) {
+              kv.second.accumulate(sid, ibufferDG);
+            }
           }
         }
       }
-    }
-    else {
-      mutexes_[sid].lock();
-      if (queues_[sid].recordsTaken < numRecords_) {
-        queues_[sid].push(ibufferDG);
+      else {
+        mutexes_[sid].lock();
+        if (queues_[sid].recordsTaken < numRecords_) {
+          queues_[sid].push(ibufferDG);
+        }
+        mutexes_[sid].unlock();
       }
-      mutexes_[sid].unlock();
-    }
-    break;
+      break;
   }
 }
 
