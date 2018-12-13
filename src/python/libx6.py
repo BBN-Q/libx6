@@ -100,6 +100,8 @@ libx6.set_threshold.argtypes           = [c_int32]*3 + [c_double]
 libx6.get_threshold.argtypes           = [c_int32]*3 + [POINTER(c_double)]
 libx6.set_threshold_invert.argtypes    = [c_int32]*3 + [c_bool]
 libx6.get_threshold_invert.argtypes    = [c_int32]*3 + [POINTER(c_bool)]
+libx6.set_threshold_input_sel.argtypes = [c_int32]*3 + [c_bool]
+libx6.get_threshold_input_sel.argtypes = [c_int32]*3 + [POINTER(c_bool)]
 
 libx6.write_kernel.argtypes            = [c_int32] + [c_uint32]*3 + [np_complex, c_uint32]
 libx6.read_kernel.argtypes             = [c_int32] + [c_uint32]*4 + [np_complex]
@@ -280,6 +282,12 @@ class X6(object):
 
     def get_threshold_invert(self, a, c):
         return self.x6_getter("get_threshold_invert", a, c)
+
+    def set_threshold_input_sel(self, a, c, correlated):
+        self.x6_call("set_threshold_input_sel", a, c, correlated)
+
+    def get_threshold_input_sel(self, a, c):
+        return self.x6_getter("get_threshold_input_sel", a, c)
 
     def write_kernel(self, a, b, c, kernel):
         self.x6_call("write_kernel", a, b, c, kernel, len(kernel))

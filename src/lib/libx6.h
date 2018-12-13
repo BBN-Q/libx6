@@ -66,6 +66,8 @@ EXPORT X6_STATUS set_threshold(int, int, int, double);
 EXPORT X6_STATUS get_threshold(int, int, int, double*);
 EXPORT X6_STATUS set_threshold_invert(int, int, int, bool);
 EXPORT X6_STATUS get_threshold_invert(int, int, int, bool*);
+EXPORT X6_STATUS set_threshold_input_sel(int, int, int, bool);
+EXPORT X6_STATUS get_threshold_input_sel(int, int, int, bool*);
 
 // although the kernel function signatures show double* they are really C99 double _Complex*
 // we use double* becuase of poor C99 complex support in Visual C and Matlab
