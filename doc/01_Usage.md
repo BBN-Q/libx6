@@ -20,8 +20,10 @@ be very useful in feedback scenarios. When `b = 0` and `c = [1..n]` for `n`
 available integrated streams, you select kernel integrators that bypass the 
 demodulator. When `b = 0` and `c = [n+1..2n]`, you select a stream of 
 thresholded state outputs, where the output is always `1` or `0` and matches the
-state as written to the digital outputs on the card. Some examples of streams 
-(assuming the card was programmed with 5 integrated streams and 2 demodulated):
+state as written to the digital outputs on the card. When `b = 0` and 
+`c = [2n+1..3n]`, you select the `(c mod n)`'th output of the correlator. 
+Some examples of streams  (assuming the card was programmed with 5 integrated 
+streams and 2 demodulated):
 
 * (1,0,0) - raw data
 * (1,1,0) - demodulated data from DSP channel 1
@@ -30,6 +32,8 @@ state as written to the digital outputs on the card. Some examples of streams
 * (1,0,2) - result data without demodulator from DSP channel 2 kernel integrator
 * (1,0,6) - thresholded state data from integrated stream 1
 * (1,0,7) - thresholded state data from integrated stream 2
+* (1,0,11) - correlated stream 1
+* (1,0,12) - correlated stream 2
 
 The first two integrated streams are connected to the digital I/O pins after 
 thresholding to enable fast feedback experiments. Physical channel 2 provides 
@@ -65,6 +69,8 @@ Do these things to acquire data with the card:
 
 * The socket API only works when the card is in `digitizer` mode. In `averager`
   mode, no data will be sent over the socket.
+  
+* Remember to set the state valid bitmask to use fast digital I/O!
 
 ## MATLAB usage
 
