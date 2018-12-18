@@ -68,6 +68,8 @@ public:
 
   int get_number_of_integrators(unsigned);
   int get_number_of_demodulators(unsigned);
+  void set_state_vld_bitmask(unsigned, unsigned);
+  int get_state_vld_bitmask(unsigned);
 
   void enable_stream(unsigned, unsigned, unsigned);
   void disable_stream(unsigned, unsigned, unsigned);

@@ -254,6 +254,14 @@ X6_STATUS get_number_of_demodulators(int deviceID, int a, int* num) {
   return x6_getter(deviceID, &X6_1000::get_number_of_demodulators, num, a);
 }
 
+X6_STATUS set_state_vld_bitmask(int deviceID, int a, unsigned mask) {
+  return x6_call(deviceID, &X6_1000::set_state_vld_bitmask, a, mask);
+}
+
+X6_STATUS get_state_vld_bitmask(int deviceID, int a, int* mask) {
+  return x6_getter(deviceID, &X6_1000::get_state_vld_bitmask, mask, a);
+}
+
 X6_STATUS enable_stream(int deviceID, int a, int b, int c) {
   return x6_call(deviceID, &X6_1000::enable_stream, a, b, c);
 }

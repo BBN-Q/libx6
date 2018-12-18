@@ -285,6 +285,14 @@ int X6_1000::get_number_of_demodulators(unsigned a) {
   return read_dsp_register(a-1, WB_QDSP_NUM_DEMOD);
 }
 
+void X6_1000::set_state_vld_bitmask(unsigned a, unsigned mask) {
+  write_dsp_register(a-1, WB_QDSP_STATE_VLD_MASK, mask);
+}
+
+int X6_1000::get_state_vld_bitmask(unsigned a) {
+  return read_dsp_register(a-1, WB_QDSP_STATE_VLD_MASK);
+}
+
 void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
   FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
 

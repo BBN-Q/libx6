@@ -89,6 +89,9 @@ libx6.get_digitizer_mode.argtypes      = [c_int32, POINTER(c_uint32)]
 libx6.get_number_of_integrators.argtypes  = [c_int32]*2 + [POINTER(c_int32)]
 libx6.get_number_of_demodulators.argtypes = [c_int32]*2 + [POINTER(c_int32)]
 
+libx6.set_state_vld_bitmask.argtypes   = [c_int32]*3
+libx6.get_state_vld_bitmask.argtypes   = [c_int32]*2 + [POINTER(c_int32)]
+
 libx6.enable_stream.argtypes           = [c_int32]*4
 libx6.disable_stream.argtypes          = [c_int32]*4
 
@@ -248,6 +251,12 @@ class X6(object):
 
     def get_number_of_demodulators(self, a):
         return self.x6_getter("get_number_of_demodulators", a)
+
+    def set_state_vld_bitmask(self, a, mask):
+        self.x6_call("set_state_vld_bitmask", a, mask)
+
+    def get_state_vld_bitmask(self, a):
+        return self.x6_getter("get_state_vld_bitmask", a)
 
     def enable_stream(self, a, b, c):
         self.x6_call("enable_stream", a, b, c)

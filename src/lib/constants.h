@@ -36,15 +36,16 @@ const double MIN_CORRELATOR_VALUE = -1.0;
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
 //Registers we read from
-#define WB_QDSP_TEST							0x01
-#define WB_QDSP_RECORD_LENGTH					0x02
+#define WB_QDSP_TEST                            0x01
+#define WB_QDSP_RECORD_LENGTH                   0x02
 #define WB_QDSP_STREAM_ENABLE                   0x03
-#define WB_QDSP_MODULE_FIRMWARE_VERSION			0x04
-#define WB_QDSP_MODULE_FIRMWARE_GIT_SHA1		0x05
+#define WB_QDSP_MODULE_FIRMWARE_VERSION         0x04
+#define WB_QDSP_MODULE_FIRMWARE_GIT_SHA1        0x05
 #define WB_QDSP_MODULE_FIRMWARE_BUILD_TIMESTAMP	0x06
-#define WB_QDSP_NUM_RAW_KI						0x07
-#define WB_QDSP_NUM_DEMOD						0x08
-#define WB_QDSP_RAW_KERNEL_LENGTH				0x10
+#define WB_QDSP_NUM_RAW_KI                      0x07
+#define WB_QDSP_NUM_DEMOD                       0x08
+#define WB_QDSP_STATE_VLD_MASK                  0x09
+#define WB_QDSP_RAW_KERNEL_LENGTH               0x10
 #define WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod)    (WB_QDSP_RAW_KERNEL_LENGTH + numRawKi)
 #define WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod)   (WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod) + numDemod)
 #define WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod) (WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numRawKi)
