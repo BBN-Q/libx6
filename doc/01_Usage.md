@@ -42,6 +42,7 @@ cables and used for connecting to other hardware for applications such as
 decision-based gates. The pinout in the current X6 firmware is as follows:
 
 DSP0 (`a = 1`): Thresholders 1,2,3,4,5 connect to DIO_P 0,2,4,6,8 respectively.
+
 DSP1 (`a = 2`): Thresholders 1,2,3,4,5 connect to DIO_P 10,12,14,16,18 respectively.
 
 DIO_P17 provides a "valid" signal to indicate that the state signals on the DIO 
@@ -58,6 +59,7 @@ of thresholder 2 and thresholder 5 in DSP1. You would, in this case, construct t
 following bitmask values:
 
 DSP0: (1 << (1-1)) | (1 << (4-1)) = 0x01 | 0x08 = 0x09 = 9
+
 DSP1: (1 << (2-1)) | (1 << (5-1)) = 0x02 | 0x10 = 0x12 = 18
 
 For any card, the bitmasks can be specified in the experiment's YAML file using the field 
@@ -78,6 +80,7 @@ performed quickly before thresholding. The inputs to correlator are set by calli
 following:
 
 `1` to <num_integrators> : Integrator output `n`
+
 <num_integrators+1> to <2*num_integrators> : External input `n`-<num_integrators>
 
 In the current X6 firmware build, the external inputs of DSP0 are connected to the
