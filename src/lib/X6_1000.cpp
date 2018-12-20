@@ -431,7 +431,7 @@ bool X6_1000::get_threshold_invert(int a, int c) {
   return bits[c-1];
 }
 
-void X6_1000::set_threshold_input_sel(int a, int c, bool correlated){
+void X6_1000::set_threshold_input_sel(int a, int thresholder, bool correlated){
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
@@ -439,18 +439,18 @@ void X6_1000::set_threshold_input_sel(int a, int c, bool correlated){
 
   //Get the current register for bit bashing
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod)));
-  bits[c-1] = correlated;
+  bits[thresholder-1] = correlated;
   write_dsp_register(a-1, WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod), bits.to_ulong());
 }
 
-bool X6_1000::get_threshold_input_sel(int a, int c) {
+bool X6_1000::get_threshold_input_sel(int a, int thresholder) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
   FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod)));
-  return bits[c-1];
+  return bits[thresholder-1];
 }
 
 void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {

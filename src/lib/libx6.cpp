@@ -290,20 +290,20 @@ X6_STATUS get_threshold(int deviceID, int a, int c, double* threshold) {
   return x6_getter(deviceID, &X6_1000::get_threshold, threshold, a, c);
 }
 
-X6_STATUS set_threshold_invert(int deviceID, int a, int c, bool invert) {
-  return x6_call(deviceID, &X6_1000::set_threshold_invert, a, c, invert);
+X6_STATUS set_threshold_invert(int deviceID, int a, int thresholder, bool invert) {
+  return x6_call(deviceID, &X6_1000::set_threshold_invert, a, thresholder, invert);
 }
 
 X6_STATUS get_threshold_invert(int deviceID, int a, int c, bool* invert) {
   return x6_getter(deviceID, &X6_1000::get_threshold_invert, invert, a, c);
 }
 
-X6_STATUS set_threshold_input_sel(int deviceID, int a, int c, bool correlated) {
-  return x6_call(deviceID, &X6_1000::set_threshold_input_sel, a, c, correlated);
+X6_STATUS set_threshold_input_sel(int deviceID, int a, int thresholder, bool correlated) {
+  return x6_call(deviceID, &X6_1000::set_threshold_input_sel, a, thresholder, correlated);
 }
 
-X6_STATUS get_threshold_input_sel(int deviceID, int a, int c, bool* correlated) {
-  return x6_getter(deviceID, &X6_1000::get_threshold_input_sel, correlated, a, c);
+X6_STATUS get_threshold_input_sel(int deviceID, int a, int thresholder, bool* correlated) {
+  return x6_getter(deviceID, &X6_1000::get_threshold_input_sel, correlated, a, thresholder);
 }
 
 X6_STATUS write_kernel(int deviceID, unsigned a, unsigned b, unsigned c, double* kernel, unsigned length) {

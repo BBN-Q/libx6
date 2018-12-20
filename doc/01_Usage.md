@@ -30,14 +30,62 @@ streams and 2 demodulated):
 * (1,1,1) - result data from demodulator + kernel integrator on DSP channel 1
 * (1,0,1) - result data without demodulator from DSP channel 1 kernel integrator
 * (1,0,2) - result data without demodulator from DSP channel 2 kernel integrator
-* (1,0,6) - thresholded state data from integrated stream 1
-* (1,0,7) - thresholded state data from integrated stream 2
+* (1,0,6) - thresholded state data stream 1
+* (1,0,7) - thresholded state data stream 2
 * (1,0,11) - correlated stream 1
 * (1,0,12) - correlated stream 2
 
-The first two integrated streams are connected to the digital I/O pins after 
-thresholding to enable fast feedback experiments. Physical channel 2 provides 
-an equivalent set of streams with `a = 2`.
+Physical channel 2 provides an equivalent set of streams with `a = 2`.
+
+The thresholders are connected to fast digital I/O which are broken out to
+cables and used for connecting to other hardware for applications such as
+decision-based gates. The pinout in the current X6 firmware is as follows:
+
+DSP0 (`a = 1`): Thresholders 1,2,3,4,5 connect to DIO_P 0,2,4,6,8 respectively.
+DSP1 (`a = 2`): Thresholders 1,2,3,4,5 connect to DIO_P 10,12,14,16,18 respectively.
+
+DIO_P17 provides a "valid" signal to indicate that the state signals on the DIO 
+lines are prepared and correct. This signal is an OR reduction of all individual valid
+signals for each of the thresholders. However, since some thresholders will 
+predictably finish before others (depending on their source), it can be useful to 
+apply a bitmask so that some valid signals are not included in the overall valid
+computation. Each DSP module has its own bitmask, represented as a single 32-bit number
+(although only the 5 least significant bits are used due to there being 5 thresholders).
+For each DSP, the valid signal of thresholder `n` is included in the overall OR reduction 
+if and only if bit `n` of that DSP's bitmask is set. For example, suppose you want to 
+only include the valid signals of thresholder 1 and thresholder 4 in DSP0 and those
+of thresholder 2 and thresholder 5 in DSP1. You would, in this case, construct the
+following bitmask values:
+
+DSP0: (1 << (1-1)) | (1 << (4-1)) = 0x01 | 0x08 = 0x09 = 9
+DSP1: (1 << (2-1)) | (1 << (5-1)) = 0x02 | 0x10 = 0x12 = 18
+
+For any card, the bitmasks can be specified in the experiment's YAML file using the field 
+`state_vld_bitmask` or by calling the `libx6` function `set_state_vld_bitmask`.
+
+The sources of the thresholders are also multiplexed between the integrator and the
+correlator outputs. For any thresholder `n`, if the input selector is set to `0` the input 
+will be that of integrator `n` and if the selector is `1`, the input will be that of
+correlator output `n`. This selector can be toggled using the `set_threshold_input_sel` 
+function or by specifying the field `threshold_correlated` in the YAML file. Note that 
+this field takes a Boolean value, with `false` corresponding to `0` and `true` 
+corresponding to `1`.
+
+Each DSP module also contains a correlator so that fast matrix multiplication may be
+performed quickly before thresholding. The inputs to correlator are set by calling
+`set_correlator_input` or by specifying the inputs directly in the YAML file with the field
+`correlator_inputs`. A value of `n` on the selector will assign the inputs according to the 
+following:
+
+`1` to <num_integrators> : Integrator output `n`
+<num_integrators+1> to <2*num_integrators> : External input `n`-<num_integrators>
+
+In the current X6 firmware build, the external inputs of DSP0 are connected to the
+integrators of DSP1 and vice versa so that correlation across multiple physical channels
+may be implemented. The correlation matrix may be programmed by calling 
+`write_correlator_matrix` or by specifying the field `correlator_matrix` in the YAML file.
+In either case, the matrix is specified as a 1D row-major list of matrix elements. Note 
+that the magnitude of the sum of correlator matrix elements in any row must not exceed 1.
 
 Do these things to acquire data with the card:
 
@@ -46,6 +94,7 @@ Do these things to acquire data with the card:
 * Set the NCO frequency (IF frequency) for each enabled demodulator stream
 * Provide an integration kernel for each *result* stream
 * Optionally set integration thresholds for hard-decisions on fast digital lines
+
 
 
 ## Gotchas, limitations, etc.
@@ -71,6 +120,9 @@ Do these things to acquire data with the card:
   mode, no data will be sent over the socket.
   
 * Remember to set the state valid bitmask to use fast digital I/O!
+
+* The magnitude of the sum of correlator matrix elements in any row must not 
+  exceed 1.
 
 ## MATLAB usage
 
