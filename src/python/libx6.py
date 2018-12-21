@@ -40,6 +40,9 @@ libpath = find_library("x6")
 if libpath is None:
     libpath = find_library("libx6")
 # if we still can't find it, then look in python prefix (where conda stores binaries)
+
+libpath = os.path.join(os.path.dirname(__file__), '../../build/libx6.dll')
+
 if libpath is None:
     libpath = sys.prefix + '/lib'
     libx6 = npct.load_library("libx6", libpath)
@@ -83,6 +86,12 @@ libx6.get_reference_source.argtypes    = [c_int32, POINTER(c_uint32)]
 libx6.set_digitizer_mode.argtypes      = [c_int32, c_uint32]
 libx6.get_digitizer_mode.argtypes      = [c_int32, POINTER(c_uint32)]
 
+libx6.get_number_of_integrators.argtypes  = [c_int32]*2 + [POINTER(c_int32)]
+libx6.get_number_of_demodulators.argtypes = [c_int32]*2 + [POINTER(c_int32)]
+
+libx6.set_state_vld_bitmask.argtypes   = [c_int32]*3
+libx6.get_state_vld_bitmask.argtypes   = [c_int32]*2 + [POINTER(c_int32)]
+
 libx6.enable_stream.argtypes           = [c_int32]*4
 libx6.disable_stream.argtypes          = [c_int32]*4
 
@@ -94,11 +103,19 @@ libx6.set_threshold.argtypes           = [c_int32]*3 + [c_double]
 libx6.get_threshold.argtypes           = [c_int32]*3 + [POINTER(c_double)]
 libx6.set_threshold_invert.argtypes    = [c_int32]*3 + [c_bool]
 libx6.get_threshold_invert.argtypes    = [c_int32]*3 + [POINTER(c_bool)]
+libx6.set_threshold_input_sel.argtypes = [c_int32]*3 + [c_bool]
+libx6.get_threshold_input_sel.argtypes = [c_int32]*3 + [POINTER(c_bool)]
 
 libx6.write_kernel.argtypes            = [c_int32] + [c_uint32]*3 + [np_complex, c_uint32]
 libx6.read_kernel.argtypes             = [c_int32] + [c_uint32]*4 + [np_complex]
 libx6.set_kernel_bias.argtypes         = [c_int32] + [c_uint32]*3 + [np_complex]
 libx6.get_kernel_bias.argtypes         = [c_int32] + [c_uint32]*3 + [np_complex]
+
+libx6.get_correlator_size.argtypes     = [c_int32]*2 + [POINTER(c_uint32)]
+libx6.write_correlator_matrix.argtypes = [c_int32, c_int32] + [np_double, c_uint32]
+libx6.read_correlator_matrix.argtypes  = [c_int32]*3 + [POINTER(c_double)]
+libx6.set_correlator_input.argytpes    = [c_int32, c_int32, c_uint32, c_uint32]
+libx6.get_correlator_input.argtypes    = [c_int32]*3 + [POINTER(c_uint32)]
 
 libx6.acquire.argtypes                 = [c_int32]
 libx6.wait_for_acquisition.argtypes    = [c_int32, c_uint32]
@@ -229,6 +246,18 @@ class X6(object):
 
     acquire_mode = property(get_acquire_mode, set_acquire_mode)
 
+    def get_number_of_integrators(self, a):
+        return self.x6_getter("get_number_of_integrators", a)
+
+    def get_number_of_demodulators(self, a):
+        return self.x6_getter("get_number_of_demodulators", a)
+
+    def set_state_vld_bitmask(self, a, mask):
+        self.x6_call("set_state_vld_bitmask", a, mask)
+
+    def get_state_vld_bitmask(self, a):
+        return self.x6_getter("get_state_vld_bitmask", a)
+
     def enable_stream(self, a, b, c):
         self.x6_call("enable_stream", a, b, c)
 
@@ -263,6 +292,12 @@ class X6(object):
     def get_threshold_invert(self, a, c):
         return self.x6_getter("get_threshold_invert", a, c)
 
+    def set_threshold_input_sel(self, a, c, correlated):
+        self.x6_call("set_threshold_input_sel", a, c, correlated)
+
+    def get_threshold_input_sel(self, a, c):
+        return self.x6_getter("get_threshold_input_sel", a, c)
+
     def write_kernel(self, a, b, c, kernel):
         self.x6_call("write_kernel", a, b, c, kernel, len(kernel))
 
@@ -288,6 +323,21 @@ class X6(object):
                 self.nbr_segments,
                 self.nbr_waveforms,
                 self.nbr_round_robins)
+
+    def get_correlator_size(self, a):
+        return self.x6_getter("get_correlator_size", a)
+
+    def write_correlator_matrix(self, a, matrix):
+        self.x6_call("write_correlator_matrix", a, matrix, len(matrix))
+
+    def read_correlator_matrix(self, a, addr):
+        return self.x6_getter("read_correlator_matrix", a, addr)
+
+    def set_correlator_input(self, a, input_num, sel):
+        self.x6_call("set_correlator_input", a, input_num, sel)
+
+    def get_correlator_input(self, a, input_num):
+        return self.x6_getter("get_correlator_input", a, input_num)
 
     def acquire(self):
         self.set_averager_settings()

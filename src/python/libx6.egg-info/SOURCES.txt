@@ -1,0 +1,5 @@
+libx6.py
+libx6.egg-info/PKG-INFO
+libx6.egg-info/SOURCES.txt
+libx6.egg-info/dependency_links.txt
+libx6.egg-info/top_level.txt

@@ -16,9 +16,46 @@ QDSPStream::QDSPStream(unsigned a, unsigned b, unsigned c) : channelID{a,b,c} {
     streamID = (a << 8) + (b << 4) + c;
     if ((b == 0) && (c == 0)) {
         type = PHYSICAL;
-    } else if (c != 0) {
-        type = RESULT;
-    } else {
+    }
+    else if (c != 0) {
+        if(c >= 6 && c <= 10)
+        {
+            type = STATE;
+        }
+        else if(c > 10)
+        {
+            type = CORRELATED;
+        }
+        else
+        {
+            type = RESULT;
+        }
+    }
+    else {
+        type = DEMOD;
+    }
+};
+
+QDSPStream::QDSPStream(unsigned a, unsigned b, unsigned c, unsigned numRawInt) : channelID{a,b,c} {
+    streamID = (a << 8) + (b << 4) + c;
+    if ((b == 0) && (c == 0)) {
+        type = PHYSICAL;
+    }
+    else if (c != 0) {
+        if(c >= numRawInt+1 && c <= 2*numRawInt)
+        {
+            type = STATE;
+        }
+        else if(c > 2*numRawInt)
+        {
+            type = CORRELATED;
+        }
+        else
+        {
+            type = RESULT;
+        }
+    }
+    else {
         type = DEMOD;
     }
 };
@@ -32,6 +69,7 @@ unsigned QDSPStream::fixed_to_float() const {
             return 1 << 14;
             break;
         case RESULT:
+        case CORRELATED:
             if (channelID[1]) {
                 return 1 << 19;
             }
@@ -39,6 +77,8 @@ unsigned QDSPStream::fixed_to_float() const {
                 return 1 << 15;
             }
             break;
+        case STATE:
+            return 1;
         default:
             return 0;
     }
@@ -53,6 +93,8 @@ size_t QDSPStream::calc_record_length(const size_t & recordLength) const {
             return 2 * recordLength / DEMOD_DECIMATION_FACTOR;
             break;
         case RESULT:
+        case STATE:
+        case CORRELATED:
             return 2;
             break;
         default:

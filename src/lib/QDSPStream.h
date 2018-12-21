@@ -14,12 +14,13 @@
 using std::uint16_t;
 using std::size_t;
 
-enum STREAM_T { PHYSICAL, DEMOD, RESULT };
+enum STREAM_T { PHYSICAL, DEMOD, RESULT, STATE, CORRELATED };
 
 class QDSPStream{
 public:
 	QDSPStream();
 	QDSPStream(unsigned, unsigned, unsigned);
+	QDSPStream(unsigned, unsigned, unsigned, unsigned);
 
 	unsigned channelID[3];
 	uint16_t streamID;
