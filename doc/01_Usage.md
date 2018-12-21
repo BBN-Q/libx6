@@ -45,7 +45,7 @@ DSP0 (`a = 1`): Thresholders 1,2,3,4,5 connect to DIO_P 0,2,4,6,8 respectively.
 
 DSP1 (`a = 2`): Thresholders 1,2,3,4,5 connect to DIO_P 10,12,14,16,18 respectively.
 
-DIO_P17 provides a "valid" signal to indicate that the state signals on the DIO 
+DIO_P19 provides a "valid" signal to indicate that the state signals on the DIO 
 lines are prepared and correct. This signal is an OR reduction of all individual valid
 signals for each of the thresholders. However, since some thresholders will 
 predictably finish before others (depending on their source), it can be useful to 
