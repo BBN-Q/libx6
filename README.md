@@ -152,16 +152,15 @@ or http://www.innovative-dsp.com/cgi-bin/dlLinux64.cgi?product=64X6-1000M. The c
 10. Reboot the computer with a full power down.
 
 ### Building libx6
-
-    ```shell
-    git clone --recursive https://github.com/BBN-Q/libx6.git
-    cd libx6
-    mkdir build
-    cd build
-    cmake ../src
-    make -j4
-    ./run_tests
-    ```
+```shell
+git clone --recursive https://github.com/BBN-Q/libx6.git
+cd libx6
+mkdir build
+cd build
+cmake ../src
+make -j4
+./run_tests
+```
 
 # License
 
