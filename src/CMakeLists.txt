@@ -15,6 +15,7 @@ message("Using ${INNOVATIVE_PATH} as Innovative install directory")
 
 #include Malibu headers
 include_directories(${INNOVATIVE_PATH}/Malibu)
+include_directories(${INNOVATIVE_PATH}/Malibu/Poco/Foundation/include)
 
 #and our own library headers
 include_directories("./lib/")
@@ -112,6 +113,8 @@ set ( II_LIBS
 	Analysis_Mb
 	Framework_Con
 	Framework_Mb
+	Framework_Win
+	Framework_Qt
 	Utility_Mb
 	Hardware_Mb
 	Pci_Mb
@@ -126,7 +129,6 @@ if(NOT MSVC)
 		-Wl,--start-group
 		${II_LIBS}
 		-Wl,--end-group
-		wdapi
 		${IPP_LIB} # in Intel IPP directory listed above
 	)
 	# on Linux wdapi needs dl to dynamically load
@@ -146,12 +148,13 @@ if(MSVC)
 
 	target_link_libraries(x6
 		${IPP_LIB}
-		wdapi
+		#wdapi
 	)
 endif()
 
 if(WIN32)
 	target_link_libraries(x6
+		setupapi
 		iphlpapi # II's PocoFoundation needs GetAdaptersAddress on Windows
 		ws2_32
 	)
