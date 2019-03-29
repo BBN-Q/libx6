@@ -26,7 +26,7 @@
 
 #include <BufferDatagrams_Mb.h>
 #include "QDSPStream.h"
-#include "logger.h"
+#include <plog/Log.h>
 #include "X6_errno.h"
 
 
@@ -78,14 +78,14 @@ template <class T>
 template <class U>
 void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 	if (recordsTaken >= expectedRecords) {
-		FILE_LOG(logDEBUG1) << "Already received expected number of records; dropping buffer";
+		LOG(plog::debug) << "Already received expected number of records; dropping buffer";
 		return;
 	}
 	//TODO: worry about performance, cache-friendly etc.
-	FILE_LOG(logDEBUG3) << "Buffering data...";
-	FILE_LOG(logDEBUG3) << "recordsTaken = " << recordsTaken;
-	FILE_LOG(logDEBUG3) << "New buffer size is " << buffer.size();
-	FILE_LOG(logDEBUG3) << "queue size is " << queue_.size();
+	LOG(plog::verbose) << "Buffering data...";
+	LOG(plog::verbose) << "recordsTaken = " << recordsTaken;
+	LOG(plog::verbose) << "New buffer size is " << buffer.size();
+	LOG(plog::verbose) << "queue size is " << queue_.size();
 
 	// if we have a socket, process the data and send it immediately
 	if (socket_ != -1) {
@@ -93,7 +93,7 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 		size_t buf_size = buffer.size() * sizeof(double);
 		ssize_t status = send(socket_, reinterpret_cast<char *>(&buf_size), sizeof(size_t), 0);
 		if (status < 0) {
-			FILE_LOG(logERROR) << "Error writing buffer size to socket,"
+			LOG(plog::error) << "Error writing buffer size to socket,"
 			#ifdef _WIN32
 			                   << " received error: " << WSAGetLastError();
 			#else
@@ -104,7 +104,7 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 
 		status = send(socket_, reinterpret_cast<char *>(workbuf.data()), buf_size, 0);
 		if (status < 0) {
-			FILE_LOG(logERROR) << "System error writing to socket: "
+			LOG(plog::error) << "System error writing to socket: "
 			#ifdef _WIN32
 			                   << WSAGetLastError();
 			#else
@@ -112,7 +112,7 @@ void RecordQueue<T>::push(const Innovative::AccessDatagram<U> & buffer) {
 			#endif
 			throw X6_SOCKET_ERROR;
 		} else if (status != static_cast<ssize_t>(buf_size)) {
-			FILE_LOG(logERROR) << "Error writing stream ID " << stream_.streamID
+			LOG(plog::error) << "Error writing stream ID " << stream_.streamID
 			                   << " buffer to socket. Tried to write "
 			                   << buf_size << " bytes, actually wrote "
 			                   << status << " bytes";
@@ -136,8 +136,8 @@ void RecordQueue<T>::get(double * buf, size_t numPoints) {
 	// for(size_t ct=0; !queue_.empty() && (ct < numPoints); ct++) {
 	for(size_t ct=0; ct < numPoints; ct++) {
 		if (queue_.empty()) {
-			FILE_LOG(logERROR) << "Tried to pull " << numPoints << " from a queue of initial size " << initialSize;
-			FILE_LOG(logERROR) << "Tried to pull an empty queue.";
+			LOG(plog::error) << "Tried to pull " << numPoints << " from a queue of initial size " << initialSize;
+			LOG(plog::error) << "Tried to pull an empty queue.";
 			break;
 		}
 		buf[ct] = static_cast<double>(queue_.front()) / fixed_to_float_;

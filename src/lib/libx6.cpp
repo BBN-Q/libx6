@@ -12,7 +12,7 @@ using std::string;
 #include <cstring>
 #include <iostream>
 
-#include "logger.h"
+#include <plog/Log.h>
 
 #include "libx6.h"
 #include "X6_1000.h"
@@ -22,25 +22,22 @@ using std::string;
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
 unsigned numDevices_ = 0;
 
-// stub class to open/close the logger file handle
+// stub class to open loggers
 class InitAndCleanUp {
 public:
   InitAndCleanUp();
-  ~InitAndCleanUp();
 };
 
 InitAndCleanUp::InitAndCleanUp() {
-  //Open the logging file
-  FILE* pFile = fopen("libx6.log", "a");
-  Output2FILE::Stream() = pFile;
-  FILE_LOG(logINFO) << "libx6 driver version: " << get_driver_version();
-}
+  if (!plog::get()) {
+    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("libx6.log", 1000000, 3);
+    plog::init<1>(plog::info, @fileAppender)
+    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
+    plog::init<2>(plog::warning, &consoleAppender);
 
-InitAndCleanUp::~InitAndCleanUp() {
-  FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading." << endl;
-  if (Output2FILE::Stream()) {
-    fclose(Output2FILE::Stream());
+    plog::init(plog::verbose).addAppender(plog::get<1>()).addAppender(plog::get<2>());
   }
+  LOG(plog::info) << "libx6 driver version: " << get_driver_version();
 }
 
 static InitAndCleanUp initandcleanup_;
@@ -109,7 +106,7 @@ void update_num_devices() {
   // TODO: figure out if this needs to be static
   static Innovative::X6_1000M x6;
   numDevices_ = static_cast<unsigned int>(x6.BoardCount());
-  FILE_LOG(logINFO) << numDevices_ << " X6 device" << (numDevices_ > 1 ? "s" : "") << " found.";
+  LOG(plog::info) << numDevices_ << " X6 device" << (numDevices_ > 1 ? "s" : "") << " found.";
 }
 
 X6_STATUS get_num_devices(unsigned* numDevices) {

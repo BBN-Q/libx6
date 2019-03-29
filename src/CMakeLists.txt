@@ -23,6 +23,9 @@ include_directories("./lib/")
 #Catch unit-testing
 include_directories("../deps/Catch/include")
 
+#plog logger
+include_directories("../deps/plog/include")
+
 #Innovative shipped shared libraries
 if(CMAKE_BUILD_TYPE MATCHES Debug)
 	message("Building and linking Debug")

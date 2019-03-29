@@ -17,7 +17,7 @@
 using std::vector;
 using std::max;
 
-#include "logger.h"
+#include <plog/Log.h>
 
 #include <BufferDatagrams_Mb.h>
 
@@ -56,10 +56,10 @@ private:
 template <class T>
 void Accumulator::accumulate(const Innovative::AccessDatagram<T> & buffer) {
     //TODO: worry about performance, cache-friendly etc.
-    FILE_LOG(logDEBUG4) << "Accumulating data...";
-    FILE_LOG(logDEBUG4) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
-    FILE_LOG(logDEBUG4) << "New buffer size is " << buffer.size();
-    FILE_LOG(logDEBUG4) << "Accumulator buffer size is " << data_.size();
+    LOG(plog::debug) << "Accumulating data...";
+    LOG(plog::debug) << "recordLength_ = " << recordLength_ << "; idx_ = " << std::distance(data_.begin(), idx_) << "; recordsTaken = " << recordsTaken;
+    LOG(plog::debug) << "New buffer size is " << buffer.size();
+    LOG(plog::debug) << "Accumulator buffer size is " << data_.size();
 
     // The assumption is that this will be called with a full record size
     // Accumulate the buffer into data_

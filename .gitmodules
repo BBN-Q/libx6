@@ -2,3 +2,6 @@
 	path = deps/Catch
 	url = https://github.com/philsquared/Catch.git
 	shallow = true
+[submodule "deps/plog"]
+	path = deps/plog
+	url = https://github.com/SergiusTheBest/plog.git
