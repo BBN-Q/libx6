@@ -5,6 +5,11 @@ cmake_minimum_required(VERSION 3.1)
 # Make sure we have C++11 support
 set(CMAKE_CXX_STANDARD 11)
 
+#set compile flag for Linux
+if(UNIX)
+  add_definitions(-DLINUX=1)
+endif()
+
 # find where Innovative is installed
 if(UNIX)
 	set(INNOVATIVE_PATH /usr/Innovative CACHE FILEPATH "location of Innovative install")
@@ -116,7 +121,6 @@ set ( II_LIBS
 	Analysis_Mb
 	Framework_Con
 	Framework_Mb
-	Framework_Win
 	Framework_Qt
 	Utility_Mb
 	Hardware_Mb
