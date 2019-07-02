@@ -12,35 +12,33 @@ using std::string;
 #include <cstring>
 #include <iostream>
 
-#include "logger.h"
-
 #include "libx6.h"
 #include "X6_1000.h"
 #include "version.hpp"
+
+#define FILE_PLOG 1
+#define CONSOLE_PLOG 2
 
 // globals
 map<unsigned, std::unique_ptr<X6_1000>> X6s_;
 unsigned numDevices_ = 0;
 
-// stub class to open/close the logger file handle
+// stub class to open loggers
 class InitAndCleanUp {
 public:
   InitAndCleanUp();
-  ~InitAndCleanUp();
 };
 
 InitAndCleanUp::InitAndCleanUp() {
-  //Open the logging file
-  FILE* pFile = fopen("libx6.log", "a");
-  Output2FILE::Stream() = pFile;
-  FILE_LOG(logINFO) << "libx6 driver version: " << get_driver_version();
-}
+  if (!plog::get()) {
+    static plog::RollingFileAppender<plog::TxtFormatter> fileAppender("libx6.log", 1000000, 3);
+    plog::init<FILE_PLOG>(plog::info, &fileAppender);
+    static plog::ColorConsoleAppender<plog::TxtFormatter> consoleAppender;
+    plog::init<CONSOLE_PLOG>(plog::warning, &consoleAppender);
 
-InitAndCleanUp::~InitAndCleanUp() {
-  FILE_LOG(logINFO) << "Cleaning up libx6 before driver unloading." << endl;
-  if (Output2FILE::Stream()) {
-    fclose(Output2FILE::Stream());
+    plog::init(plog::verbose).addAppender(plog::get<FILE_PLOG>()).addAppender(plog::get<CONSOLE_PLOG>());
   }
+  LOG(plog::info) << "libx6 driver version: " << get_driver_version();
 }
 
 static InitAndCleanUp initandcleanup_;
@@ -109,7 +107,7 @@ void update_num_devices() {
   // TODO: figure out if this needs to be static
   static Innovative::X6_1000M x6;
   numDevices_ = static_cast<unsigned int>(x6.BoardCount());
-  FILE_LOG(logINFO) << numDevices_ << " X6 device" << (numDevices_ > 1 ? "s" : "") << " found.";
+  LOG(plog::info) << numDevices_ << " X6 device" << (numDevices_ > 1 ? "s" : "") << " found.";
 }
 
 X6_STATUS get_num_devices(unsigned* numDevices) {
@@ -434,40 +432,13 @@ EXPORT X6_STATUS read_pulse_waveform(int deviceID, unsigned pg, unsigned addr, d
   return x6_getter(deviceID, &X6_1000::read_pulse_waveform, val, pg, addr);
 }
 
-//Expects a null-terminated character array
-X6_STATUS set_log(char* fileNameArr) {
-  string fileName(fileNameArr);
-  if (fileName.compare("stdout") == 0){
-    return update_log(stdout);
-  }
-  else if (fileName.compare("stderr") == 0){
-    return update_log(stderr);
-  }
-  else{
-
-    FILE* pFile = fopen(fileName.c_str(), "a");
-    if (!pFile) {
-      return X6_LOGFILE_ERROR;
-    }
-
-    return update_log(pFile);
-  }
+X6_STATUS set_file_logging_level(plog::Severity severity) {
+  plog::get<FILE_PLOG>()->setMaxSeverity(severity);
+  return X6_OK;
 }
 
-X6_STATUS update_log(FILE* pFile) {
-  if (pFile) {
-    //Close the current file
-    if (Output2FILE::Stream()) fclose(Output2FILE::Stream());
-    //Assign the new one
-    Output2FILE::Stream() = pFile;
-    return X6_OK;
-  } else {
-    return X6_LOGFILE_ERROR;
-  }
-}
-
-X6_STATUS set_logging_level(int logLevel) {
-  FILELog::ReportingLevel() = TLogLevel(logLevel);
+X6_STATUS set_console_logging_level(plog::Severity severity) {
+  plog::get<CONSOLE_PLOG>()->setMaxSeverity(severity);
   return X6_OK;
 }
 

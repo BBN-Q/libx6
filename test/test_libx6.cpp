@@ -7,7 +7,7 @@ using std::vector;
 #include <random>
 #include <algorithm>
 #include <functional> // std::bind
-
+#include <iostream>
 #include "libx6.h"
 #include "constants.h"
 
@@ -82,9 +82,10 @@ TEST_CASE("record length") {
 
 void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & kernel, size_t numChecks) {
 
-	write_kernel(0, 1, 0, 1, reinterpret_cast<double*>(kernel.data()), kernel.size());
+	write_kernel(0, a, b, c, reinterpret_cast<double*>(kernel.data()), kernel.size());
 
 	//Check first/last and random selection in between (too slow to do all)
+	numChecks = 2;
 	vector<unsigned> checkIdx(numChecks);
 	checkIdx[0] = 0;
 	checkIdx[1] = kernel.size()-1;
@@ -92,10 +93,11 @@ void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & 
 	std::mt19937 engine; // Mersenne twister MT19937
 	auto gen_rand_idx = std::bind(dist, engine);
 	std::generate_n(checkIdx.begin()+2, numChecks-2, gen_rand_idx);
+	
 
 	for (size_t ct = 0; ct < checkIdx.size(); ct++) {
 		complex<double> val;
-		read_kernel(0, 1, 0, 1, checkIdx[ct], reinterpret_cast<double*>(&val));
+		read_kernel(0, a, b, c, checkIdx[ct], reinterpret_cast<double*>(&val));
 		INFO( "Read back: " << val << " ; expected: " << kernel[checkIdx[ct]] );
 		CHECK( std::real(val) == Approx( std::real(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
 		CHECK( std::imag(val) == Approx( std::imag(kernel[checkIdx[ct]])).epsilon( 2.0 / (1 << 15)) );
@@ -138,14 +140,16 @@ TEST_CASE("kernels") {
 	SECTION("raw kernel write read") {
 
 		kernel.resize(4096);
-		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		//std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.3, 0.123));
 		check_kernel(1, 0, 1, kernel, 100);
 	}
 
 	SECTION("demod kernel write read") {
 
 		kernel.resize(512);
-		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		//std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.2, 0.712));
 		check_kernel(1, 1, 1, kernel, 100);
 	}
 

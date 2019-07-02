@@ -19,6 +19,8 @@
 #include <stdint.h>
 #undef I //used in Malibu code
 #include <stdbool.h>
+#include <plog/Log.h>
+#include <plog/Appenders/ColorConsoleAppender.h>
 
 #include "X6_errno.h"
 #include "X6_enums.h"
@@ -97,9 +99,8 @@ EXPORT X6_STATUS get_buffer_size(int, ChannelTuple*, unsigned, unsigned*);
 EXPORT X6_STATUS get_record_length(int, ChannelTuple*, unsigned*);
 EXPORT X6_STATUS get_variance_buffer_size(int, ChannelTuple*, unsigned, int*);
 
-EXPORT X6_STATUS set_log(char*);
-X6_STATUS update_log(FILE*);
-EXPORT X6_STATUS set_logging_level(int);
+EXPORT X6_STATUS set_file_logging_level(plog::Severity);
+EXPORT X6_STATUS set_console_logging_level(plog::Severity);
 
 /* unused/unfinished methods */
 EXPORT X6_STATUS initX6(int);

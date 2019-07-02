@@ -87,16 +87,16 @@ void X6_1000::open(int deviceID) {
 
   try {
     module_.Open();
-    FILE_LOG(logINFO) << "Opened Device " << deviceID;
-    FILE_LOG(logINFO) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
+    LOG(plog::info) << "Opened Device " << deviceID;
+    LOG(plog::info) << "Bus master size: Input => " << RxBmSize << " MB" << " Output => " << TxBmSize << " MB";
   }
   catch(...) {
-    FILE_LOG(logINFO) << "Module Device Open Failure!";
+    LOG(plog::info) << "Module Device Open Failure!";
     throw X6_MODULE_ERROR;
   }
 
   module_.Reset();
-  FILE_LOG(logINFO) << "X6 module opened and reset successfully...";
+  LOG(plog::info) << "X6 module opened and reset successfully...";
 
   needToInit_ = true;
 
@@ -106,14 +106,14 @@ void X6_1000::open(int deviceID) {
 
   //	Connect Stream
   stream_.ConnectTo(&module_);
-  FILE_LOG(logINFO) << "Stream Connected...";
+  LOG(plog::info) << "Stream Connected...";
 
   prefillPacketCount_ = stream_.PrefillPacketCount();
-  FILE_LOG(logDEBUG) << "Stream prefill packet count: " << prefillPacketCount_;
+  LOG(plog::debug) << "Stream prefill packet count: " << prefillPacketCount_;
 
   //Set some default clocking so get_pll_frequency and *_nco_frequency work
   //Use internal reference and 1GS ADC/DAC
-  FILE_LOG(logDEBUG) << "Setting default clocking to internal 10MHz reference.";
+  LOG(plog::debug) << "Setting default clocking to internal 10MHz reference.";
   module_.Clock().Reference(IX6ClockIo::rsInternal);
   module_.Clock().ReferenceFrequency(10e6);
   module_.Clock().Source(IX6ClockIo::csInternal);
@@ -149,13 +149,13 @@ void X6_1000::init() {
   double adc_freq = module_.Clock().Adc().Frequency();
   double dac_freq = module_.Clock().Dac().Frequency();
 
-  FILE_LOG(logDEBUG) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
-  FILE_LOG(logDEBUG) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
+  LOG(plog::debug) << "Desired PLL Frequencies: [ADC] " << adc_freq << " [DAC] " << dac_freq;
+  LOG(plog::debug) << "Actual PLL Frequencies: [ADC] " << adc_freq_actual << " [DAC] " << dac_freq_actual;
 
-  FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
-  FILE_LOG(logDEBUG) << "Preconfiguring stream...";
+  LOG(plog::debug) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+  LOG(plog::debug) << "Preconfiguring stream...";
   stream_.Preconfigure();
-  FILE_LOG(logDEBUG) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
+  LOG(plog::debug) << "AFE reg. 0x98 (DAC calibration): " << hexn<8> << read_wishbone_register(0x0800, 0x98);
 
   needToInit_ = false;
 }
@@ -166,7 +166,7 @@ void X6_1000::close() {
   unregister_sockets();
 
   isOpen_ = false;
-  FILE_LOG(logINFO) << "Closed connection to device " << deviceID_;
+  LOG(plog::info) << "Closed connection to device " << deviceID_;
 }
 
 uint32_t X6_1000::get_firmware_version() {
@@ -198,7 +198,7 @@ X6_REFERENCE_SOURCE X6_1000::get_reference_source() {
 
 double X6_1000::get_pll_frequency() {
   double freq = module_.Clock().FrequencyActual();
-  FILE_LOG(logINFO) << "PLL frequency for X6: " << freq;
+  LOG(plog::info) << "PLL frequency for X6: " << freq;
   return freq;
 }
 
@@ -219,7 +219,7 @@ void X6_1000::set_trigger_delay(float delay) {
 }
 
 void X6_1000::set_digitizer_mode(const X6_DIGITIZER_MODE & mode) {
-  FILE_LOG(logINFO) << "Setting digitizer mode to: " << mode;
+  LOG(plog::info) << "Setting digitizer mode to: " << mode;
   digitizerMode_ = mode;
 }
 
@@ -250,13 +250,13 @@ void X6_1000::set_record_length(int recordLength) {
 
   // minimum of 128 -- really just to enforce a 4 word demod vita packet - could revist if we need shorter
   if (recordLength < MIN_RECORD_LENGTH) {
-    FILE_LOG(logERROR) << "Record length of " << recordLength << " too short; min. 132 samples.";
+    LOG(plog::error) << "Record length of " << recordLength << " too short; min. 132 samples.";
     throw X6_INVALID_RECORD_LENGTH;
   }
 
   // maximum of 16384 -- really just to enforce a 4096 word raw stream packet - could revist later
   if (recordLength > MAX_RECORD_LENGTH) {
-    FILE_LOG(logERROR) << "Record length of " << recordLength << " too long; max. of 16384 samples.";
+    LOG(plog::error) << "Record length of " << recordLength << " too long; max. of 16384 samples.";
     throw X6_INVALID_RECORD_LENGTH;
   }
 
@@ -264,11 +264,11 @@ void X6_1000::set_record_length(int recordLength) {
   // total decimation 32 and 4 words for 128bit wide data path
   // could revist later and only enforce when demod stream is output
   if (recordLength % RECORD_LENGTH_GRANULARITY != 0) {
-    FILE_LOG(logERROR) << "Record length of " << recordLength << " is not a mulitple of 128";
+    LOG(plog::error) << "Record length of " << recordLength << " is not a mulitple of 128";
     throw X6_INVALID_RECORD_LENGTH;
   }
 
-  FILE_LOG(logINFO) << "Setting recordLength_ = " << recordLength;
+  LOG(plog::info) << "Setting recordLength_ = " << recordLength;
   recordLength_ = recordLength;
 
   //Set the QDSP register
@@ -294,48 +294,48 @@ int X6_1000::get_state_vld_bitmask(unsigned a) {
 }
 
 void X6_1000::enable_stream(unsigned a, unsigned b, unsigned c) {
-  FILE_LOG(logINFO) << "Enable stream " << a << "." << b << "." << c;
+  LOG(plog::info) << "Enable stream " << a << "." << b << "." << c;
 
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   // set the appropriate bit in stream_enable register
   int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
   int bit = (b==0) ? (c > numRawKi ? (c+2*numDemod) : c) : (numRawKi + b + (c == 0 ? 0 : numDemod));
   reg |= 1 << bit;
-  FILE_LOG(logDEBUG4) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
+  LOG(plog::verbose) << "Setting stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
   write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
   QDSPStream stream = QDSPStream(a, b, c, numRawKi);
-  FILE_LOG(logDEBUG2) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << hexn<4> << stream.streamID;
+  LOG(plog::verbose) << "Assigned stream " << a << "." << b << "." << c << " to streamID " << hexn<4> << stream.streamID;
   activeQDSPStreams_[stream.streamID] = stream;
 }
 
 void X6_1000::disable_stream(unsigned a, unsigned b, unsigned c) {
-  FILE_LOG(logINFO) << "Disable stream " << a << "." << b << "." << c;
+  LOG(plog::info) << "Disable stream " << a << "." << b << "." << c;
 
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   // clear the appropriate bit in stream_enable register
   int reg = read_dsp_register(a-1, WB_QDSP_STREAM_ENABLE);
   int bit = (b==0) ? (c > numRawKi ? (c+2*numDemod) : c) : (numRawKi + b + (c == 0 ? 0 : numDemod));
   reg &= ~(1 << bit);
-  FILE_LOG(logDEBUG4) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
+  LOG(plog::verbose) << "Clearing stream_enable register bit " << bit << " by writing register value " << hexn<8> << reg;
   write_dsp_register(a-1, WB_QDSP_STREAM_ENABLE, reg);
 
   //Find the channel
   uint16_t streamID = QDSPStream(a, b, c, numRawKi).streamID;
   if (activeQDSPStreams_.count(streamID)) {
     activeQDSPStreams_.erase(streamID);
-    FILE_LOG(logINFO) << "Disabling stream " << a << "." << b << "." << c;
+    LOG(plog::info) << "Disabling stream " << a << "." << b << "." << c;
   }
   else {
-    FILE_LOG(logERROR) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
+    LOG(plog::error) << "Tried to disable stream " << a << "." << b << "." << c << " which was not enabled.";
   }
 }
 
@@ -365,12 +365,12 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   // NCO runs at quarter rate
   double nfreq = 4 * freq/get_pll_frequency();
   int32_t phase_increment = rint(nfreq * (1 << 24)); //24 bit precision on DDS
-  FILE_LOG(logDEBUG3) << "Setting channel " << a << "." << b << " NCO frequency to: " << freq/1e6 << " MHz (" << phase_increment << ")";
+  LOG(plog::verbose) << "Setting channel " << a << "." << b << " NCO frequency to: " << freq/1e6 << " MHz (" << phase_increment << ")";
   write_dsp_register(a-1, WB_QDSP_PHASE_INC(numRawKi,numDemod) + (b-1), phase_increment);
 }
 
@@ -378,7 +378,7 @@ double X6_1000::get_nco_frequency(int a, int b) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   uint32_t phaseInc = read_dsp_register(a-1, WB_QDSP_PHASE_INC(numRawKi,numDemod) + (b-1));
   //Undo the math in set_nco_frequency
@@ -389,11 +389,11 @@ void X6_1000::set_threshold(int a, int c, double threshold) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   // Results are sfix32_15, so scale threshold by 2^15.
   int32_t scaled_threshold = threshold * (1 << 15);
-  FILE_LOG(logDEBUG3) << "Setting channel " << a << ".0." << c << " threshold to: " << threshold << " (" << scaled_threshold << ")";
+  LOG(plog::verbose) << "Setting channel " << a << ".0." << c << " threshold to: " << threshold << " (" << scaled_threshold << ")";
   write_dsp_register(a-1, WB_QDSP_THRESHOLD(numRawKi,numDemod) + (c-1), scaled_threshold);
 }
 
@@ -401,7 +401,7 @@ double X6_1000::get_threshold(int a, int c) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
 
   int32_t fixedThreshold = read_dsp_register(a-1, WB_QDSP_THRESHOLD(numRawKi,numDemod) + (c-1));
@@ -413,7 +413,7 @@ void X6_1000::set_threshold_invert(int a, int c, bool invert){
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Get the current register for bit bashing
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)));
@@ -425,7 +425,7 @@ bool X6_1000::get_threshold_invert(int a, int c) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)));
   return bits[c-1];
@@ -435,7 +435,7 @@ void X6_1000::set_threshold_input_sel(int a, int thresholder, bool correlated){
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Get the current register for bit bashing
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod)));
@@ -447,7 +447,7 @@ bool X6_1000::get_threshold_input_sel(int a, int thresholder) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   std::bitset<32> bits(read_dsp_register(a-1, WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod)));
   return bits[thresholder-1];
@@ -456,14 +456,14 @@ bool X6_1000::get_threshold_input_sel(int a, int thresholder) {
 void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & kernel) {
 
   if ( (b == 0 && c == 0) || (b != 0 && c == 0) ) {
-    FILE_LOG(logERROR) << "Attempt to write kernel to non kernel integration stream";
+    LOG(plog::error) << "Attempt to write kernel to non kernel integration stream";
     throw X6_INVALID_KERNEL_STREAM;
   }
 
   if (
     (( b == 0 ) && ( kernel.size() > MAX_RAW_KERNEL_LENGTH )) ||
     (( b != 0 ) && ( kernel.size() > MAX_DEMOD_KERNEL_LENGTH )) ) {
-      FILE_LOG(logERROR) << "kernel too long for raw kernel";
+      LOG(plog::error) << "kernel too long for raw kernel";
       throw X6_INVALID_KERNEL_LENGTH;
   }
 
@@ -471,7 +471,7 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
   auto range_check = [](double val){
     const double one_bit_level = 1.0/(1 << KERNEL_FRAC_BITS);
     if ((val > (MAX_KERNEL_VALUE + 1.5*one_bit_level )) || (val < (MIN_KERNEL_VALUE - 0.5*one_bit_level)) ) {
-      FILE_LOG(logERROR) << "kernel value " << val << " is out of range";
+      LOG(plog::error) << "kernel value " << val << " is out of range";
       throw X6_KERNEL_OUT_OF_RANGE;
     }
   };
@@ -490,9 +490,9 @@ void X6_1000::write_kernel(int a, int b, int c, const vector<complex<double>> & 
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
-  FILE_LOG(logDEBUG3) << "Writing channel " << a << "." << b << "." << c << " kernel with length	" << kernel.size();
+  LOG(plog::verbose) << "Writing channel " << a << "." << b << "." << c << " kernel with length	" << kernel.size();
 
   //Depending on raw or demod integrator we are enumerated by c or b
   int channel = (b==0) ? c : b;
@@ -518,7 +518,7 @@ complex<double> X6_1000::read_kernel(unsigned a, unsigned b, unsigned c, unsigne
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Depending on raw or demod integrator we are enumerated by c or b
   int KI = (b==0) ? c : b;
@@ -544,7 +544,7 @@ void X6_1000::set_kernel_bias(int a, int b, int c, complex<double> bias) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Use a QDSPStream to get the scaling
   QDSPStream stream(a,b,c,numRawKi);
@@ -566,7 +566,7 @@ complex<double> X6_1000::get_kernel_bias(int a, int b, int c) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Use a QDSPStream to get the scaling
   QDSPStream stream(a,b,c,numRawKi);
@@ -589,12 +589,12 @@ void X6_1000::set_active_channels() {
   module_.Input().ChannelDisableAll();
 
   for (unsigned ct = 0; ct < activeInputChannels_.size(); ct++) {
-    FILE_LOG(logINFO) << "Physical input channel " << ct << (activeInputChannels_[ct] ? " enabled" : " disabled");
+    LOG(plog::info) << "Physical input channel " << ct << (activeInputChannels_[ct] ? " enabled" : " disabled");
     module_.Input().ChannelEnabled(ct, activeInputChannels_[ct]);
   }
 
   for (unsigned ct = 0; ct < activeOutputChannels_.size(); ct++) {
-    FILE_LOG(logINFO) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
+    LOG(plog::info) << "Physical output channel " << ct << (activeOutputChannels_[ct] ? " enabled" : " disabled");
     module_.Output().ChannelEnabled(ct, activeOutputChannels_[ct]);
   }
 }
@@ -603,7 +603,7 @@ uint32_t X6_1000::get_correlator_size(int a) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   return read_dsp_register(a-1, WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod));
 }
@@ -612,7 +612,7 @@ void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
 
   uint32_t correlator_size = (uint32_t)get_correlator_size(a);
   if(matrix.size() != correlator_size*correlator_size) {
-    FILE_LOG(logERROR) << "Incorrect number of correlator matrix elements; have " << matrix.size() << ", expecting " << (correlator_size*correlator_size) << ".";
+    LOG(plog::error) << "Incorrect number of correlator matrix elements; have " << matrix.size() << ", expecting " << (correlator_size*correlator_size) << ".";
     return;
   }
 
@@ -624,14 +624,14 @@ void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
     }
 
     if(fabs(sum) > 1) {
-      FILE_LOG(logERROR) << "Correlation matrix elements in row " << i << " sum to " << sum << "; behavior not guaranteed.";
+      LOG(plog::error) << "Correlation matrix elements in row " << i << " sum to " << sum << "; behavior not guaranteed.";
     }
   }
 
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   auto scale_with_clip = [](double val){
     val = std::min(val, MAX_CORRELATOR_VALUE);
@@ -643,7 +643,7 @@ void X6_1000::write_correlator_matrix(int a, const vector<double> & matrix) {
   for (size_t ct = 0; ct < matrix.size(); ct++) {
     int16_t scaled = scale_with_clip(matrix[ct]);
     uint32_t conv = scaled;
-    FILE_LOG(logINFO) << "Writing " << hexn<4> << conv << " to addr " << ct;
+    LOG(plog::info) << "Writing " << hexn<4> << conv << " to addr " << ct;
     write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod), ct);
     write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod), conv);
   }
@@ -655,7 +655,7 @@ double X6_1000::read_correlator_matrix(int a, unsigned addr) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   //Write the address register
   write_dsp_register(a-1, WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod), addr);
@@ -675,9 +675,9 @@ void X6_1000::set_correlator_input(int a, uint32_t input_num, uint32_t sel) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
-  FILE_LOG(logINFO) << "Setting input " << input_num << " to " << sel;
+  LOG(plog::info) << "Setting input " << input_num << " to " << sel;
   write_dsp_register(a-1, WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod) + input_num, sel);
 }
 
@@ -685,24 +685,24 @@ uint32_t X6_1000::get_correlator_input(int a, uint32_t input_num) {
   // Read the DSP stream counts
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
-  FILE_LOG(logINFO) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+  LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   return read_dsp_register(a-1, WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod) + input_num);
 }
 
 void X6_1000::log_card_info() {
 
-  FILE_LOG(logINFO) << std::hex << "Logic Version: " << module_.Info().FpgaLogicVersion()
+  LOG(plog::info) << std::hex << "Logic Version: " << module_.Info().FpgaLogicVersion()
     << ", Hdw Variant: " << module_.Info().FpgaHardwareVariant()
     << ", Revision: " << module_.Info().PciLogicRevision()
     << ", Subrevision: " << module_.Info().FpgaLogicSubrevision();
 
-  FILE_LOG(logINFO)	<< std::hex << "Board Family: " << module_.Info().PciLogicFamily()
+  LOG(plog::info)	<< std::hex << "Board Family: " << module_.Info().PciLogicFamily()
     << ", Type: " << module_.Info().PciLogicType()
     << ", Board Revision: " << module_.Info().PciLogicPcb()
     << ", Chip: " << module_.Info().FpgaChipType();
 
-  FILE_LOG(logINFO)	<< "PCI Express Lanes: " << module_.Debug()->LaneCount();
+  LOG(plog::info)	<< "PCI Express Lanes: " << module_.Debug()->LaneCount();
 }
 
 void X6_1000::acquire() {
@@ -742,23 +742,23 @@ void X6_1000::acquire() {
     switch (kv.second.type) {
     case PHYSICAL:
       physChans_.push_back(kv.first);
-      FILE_LOG(logDEBUG) << "ADC physical stream ID: " << hexn<4> << kv.first;
+      LOG(plog::debug) << "ADC physical stream ID: " << hexn<4> << kv.first;
       break;
     case DEMOD:
       virtChans_.push_back(kv.first);
-      FILE_LOG(logDEBUG) << "ADC virtual stream ID: " << hexn<4> << kv.first;
+      LOG(plog::debug) << "ADC virtual stream ID: " << hexn<4> << kv.first;
       break;
     case RESULT:
       resultChans_.push_back(kv.first);
-      FILE_LOG(logDEBUG) << "ADC result stream ID: " << hexn<4> << kv.first;
+      LOG(plog::debug) << "ADC result stream ID: " << hexn<4> << kv.first;
       break;
     case STATE:
       stateChans_.push_back(kv.first);
-      FILE_LOG(logDEBUG) << "Thresholded state stream ID: " << hexn<4> << kv.first;
+      LOG(plog::debug) << "Thresholded state stream ID: " << hexn<4> << kv.first;
       break;
     case CORRELATED:
       correlatedChans_.push_back(kv.first);
-      FILE_LOG(logDEBUG) << "Correlation stream ID: " << hexn<4> << kv.first;
+      LOG(plog::debug) << "Correlation stream ID: " << hexn<4> << kv.first;
       break;
     }
   }
@@ -783,35 +783,35 @@ void X6_1000::acquire() {
 
   //Now set the buffers sizes to fire when a full record length is in
   int samplesPerWord = module_.Input().Info().SamplesPerWord();
-  FILE_LOG(logDEBUG) << "samplesPerWord = " << samplesPerWord;
+  LOG(plog::debug) << "samplesPerWord = " << samplesPerWord;
   // calculate packet size for physical and virtual channels
   int packetSize = recordLength_/samplesPerWord/get_decimation()/RAW_DECIMATION_FACTOR;
-  FILE_LOG(logDEBUG) << "Physical channel packetSize = " << packetSize;
+  LOG(plog::debug) << "Physical channel packetSize = " << packetSize;
   VMPs_[0].Resize(packetSize);
   VMPs_[0].Clear();
 
   //Vitual channels are complex so they get a factor of two.
   packetSize = 2*recordLength_/samplesPerWord/get_decimation()/DEMOD_DECIMATION_FACTOR;
-  FILE_LOG(logDEBUG) << "Virtual channel packetSize = " << packetSize;
+  LOG(plog::debug) << "Virtual channel packetSize = " << packetSize;
   VMPs_[1].Resize(packetSize);
   VMPs_[1].Clear();
 
   //Result channels are complex 32bit integers
   packetSize = 2;
-  FILE_LOG(logDEBUG) << "Result channel packetSize = " << packetSize;
+  LOG(plog::debug) << "Result channel packetSize = " << packetSize;
   VMPs_[2].Resize(packetSize);
   VMPs_[2].Clear();
 
   // State channels are technically just binary but they send in the same manner as result streams
   packetSize = 2;
-  FILE_LOG(logDEBUG) << "State channel packetSize = " << packetSize;
+  LOG(plog::debug) << "State channel packetSize = " << packetSize;
   VMPs_[3].Resize(packetSize);
   VMPs_[3].Clear();
 
   // Correlated channels have the same width as result streams
   //Result channels are complex 32bit integers
   packetSize = 2;
-  FILE_LOG(logDEBUG) << "Correlated channel packetSize = " << packetSize;
+  LOG(plog::debug) << "Correlated channel packetSize = " << packetSize;
   VMPs_[4].Resize(packetSize);
   VMPs_[4].Clear();
 
@@ -825,11 +825,11 @@ void X6_1000::acquire() {
 
   trigger_.AtStreamStart();
 
-  FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
+  LOG(plog::debug) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+  LOG(plog::debug) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+  LOG(plog::debug) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
+  LOG(plog::debug) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+  LOG(plog::debug) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 
   // Enable the pulse generators
   for (size_t pg = 0; pg < 2; pg++) {
@@ -842,14 +842,14 @@ void X6_1000::acquire() {
   isRunning_ = true;
 
   //	Start Streaming
-  FILE_LOG(logINFO) << "Arming acquisition";
+  LOG(plog::info) << "Arming acquisition";
   stream_.Start();
 
-  FILE_LOG(logDEBUG) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
-  FILE_LOG(logDEBUG) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
+  LOG(plog::debug) << "AFE reg. 0x5 (adc/dac run): " << hexn<8> << read_wishbone_register(0x0800, 0x5);
+  LOG(plog::debug) << "AFE reg. 0x8 (adc en): " << hexn<8> << read_wishbone_register(0x0800, 0x8);
+  LOG(plog::debug) << "AFE reg. 0x9 (adc trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x9);
+  LOG(plog::debug) << "AFE reg. 0x80 (dac en): " << hexn<8> << read_wishbone_register(0x0800, 0x80);
+  LOG(plog::debug) << "AFE reg. 0x81 (dac trigger): " << hexn<8> << read_wishbone_register(0x0800, 0x81);
 }
 
 void X6_1000::wait_for_acquisition(unsigned timeOut){
@@ -926,13 +926,13 @@ void X6_1000::transfer_stream(QDSPStream stream, double * buffer, size_t length)
   //Check we have the stream
   uint16_t sid = stream.streamID;
   if (activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()) {
-    FILE_LOG(logERROR) << "Tried to transfer waveform from disabled stream.";
+    LOG(plog::error) << "Tried to transfer waveform from disabled stream.";
     throw X6_INVALID_CHANNEL;
   }
   if (digitizerMode_ == AVERAGER) {
     //Don't copy more than we have
     if (length < accumulators_[sid].get_buffer_size() ) {
-      FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer waveform.";
+      LOG(plog::error) << "Not enough memory allocated in buffer to transfer waveform.";
     }
     accumulators_[sid].snapshot(buffer);
   }
@@ -950,12 +950,12 @@ void X6_1000::transfer_variance(QDSPStream stream, double * buffer, size_t lengt
   //Check we have the stream
   uint16_t sid = stream.streamID;
   if (activeQDSPStreams_.find(sid) == activeQDSPStreams_.end()) {
-    FILE_LOG(logERROR) << "Tried to transfer waveform variance from disabled stream.";
+    LOG(plog::error) << "Tried to transfer waveform variance from disabled stream.";
     throw X6_INVALID_CHANNEL;
   }
   //Don't copy more than we have
   if (length < accumulators_[sid].get_buffer_size() ) {
-    FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer variance.";
+    LOG(plog::error) << "Not enough memory allocated in buffer to transfer variance.";
   }
   accumulators_[sid].snapshot_variance(buffer);
 }
@@ -969,12 +969,12 @@ void X6_1000::transfer_correlation(vector<QDSPStream> & streams, double *buffer,
   for (size_t i = 0; i < streams.size(); i++)
     sids[i] = streams[i].streamID;
   if (correlators_.find(sids) == correlators_.end()) {
-    FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+    LOG(plog::error) << "Tried to transfer invalid correlator.";
     throw X6_INVALID_CHANNEL;
   }
   // Don't copy more than we have
   if (length < correlators_[sids].get_buffer_size()) {
-    FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    LOG(plog::error) << "Not enough memory allocated in buffer to transfer correlator.";
   }
   correlators_[sids].snapshot(buffer);
 }
@@ -988,12 +988,12 @@ void X6_1000::transfer_correlation_variance(vector<QDSPStream> & streams, double
   for (size_t i = 0; i < streams.size(); i++)
     sids[i] = streams[i].streamID;
   if (correlators_.find(sids) == correlators_.end()) {
-    FILE_LOG(logERROR) << "Tried to transfer invalid correlator.";
+    LOG(plog::error) << "Tried to transfer invalid correlator.";
     throw X6_INVALID_CHANNEL;
   }
   // Don't copy more than we have
   if (length < correlators_[sids].get_buffer_size()) {
-    FILE_LOG(logERROR) << "Not enough memory allocated in buffer to transfer correlator.";
+    LOG(plog::error) << "Not enough memory allocated in buffer to transfer correlator.";
   }
   correlators_[sids].snapshot_variance(buffer);
 }
@@ -1087,7 +1087,7 @@ void X6_1000::initialize_correlators() {
 
 void X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
   //Seems to be called when AtConfigure is called on the trigger module
-  FILE_LOG(logDEBUG) << "X6_1000::HandleDisableTrigger";
+  LOG(plog::debug) << "X6_1000::HandleDisableTrigger";
   module_.Input().Trigger().External(false);
   module_.Output().Trigger().External(false);
 }
@@ -1096,26 +1096,26 @@ void X6_1000::HandleDisableTrigger(OpenWire::NotifyEvent & /*Event*/) {
 void X6_1000::HandleExternalTrigger(OpenWire::NotifyEvent & /*Event*/) {
   //This is called when ``AtStreamStart`` is called on the trigger manager module
   // and external trigger has been set with ExternalTrigger(true) being called on the trigger module
-  FILE_LOG(logDEBUG) << "X6_1000::HandleExternalTrigger";
+  LOG(plog::debug) << "X6_1000::HandleExternalTrigger";
   module_.Input().Trigger().External(true);
   module_.Output().Trigger().External(true);
 }
 
 
 void X6_1000::HandleSoftwareTrigger(OpenWire::NotifyEvent & /*Event*/) {
-  FILE_LOG(logDEBUG) << "X6_1000::HandleSoftwareTrigger";
+  LOG(plog::debug) << "X6_1000::HandleSoftwareTrigger";
 }
 
 void X6_1000::HandleBeforeStreamStart(OpenWire::NotifyEvent & /*Event*/) {
 }
 
 void X6_1000::HandleAfterStreamStart(OpenWire::NotifyEvent & /*Event*/) {
-  FILE_LOG(logINFO) << "Analog I/O started";
+  LOG(plog::info) << "Analog I/O started";
   timer_.Enabled(true);
 }
 
 void X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
-  FILE_LOG(logINFO) << "Analog I/O stopped";
+  LOG(plog::info) << "Analog I/O stopped";
   // Disable external triggering initially
   module_.Input().SoftwareTrigger(false);
   module_.Input().Trigger().External(false);
@@ -1136,11 +1136,11 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   AlignedVeloPacketExQ::Range InVelo(buffer);
   size_t ct = 0;
   unsigned int * pos = InVelo.begin();
-  FILE_LOG(logDEBUG3) << "[HandleDataAvailable] Velo packet of size " << buffer.SizeInInts() << " contains...";
+  LOG(plog::verbose) << "[HandleDataAvailable] Velo packet of size " << buffer.SizeInInts() << " contains...";
   while (ct < buffer.SizeInInts()){
     VitaHeaderDatagram vh_dg(pos+ct);
     double timeStamp = vh_dg.TS_Seconds() + 5e-9*vh_dg.TS_FSeconds();
-    FILE_LOG(logDEBUG3) << "\t stream ID = " << hexn<4> << vh_dg.StreamId() <<
+    LOG(plog::verbose) << "\t stream ID = " << hexn<4> << vh_dg.StreamId() <<
       " with size " << vh_dg.PacketSize() <<
       "; packet count = " << std::dec << vh_dg.PacketCount() <<
       " at timestamp " << timeStamp;
@@ -1154,7 +1154,7 @@ void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event)
   }
 
   if (check_done()) {
-    FILE_LOG(logINFO) << "check_done() returned true. Stopping...";
+    LOG(plog::info) << "check_done() returned true. Stopping...";
     stop();
   }
 }
@@ -1168,7 +1168,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
   PacketBufferHeader header(Event.Data);
   uint16_t sid;
 
-  FILE_LOG(logDEBUG3) << "[VMPDataAvailable] called for stream with header peripheralID " << std::dec << header.PeripheralId();
+  LOG(plog::verbose) << "[VMPDataAvailable] called for stream with header peripheralID " << std::dec << header.PeripheralId();
 
   switch (streamType) {
     case PHYSICAL:
@@ -1188,7 +1188,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
       break;
   }
 
-  FILE_LOG(logDEBUG3) << "[VMPDataAvailable] SID for stream with header peripheralID " << std::dec << header.PeripheralId() << " determined to be " << hexn<4> << sid;
+  LOG(plog::verbose) << "[VMPDataAvailable] SID for stream with header peripheralID " << std::dec << header.PeripheralId() << " determined to be " << hexn<4> << sid;
 
   // interpret the data as 16 or 32-bit integers depending on the channel type
   ShortDG sbufferDG(Event.Data);
@@ -1197,7 +1197,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
   switch (streamType) {
     case PHYSICAL:
     case DEMOD:
-      FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
+      LOG(plog::verbose) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << sbufferDG.size() << " samples";
       if ( digitizerMode_ == AVERAGER) {
         // accumulate the data in the appropriate channel
         if (accumulators_[sid].recordsTaken < numRecords_) {
@@ -1215,7 +1215,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
     case RESULT:
     case CORRELATED:
     case STATE:
-      FILE_LOG(logDEBUG3) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
+      LOG(plog::verbose) << "[VMPDataAvailable] buffer SID = " << hexn<4> << sid << "; buffer.size = " << std::dec << ibufferDG.size() << " samples";
       if ( digitizerMode_ == AVERAGER) {
         // accumulate the data in the appropriate channel
         if (accumulators_[sid].recordsTaken < numRecords_) {
@@ -1242,7 +1242,7 @@ void X6_1000::VMPDataAvailable(Innovative::VeloMergeParserDataAvailable & Event,
 bool X6_1000::check_done() {
   if ( digitizerMode_ == AVERAGER) {
     for (auto & kv : accumulators_) {
-      FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
+      LOG(plog::debug) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
     for (auto & kv : accumulators_) {
       if (kv.second.recordsTaken < numRecords_) {
@@ -1253,7 +1253,7 @@ bool X6_1000::check_done() {
   }
   else {
     for (auto & kv : queues_) {
-      FILE_LOG(logDEBUG2) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
+      LOG(plog::debug) << "Channel " << hexn<4> << kv.first << " has taken " << std::dec << kv.second.recordsTaken << " records.";
     }
     for (auto & kv : queues_) {
       if (kv.second.recordsTaken < numRecords_) {
@@ -1268,9 +1268,9 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
 
   //Check and write the length
   //Waveform length should be multiple of four and less than 16384
-  FILE_LOG(logDEBUG1) << "Writing waveform of length " << wf.size() << " to PG " << pg;
+  LOG(plog::debug) << "Writing waveform of length " << wf.size() << " to PG " << pg;
   if (((wf.size() % 4) != 0) || (wf.size() > 16384)){
-    FILE_LOG(logERROR) << "invalid waveform length " << wf.size();
+    LOG(plog::error) << "invalid waveform length " << wf.size();
     throw X6_INVALID_WF_LEN;
   }
   write_wishbone_register(BASE_PG[pg], WB_PG_WF_LENGTH, wf.size()/2);
@@ -1280,7 +1280,7 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
   auto range_check = [](double val){
     const double one_bit_level = 1.0/(1 << WF_FRAC_BITS);
     if ((val > (MAX_WF_VALUE + 1.5*one_bit_level)) || (val < (MIN_WF_VALUE - 0.5*one_bit_level)) ) {
-      FILE_LOG(logERROR) << "waveform value out of range: " << val;
+      LOG(plog::error) << "waveform value out of range: " << val;
       throw X6_WF_OUT_OF_RANGE;
     }
   };
@@ -1298,7 +1298,7 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
     range_check(wf[ct+1]);
     int32_t fixedValB = scale_with_clip(wf[ct+1]);
     uint32_t stackedVal = (fixedValB << 16) | (fixedValA & 0x0000ffff); // signed to unsigned is defined modulo 2^n in the standard
-    FILE_LOG(logDEBUG2) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
+    LOG(plog::debug) << "Writing waveform values " << wf[ct] << "(" << hexn<4> << fixedValA << ") and " <<
                 wf[ct+1] << "(" << hexn<4> << fixedValB << ") as " << hexn<8> << stackedVal;
     write_wishbone_register(BASE_PG[pg], WB_PG_WF_ADDR, ct/2); // address
     write_wishbone_register(BASE_PG[pg], WB_PG_WF_DATA, stackedVal); //data
@@ -1306,7 +1306,7 @@ void X6_1000::write_pulse_waveform(unsigned pg, vector<double>& wf){
 }
 
 double X6_1000::read_pulse_waveform(unsigned pg, uint16_t addr){
-  FILE_LOG(logDEBUG1) << "Reading PG " << pg << " waveform at address " << addr;
+  LOG(plog::debug) << "Reading PG " << pg << " waveform at address " << addr;
   write_wishbone_register(BASE_PG[pg], 9, addr/2); // address is in 32bit words
   uint32_t stackedVal = read_wishbone_register(BASE_PG[pg], 10);
 
@@ -1321,7 +1321,7 @@ double X6_1000::read_pulse_waveform(unsigned pg, uint16_t addr){
 }
 
 void X6_1000::HandleTimer(OpenWire::NotifyEvent & /*Event*/) {
-  // FILE_LOG(logDEBUG) << "X6_1000::HandleTimer";
+  // LOG(plog::debug) << "X6_1000::HandleTimer";
   trigger_.AtTimerTick();
 }
 

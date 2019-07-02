@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 #set compile flag for Linux
 if(UNIX)
   add_definitions(-DLINUX=1)
+  set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -lpthread")
 endif()
 
 # find where Innovative is installed
@@ -27,6 +28,9 @@ include_directories("./lib/")
 
 #Catch unit-testing
 include_directories("../deps/Catch/include")
+
+#plog logger
+include_directories("../deps/plog/include")
 
 #Innovative shipped shared libraries
 if(CMAKE_BUILD_TYPE MATCHES Debug)
