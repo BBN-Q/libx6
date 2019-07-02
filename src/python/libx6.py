@@ -30,6 +30,7 @@ import numpy as np
 import numpy.ctypeslib as npct
 from ctypes import c_int32, c_uint32, c_float, c_double, c_char_p, c_bool, create_string_buffer, byref, POINTER, Structure, CDLL
 from ctypes.util import find_library
+from enum import IntEnum
 
 np_double = npct.ndpointer(dtype=np.double, ndim=1, flags='CONTIGUOUS')
 np_complex = npct.ndpointer(dtype=np.complex128, ndim=1, flags='CONTIGUOUS')
@@ -54,6 +55,22 @@ class Channel(Structure):
     _fields_ = [("a", c_int32),
                 ("b", c_int32),
                 ("c", c_int32)]
+
+class PlogSeverity(IntEnum):
+    none = 0
+    fatal = 1
+    error = 2
+    warning = 3
+    info = 4
+    debug = 5
+    verbose = 6
+
+    def __init__(self, value):
+        self._as_parameter = int(value)
+
+    @classmethod
+    def from_param(cls, obj):
+        return int(obj)
 
 # reference source
 reference_dict = {0: "external", 1: "internal"}
@@ -132,8 +149,10 @@ libx6.get_buffer_size.argtypes         = [c_int32, POINTER(Channel), c_uint32, P
 libx6.get_record_length.argtypes       = [c_int32, POINTER(Channel), POINTER(c_uint32)]
 libx6.get_variance_buffer_size.argtypes = [c_int32, POINTER(Channel), c_uint32, POINTER(c_int32)]
 
-libx6.set_log.argtypes                 = [c_char_p]
-libx6.set_logging_level.argtypes       = [c_int32]
+libx6.set_file_logging_level.argtypes      = [PlogSeverity]
+libx6.set_file_logging_level.restype       = c_int
+libx6.set_console_logging_level.argtypes   = [PlogSeverity]
+libx6.set_console_logging_level.restype    = c_int
 
 libx6.get_logic_temperature.argtypes   = [c_int32, POINTER(c_float)]
 
@@ -161,10 +180,21 @@ def get_num_devices():
     return num_devices.value
 
 def set_log(filename):
-    check(libx6.set_log(filename.encode('utf-8')))
+    raise NotImplementedError("Setting log filename no longer supported.")
 
 def set_logging_level(level):
-    check(libx6.set_logging_level(level))
+    raise NotImplementedError("Deprecated function. Please use `set_file_logging_level` or `set_console_logging_level`.")
+
+def set_file_logging_level(level):
+    assert isinstance(level, PlogSeverity), "Please use a PlogSeverity enum to set log severity."
+    check(libaps2.set_file_logging_level(level))
+
+def set_console_logging_level(level):
+    assert isinstance(level, PlogSeverity), "Please use a PlogSeverity enum to set log severity."
+    check(libaps2.set_console_logging_level(level))
+
+def enumerate_boards():
+    return [f"X6-{n}" for n in get_num_devices()]
 
 class X6(object):
     def __init__(self):
