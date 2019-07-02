@@ -42,8 +42,6 @@ if libpath is None:
     libpath = find_library("libx6")
 # if we still can't find it, then look in python prefix (where conda stores binaries)
 
-libpath = os.path.join(os.path.dirname(__file__), '../../build/libx6.dll')
-
 if libpath is None:
     libpath = sys.prefix + '/lib'
     libx6 = npct.load_library("libx6", libpath)
@@ -150,9 +148,9 @@ libx6.get_record_length.argtypes       = [c_int32, POINTER(Channel), POINTER(c_u
 libx6.get_variance_buffer_size.argtypes = [c_int32, POINTER(Channel), c_uint32, POINTER(c_int32)]
 
 libx6.set_file_logging_level.argtypes      = [PlogSeverity]
-libx6.set_file_logging_level.restype       = c_int
+libx6.set_file_logging_level.restype       = c_int32
 libx6.set_console_logging_level.argtypes   = [PlogSeverity]
-libx6.set_console_logging_level.restype    = c_int
+libx6.set_console_logging_level.restype    = c_int32
 
 libx6.get_logic_temperature.argtypes   = [c_int32, POINTER(c_float)]
 
@@ -187,14 +185,14 @@ def set_logging_level(level):
 
 def set_file_logging_level(level):
     assert isinstance(level, PlogSeverity), "Please use a PlogSeverity enum to set log severity."
-    check(libaps2.set_file_logging_level(level))
+    check(libx6.set_file_logging_level(level))
 
 def set_console_logging_level(level):
     assert isinstance(level, PlogSeverity), "Please use a PlogSeverity enum to set log severity."
-    check(libaps2.set_console_logging_level(level))
+    check(libx6.set_console_logging_level(level))
 
 def enumerate_boards():
-    return [f"X6-{n}" for n in get_num_devices()]
+    return [f"X6-{n}" for n in range(int(get_num_devices()))]
 
 class X6(object):
     def __init__(self):
