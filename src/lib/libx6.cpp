@@ -433,13 +433,13 @@ EXPORT X6_STATUS read_pulse_waveform(int deviceID, unsigned pg, unsigned addr, d
 }
 
 X6_STATUS set_file_logging_level(plog::Severity severity) {
-  plog::get<FILE_LOG>()->setMaxSeverity(severity);
-  return APS2_OK;
+  plog::get<FILE_PLOG>()->setMaxSeverity(severity);
+  return X6_OK;
 }
 
 X6_STATUS set_console_logging_level(plog::Severity severity) {
-  plog::get<CONSOLE_LOG>()->setMaxSeverity(severity);
-  return APS2_OK;
+  plog::get<CONSOLE_PLOG>()->setMaxSeverity(severity);
+  return X6_OK;
 }
 
 X6_STATUS read_register(int deviceID, uint32_t wbAddr, uint32_t offset, uint32_t* regValue) {
