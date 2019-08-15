@@ -8,6 +8,8 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
+@cmakedefine01 HAS_RESULT_STREAM
+
 #include <vector>
 
 const int MAX_NUM_DEVICES = 5;
@@ -35,6 +37,9 @@ const double MIN_CORRELATOR_VALUE = -1.0;
 // WishBone interface
 const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 
+//Old firmware version number 
+#define X6_OLD_FIRMWARE_VERSION	10
+
 //Registers we read from
 #define WB_QDSP_TEST                            0x01
 #define WB_QDSP_RECORD_LENGTH                   0x02
@@ -46,6 +51,25 @@ const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 #define WB_QDSP_NUM_DEMOD                       0x08
 #define WB_QDSP_STATE_VLD_MASK                  0x09
 #define WB_QDSP_RAW_KERNEL_LENGTH               0x10
+
+/*#if !(HAS_RESULT_STREAM)
+
+#define WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod)   	0x14
+#define WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod)   	0x20
+#define WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod)	0x28
+#define WB_QDSP_THRESHOLD(numRawKi,numDemod)              	0x30
+#define WB_QDSP_PHASE_INC(numRawKi,numDemod)              	0x34
+#define WB_QDSP_THRESHOLD_INVERT(numRawKi,numDemod)       	0x38
+#define WB_QDSP_THRESHOLD_INPUT_SEL(numRawKi,numDemod)    	0x00 //not defined <=>
+#define WB_QDSP_RAW_KERNEL_BIAS(numRawKi,numDemod)       	0x40
+#define WB_QDSP_DEMOD_KERNEL_BIAS(numRawKi,numDemod)      	0x48
+#define WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod)        	0x00
+#define WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod)      	0x00
+#define WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod)      	0x00
+#define WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod)         	0x00
+
+#else*/
+
 #define WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod)    (WB_QDSP_RAW_KERNEL_LENGTH + numRawKi)
 #define WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod)   (WB_QDSP_DEMOD_KERNEL_LENGTH(numRawKi,numDemod) + numDemod)
 #define WB_QDSP_DEMOD_KERNEL_ADDR_DATA(numRawKi,numDemod) (WB_QDSP_RAW_KERNEL_ADDR_DATA(numRawKi,numDemod) + 2*numRawKi)
@@ -59,6 +83,8 @@ const std::vector<unsigned> BASE_DSP = {0x2000, 0x2100};
 #define WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod)      (WB_QDSP_CORRELATOR_SIZE(numRawKi,numDemod)+1)
 #define WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod)      (WB_QDSP_CORRELATOR_M_ADDR(numRawKi,numDemod)+1)
 #define WB_QDSP_CORRELATOR_SEL(numRawKi,numDemod)         (WB_QDSP_CORRELATOR_M_DATA(numRawKi,numDemod)+1)
+
+//#endif
 
 //pulse generator offsets
 const std::vector<uint32_t> BASE_PG = {0x2200, 0x2300};

@@ -104,6 +104,14 @@ void X6_1000::open(int deviceID) {
 
   log_card_info();
 
+  //determine firmware versions
+  isOldFirmware = (get_firmware_version() == X6_OLD_FIRMWARE_VERSION);
+  if (isOldFirmware) {
+    LOG(plog::info) << "Has old firmware version with 2 DSP chains...";
+  } else {
+    LOG(plog::info) << "Has new firmware with 4 DSP chains and hardware correlators..."
+  }
+
   //	Connect Stream
   stream_.ConnectTo(&module_);
   LOG(plog::info) << "Stream Connected...";

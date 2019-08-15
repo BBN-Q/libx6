@@ -145,6 +145,7 @@ private:
   X6_1000& operator=(const X6_1000&) = delete;
 
   unsigned deviceID_;       /**< board ID (aka target number) */
+  bool isOldFirmware;       /**Old vs. new firmware **/
 
   Innovative::X6_1000M            module_; /**< Malibu module */
   Innovative::TriggerManager      trigger_;   /**< Malibu trigger manager */
