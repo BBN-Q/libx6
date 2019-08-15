@@ -8,8 +8,6 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-@cmakedefine01 HAS_RESULT_STREAM
-
 #include <vector>
 
 const int MAX_NUM_DEVICES = 5;
