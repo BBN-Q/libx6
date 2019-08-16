@@ -9,7 +9,7 @@
 #ifndef X6_REGISTERS_H_
 #define X6_REGISTERS_H_ 
 
-#include <stdint>
+#include <cstdint>
 #include "constants.h"
 
 #define WB_QDSP_TEST                            0x01
@@ -26,7 +26,7 @@
 struct firmware_v10_tag firmware_v10 {};
 struct firmware_v20_tag firmware_v20 {};
 
-struct  _QDSP_registers {
+struct QDSP_registers {
 
 	QDSP_registers(const firmware_v10_tag &);
 	QDSP_registers(const int, const int, const firmware_v20_tag &);
@@ -50,7 +50,7 @@ struct  _QDSP_registers {
 	const uint32_t WB_QDSP_CORRELATOR_M_DATA;
 	const uint32_t WB_QDSP_CORRELATOR_SEL;
 
-} QDSP_registers;
+};
 
 
 #endif
