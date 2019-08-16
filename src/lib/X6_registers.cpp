@@ -8,7 +8,7 @@
 
 #include "X6_registers.h"
 
-QDSP_registers::QDSP_registers(const firmware_v10_tag &tag) {
+QDSP_registers::QDSP_registers(const firmware_v10_tag tag) {
 
 	WB_QDSP_DEMOD_KERNEL_LENGTH			= 0x14;
 	
@@ -31,7 +31,7 @@ QDSP_registers::QDSP_registers(const firmware_v10_tag &tag) {
 
 }
 
-QDSP_registers::QDSP_registers(const int numRawKi, const int numDemod, const firmware_v20_tag &tag) {
+QDSP_registers::QDSP_registers(const int numRawKi, const int numDemod, const firmware_v20_tag tag) {
 
 	WB_QDSP_DEMOD_KERNEL_LENGTH     = (WB_QDSP_RAW_KERNEL_LENGTH + numRawKi);
 	WB_QDSP_RAW_KERNEL_ADDR_DATA    = (WB_QDSP_DEMOD_KERNEL_LENGTH + numDemod);

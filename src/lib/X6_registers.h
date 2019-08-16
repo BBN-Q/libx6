@@ -23,9 +23,6 @@
 #define WB_QDSP_STATE_VLD_MASK                  0x09
 #define WB_QDSP_RAW_KERNEL_LENGTH               0x10
 
-struct firmware_v10_tag {} firmware_v10 {};
-struct firmware_v20_tag {} firmware_v20 {};
-
 struct QDSP_registers {
 
 	uint32_t WB_QDSP_DEMOD_KERNEL_LENGTH;
@@ -47,8 +44,11 @@ struct QDSP_registers {
 	uint32_t WB_QDSP_CORRELATOR_M_DATA;
 	uint32_t WB_QDSP_CORRELATOR_SEL;
 
-	QDSP_registers(const firmware_v10_tag &);
-	QDSP_registers(const int, const int, const firmware_v20_tag &);
+	static struct firmware_v10_tag {} firmware_v10;
+	static struct firmware_v10_tag {} firmware_v20;
+
+	QDSP_registers(const firmware_v10_tag);
+	QDSP_registers(const int, const int, const firmware_v20_tag);
 
 };
 

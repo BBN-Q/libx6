@@ -25,7 +25,7 @@ using namespace Innovative;
 // constructor
 X6_1000::X6_1000() :
     isOpen_{false},
-    isOldFirmware_{true}
+    isOldFirmware_{true},
     isRunning_{false},
     needToInit_{true},
     activeInputChannels_{true, true},
@@ -377,9 +377,9 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
   LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
   if (isOldFirmware_) {
-    QDSP_registers regs(firmware_v10);
+    QDSP_registers regs(QDSP_reigsters::firmware_v10);
   } else {
-    QDSP_registers regs(numRawKi, numDemod, firmware_v20);
+    QDSP_registers regs(numRawKi, numDemod, QDSP_registers::firmware_v20);
   }
 
   // NCO runs at quarter rate
