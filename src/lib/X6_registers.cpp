@@ -47,6 +47,4 @@ QDSP_registers::QDSP_registers(const int numRawKi, const int numDemod, const fir
 	WB_QDSP_CORRELATOR_M_DATA       = (WB_QDSP_CORRELATOR_M_ADDR + 1);
 	WB_QDSP_CORRELATOR_SEL          = (WB_QDSP_CORRELATOR_M_DATA + 1);
 
-
-
 }

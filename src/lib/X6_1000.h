@@ -13,6 +13,7 @@
 #include <mutex>
 
 #include "X6_enums.h"
+#include "X6_registers.h"
 
 #include "QDSPStream.h"
 #include "RecordQueue.h"
@@ -146,6 +147,7 @@ private:
 
   unsigned deviceID_;       /**< board ID (aka target number) */
   bool isOldFirmware;       /**Old vs. new firmware **/
+  QDSP_registers regs;      /** Register locations, firmware-dependent **/
 
   Innovative::X6_1000M            module_; /**< Malibu module */
   Innovative::TriggerManager      trigger_;   /**< Malibu trigger manager */

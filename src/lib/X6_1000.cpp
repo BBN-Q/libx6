@@ -104,12 +104,17 @@ void X6_1000::open(int deviceID) {
 
   log_card_info();
 
+  uint32_t numRawKi = get_number_of_integrators(a);
+  uint32_t numDemod = get_number_of_demodulators(a);
+
   //determine firmware versions
   isOldFirmware = (get_firmware_version() == X6_OLD_FIRMWARE_VERSION);
   if (isOldFirmware) {
     LOG(plog::info) << "Has old firmware version with 2 DSP chains...";
+    regs = QDSP_registers(firmware_v10);
   } else {
     LOG(plog::info) << "Has new firmware with 4 DSP chains and hardware correlators..."
+    regs = QDSP_registers(numRawKi, numDemod, firmware_v20)
   }
 
   //	Connect Stream
