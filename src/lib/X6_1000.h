@@ -199,6 +199,8 @@ private:
   void initialize_queues();
   void initialize_correlators();
 
+  QDSP_registers get_stream_registers(const int, const int);
+
   // Malibu Event handlers
 
   void HandleDisableTrigger(OpenWire::NotifyEvent & Event);

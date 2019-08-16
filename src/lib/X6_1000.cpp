@@ -376,11 +376,7 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
   uint32_t numDemod = get_number_of_demodulators(a);
   LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
 
-  if (isOldFirmware_) {
-    QDSP_registers regs(QDSP_reigsters::firmware_v10);
-  } else {
-    QDSP_registers regs(numRawKi, numDemod, QDSP_registers::firmware_v20);
-  }
+  QDSP_registers regs = get_stream_registers(a, b)
 
   // NCO runs at quarter rate
   double nfreq = 4 * freq/get_pll_frequency();
@@ -1093,6 +1089,14 @@ void X6_1000::initialize_correlators() {
       }
       correlators_[streamIDs] = Correlator(streams, numSegments_, waveforms_);
     }
+  }
+}
+
+QDSP_registers X6_1000:get_stream_registers(const int a, const int b) {
+  if (isOldFirmware_) {
+    return QDSP_registers(QDSP_reigsters::firmware_v10);
+  } else {
+    return QDSP_registers(numRawKi, numDemod, QDSP_registers::firmware_v20);
   }
 }
 

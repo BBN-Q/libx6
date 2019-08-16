@@ -95,6 +95,7 @@ set ( DLL_SRC
 	./lib/Accumulator.cpp
 	./lib/Correlator.cpp
 	./lib/X6_1000.cpp
+	./lib/X6_registers.cpp
 )
 
 set_source_files_properties( ${DLL_SRC} PROPERTIES LANGUAGE CXX )
