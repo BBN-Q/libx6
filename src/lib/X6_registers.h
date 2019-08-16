@@ -7,7 +7,7 @@
 // Copyright 2013-2019 Raytheon BBN Technologies
 
 #ifndef X6_REGISTERS_H_
-#define X6_REGISTERS_H_ 
+#define X6_REGISTERS_H_
 
 #include <cstdint>
 #include "constants.h"
@@ -26,7 +26,7 @@
 struct QDSP_registers {
 
 	uint32_t WB_QDSP_DEMOD_KERNEL_LENGTH;
-	
+
 	uint32_t WB_QDSP_RAW_KERNEL_ADDR_DATA;
 	uint32_t WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
 
@@ -47,8 +47,8 @@ struct QDSP_registers {
 	static struct firmware_v10_tag {} firmware_v10;
 	static struct firmware_v20_tag {} firmware_v20;
 
-	QDSP_registers(const firmware_v10_tag);
-	QDSP_registers(const int, const int, const firmware_v20_tag);
+	explicit QDSP_registers(const firmware_v10_tag);
+	explicit QDSP_registers(const int, const int, const firmware_v20_tag);
 
 };
 

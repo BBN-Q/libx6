@@ -199,7 +199,7 @@ private:
   void initialize_queues();
   void initialize_correlators();
 
-  QDSP_registers get_stream_registers(const int, const int);
+  QDSP_registers get_stream_registers(const int);
 
   // Malibu Event handlers
 
