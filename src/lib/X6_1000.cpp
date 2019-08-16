@@ -25,12 +25,12 @@ using namespace Innovative;
 // constructor
 X6_1000::X6_1000() :
     isOpen_{false},
+    isOldFirmware_{true}
     isRunning_{false},
     needToInit_{true},
     activeInputChannels_{true, true},
     activeOutputChannels_{false, false, false, false},
-    refSource_{INTERNAL_REFERENCE},
-    isOldFirmware_{true}}
+    refSource_{INTERNAL_REFERENCE}
   {
 
   timer_.Interval(1000);
