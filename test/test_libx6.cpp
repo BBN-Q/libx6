@@ -93,7 +93,7 @@ void check_kernel(unsigned a, unsigned b, unsigned c, vector<complex<double>> & 
 	std::mt19937 engine; // Mersenne twister MT19937
 	auto gen_rand_idx = std::bind(dist, engine);
 	std::generate_n(checkIdx.begin()+2, numChecks-2, gen_rand_idx);
-	
+
 
 	for (size_t ct = 0; ct < checkIdx.size(); ct++) {
 		complex<double> val;
@@ -140,16 +140,16 @@ TEST_CASE("kernels") {
 	SECTION("raw kernel write read") {
 
 		kernel.resize(4096);
-		//std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
-		std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.3, 0.123));
+		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		//std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.3, 0.123));
 		check_kernel(1, 0, 1, kernel, 100);
 	}
 
 	SECTION("demod kernel write read") {
 
 		kernel.resize(512);
-		//std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
-		std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.2, 0.712));
+		std::generate_n(kernel.begin(), kernel.size(), gen_rand_complex);
+		//std::fill(kernel.begin(), kernel.end(), std::complex<double> (0.2, 0.712));
 		check_kernel(1, 1, 1, kernel, 100);
 	}
 
