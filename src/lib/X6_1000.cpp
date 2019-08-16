@@ -30,6 +30,8 @@ X6_1000::X6_1000() :
     activeInputChannels_{true, true},
     activeOutputChannels_{false, false, false, false},
     refSource_{INTERNAL_REFERENCE}
+    isOldFirmware_{true},
+    regs_{QDSO_registers(firmware_v10)}
   {
 
   timer_.Interval(1000);
@@ -104,17 +106,12 @@ void X6_1000::open(int deviceID) {
 
   log_card_info();
 
-  uint32_t numRawKi = get_number_of_integrators(a);
-  uint32_t numDemod = get_number_of_demodulators(a);
-
   //determine firmware versions
-  isOldFirmware = (get_firmware_version() == X6_OLD_FIRMWARE_VERSION);
-  if (isOldFirmware) {
+  isOldFirmware_ = (get_firmware_version() == X6_OLD_FIRMWARE_VERSION);
+  if (isOldFirmware_) {
     LOG(plog::info) << "Has old firmware version with 2 DSP chains...";
-    regs = QDSP_registers(firmware_v10);
   } else {
     LOG(plog::info) << "Has new firmware with 4 DSP chains and hardware correlators...";
-    regs = QDSP_registers(numRawKi, numDemod, firmware_v20)
   }
 
   //	Connect Stream
@@ -379,6 +376,12 @@ void X6_1000::set_nco_frequency(int a, int b, double freq) {
   uint32_t numRawKi = get_number_of_integrators(a);
   uint32_t numDemod = get_number_of_demodulators(a);
   LOG(plog::info) << "Detected DSP " << a << " has having " << numRawKi << " raw streams and " << numDemod << " demod streams.";
+
+  if (isOldFirmware_) {
+    QDSP_registers regs(firmware_v10);
+  } else {
+    QDSP_registers regs(numRawKi, numDemod, firmware_v20);
+  }
 
   // NCO runs at quarter rate
   double nfreq = 4 * freq/get_pll_frequency();
