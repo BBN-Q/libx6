@@ -29,9 +29,8 @@ X6_1000::X6_1000() :
     needToInit_{true},
     activeInputChannels_{true, true},
     activeOutputChannels_{false, false, false, false},
-    refSource_{INTERNAL_REFERENCE}
-    isOldFirmware_{true},
-    regs_{QDSO_registers(firmware_v10)}
+    refSource_{INTERNAL_REFERENCE},
+    isOldFirmware_{true}}
   {
 
   timer_.Interval(1000);
