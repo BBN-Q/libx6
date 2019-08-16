@@ -113,7 +113,7 @@ void X6_1000::open(int deviceID) {
     LOG(plog::info) << "Has old firmware version with 2 DSP chains...";
     regs = QDSP_registers(firmware_v10);
   } else {
-    LOG(plog::info) << "Has new firmware with 4 DSP chains and hardware correlators..."
+    LOG(plog::info) << "Has new firmware with 4 DSP chains and hardware correlators...";
     regs = QDSP_registers(numRawKi, numDemod, firmware_v20)
   }
 
