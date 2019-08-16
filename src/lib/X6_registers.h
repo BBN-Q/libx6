@@ -28,26 +28,25 @@ struct firmware_v20_tag {} firmware_v20 {};
 
 struct QDSP_registers {
 
-	const uint32_t WB_QDSP_DEMOD_KERNEL_LENGTH;
+	uint32_t WB_QDSP_DEMOD_KERNEL_LENGTH;
 	
-	const uint32_t WB_QDSP_RAW_KERNEL_ADDR_DATA;
-	const uint32_t WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
+	uint32_t WB_QDSP_RAW_KERNEL_ADDR_DATA;
+	uint32_t WB_QDSP_DEMOD_KERNEL_ADDR_DATA;
 
-	const uint32_t WB_QDSP_PHASE_INC;
+	uint32_t WB_QDSP_PHASE_INC;
 
-	const uint32_t WB_QDSP_THRESHOLD;
-	const uint32_t WB_QDSP_THRESHOLD_INVERT;
-	const uint32_t WB_QDSP_THRESHOLD_INPUT_SEL;
+	uint32_t WB_QDSP_THRESHOLD;
+	uint32_t WB_QDSP_THRESHOLD_INVERT;
+	uint32_t WB_QDSP_THRESHOLD_INPUT_SEL;
 
-	const uint32_t WB_QDSP_RAW_KERNEL_BIAS;
-	const uint32_t WB_QDSP_DEMOD_KERNEL_BIAS;
+	uint32_t WB_QDSP_RAW_KERNEL_BIAS;
+	uint32_t WB_QDSP_DEMOD_KERNEL_BIAS;
 
-	const uint32_t WB_QDSP_CORRELATOR_SIZE;
-	const uint32_t WB_QDSP_CORRELATOR_M_ADDR;
-	const uint32_t WB_QDSP_CORRELATOR_M_DATA;
-	const uint32_t WB_QDSP_CORRELATOR_SEL;
+	uint32_t WB_QDSP_CORRELATOR_SIZE;
+	uint32_t WB_QDSP_CORRELATOR_M_ADDR;
+	uint32_t WB_QDSP_CORRELATOR_M_DATA;
+	uint32_t WB_QDSP_CORRELATOR_SEL;
 
-	QDSP_registers() {};
 	QDSP_registers(const firmware_v10_tag &);
 	QDSP_registers(const int, const int, const firmware_v20_tag &);
 
