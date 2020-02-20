@@ -839,7 +839,7 @@ void X6_1000::acquire() {
   }
 
   // flag must be set before calling stream start
-  isRunning_ = true;
+  // isRunning_ = true;
 
   //	Start Streaming
   LOG(plog::info) << "Arming acquisition";
@@ -1111,6 +1111,7 @@ void X6_1000::HandleBeforeStreamStart(OpenWire::NotifyEvent & /*Event*/) {
 
 void X6_1000::HandleAfterStreamStart(OpenWire::NotifyEvent & /*Event*/) {
   LOG(plog::info) << "Analog I/O started";
+  isRunning_ = true;
   timer_.Enabled(true);
 }
 
@@ -1127,8 +1128,10 @@ void X6_1000::HandleAfterStreamStop(OpenWire::NotifyEvent & /*Event*/) {
 }
 
 void X6_1000::HandleDataAvailable(Innovative::VitaPacketStreamDataEvent & Event) {
-  if (!isRunning_) return;
-
+  if (!isRunning_) {
+    LOG(plog::warning) << "isRunning_ not set before HandleDataAvailable is called! Error! Error!";
+    return;
+  }
   // create a buffer to receive the data
   VeloBuffer buffer;
   Event.Sender->Recv(buffer);
